@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>HashMap-实现原理 | 无知是天堂</title>
+  <title>HashMap剖析 | 无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
@@ -16,14 +16,14 @@
   <meta name="description" content="大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输出，该输出就是散列值。 这种转换是一种压缩映射，也就是，散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，所以不可能从散列值来唯一的确定输入值。简单的说">
 <meta name="keywords" content="Java">
 <meta property="og:type" content="article">
-<meta property="og:title" content="HashMap-实现原理">
+<meta property="og:title" content="HashMap剖析">
 <meta property="og:url" content="http://yoursite.com/2018/08/20/HashMap/index.html">
 <meta property="og:site_name" content="无知是天堂">
 <meta property="og:description" content="大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输出，该输出就是散列值。 这种转换是一种压缩映射，也就是，散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，所以不可能从散列值来唯一的确定输入值。简单的说">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-08-20T08:53:15.270Z">
+<meta property="og:updated_time" content="2018-08-21T06:38:23.679Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="HashMap-实现原理">
+<meta name="twitter:title" content="HashMap剖析">
 <meta name="twitter:description" content="大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输出，该输出就是散列值。 这种转换是一种压缩映射，也就是，散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，所以不可能从散列值来唯一的确定输入值。简单的说">
   
   
@@ -66,7 +66,7 @@
     
     
   
-    <h1 class="title">HashMap-实现原理</h1>
+    <h1 class="title">HashMap剖析</h1>
   
 
   </header>
@@ -117,7 +117,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Java/" style="font-size: 10px;">Java</a>
+    <a href="/tags/Cache/" style="font-size: 10px;">Cache</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a>
   </div>
 </div>
 
@@ -128,7 +128,11 @@
   <ul class="entry">
     
       <li>
-        <a href="/2018/08/20/HashMap/">HashMap-实现原理</a>
+        <a href="/2018/08/21/redis/">Redis算法了解</a>
+      </li>
+    
+      <li>
+        <a href="/2018/08/20/HashMap/">HashMap剖析</a>
       </li>
     
       <li>
