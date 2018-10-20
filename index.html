@@ -59,6 +59,62 @@
   <header>
     
       <div class="icon"></div>
+      <a href="/2018/10/20/redis-common/">
+  <time datetime="2018-10-20T01:52:06.000Z">
+    2018-10-20
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2018/10/20/redis-common/">Redis日常操作整理</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><p>昨天运维监控线上某服务<code>redis</code>打到100%，业务日志瞬间<code>connect refused</code>，差不多半个小时清理后，缓存服务恢复正常</p>
+<p>运维提供了一大批没有设置过期时间的<code>key</code>前来告状，其中有个‘key’半个月，存储了8G的内容，且没有过期时间，真乃神人也，我所在的业务模块，也被拔出好几个<code>key</code>存在问题</p>
+<p>现总结如下</p>
+<h2 id="如何实现某段时间的限流"><a href="#如何实现某段时间的限流" class="headerlink" title="如何实现某段时间的限流"></a>如何实现某段时间的限流</h2><p>这次排查下来，有基础代码很有问题，最有意思的是限流操作部分代码，很多场景需要用到<code>Redis</code>，如ip限制，短信当天发送限制，某个接口一段时间调用限制</p>
+<p>看程序实现，伪代码如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">int lockKeyNum = redis.get(lockKey) == null ? 0 : Integer.parse(redis.get(lockKey));</span><br><span class="line">if (lockKeyNum &lt;= 0) &#123;</span><br><span class="line">    // 初始化</span><br><span class="line">    redis.set(lockKey, 1);</span><br><span class="line">    redis.expire(lockey, 1, TimeUnit.DAYS);</span><br><span class="line">&#125; eles &#123;</span><br><span class="line">    long expireTime = redis.ttl(lockKey);</span><br><span class="line">    redis.set(lockKey, lockKeyNum + 1);</span><br><span class="line">    redis.expire(lockKey, expireTime, TimeUnit.SECONDS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这段代码看着没啥问题，如果细细揣摩，还是隐藏很多的问题的，如下列出</p>
+<ul>
+<li><p><code>Redis</code>从某个版本（具体我也忘了。。）支持set后直接设置过期时间，属于一个原子操作</p>
+</li>
+<li><p>累加器操作，自己实现完全没有意义，且多线程、进程，很容易出问题，此处初识<code>Redis</code>的人估计会疑惑，如果存在key就直接set值好了，为何还要先获取过期时间，如果直接set的话，会覆盖当前key的过期时间，这算一个初学者的坑，大家都会经历的。在这如果高并发，同时存在多个线程操作lockKey，因为redis是单线程，同时get或者set肯定会出现幻读或者脏写等操作，此处应使用<code>increment</code>命令，redis自己的累加器，且只是对值的累加，过期时间仍会保留，完美！</p>
+</li>
+</ul>
+<p>完善代码：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">String lockKey = redis.get(lockKey);</span><br><span class="line">if (StringUtils.isEmpty(lockKey)) &#123;</span><br><span class="line">    // 初始化</span><br><span class="line">    redis.set(lockKey, 1, 1, TimeUnit.DAYS);</span><br><span class="line">&#125; eles &#123;</span><br><span class="line">    redis.increment(lockKey, 1);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="ValueOperations常用命令"><a href="#ValueOperations常用命令" class="headerlink" title="ValueOperations常用命令"></a>ValueOperations常用命令</h2><p>org.springframework.data.redis.core.ValueOperations</p>
+<h3 id="setIfAbsent"><a href="#setIfAbsent" class="headerlink" title="setIfAbsent"></a>setIfAbsent</h3><p>如果键不存在则新增,存在则不改变已经有的值。</p>
+<h3 id="multiSet"><a href="#multiSet" class="headerlink" title="multiSet"></a>multiSet</h3><p>多个值同事设置</p>
+<h3 id="multiSetIfAbsent"><a href="#multiSetIfAbsent" class="headerlink" title="multiSetIfAbsent"></a>multiSetIfAbsent</h3><p>如果对应的map集合名称不存在，则添加，如果存在则不做修改。</p>
+<h3 id="getAndSet"><a href="#getAndSet" class="headerlink" title="getAndSet"></a>getAndSet</h3><p>获取原来key键对应的值并重新赋新值。</p>
+<h3 id="multiGet"><a href="#multiGet" class="headerlink" title="multiGet"></a>multiGet</h3><p>根据集合取出对应的value值。</p>
+<h3 id="increment"><a href="#increment" class="headerlink" title="increment"></a>increment</h3><p>以增量的方式将long值存储在变量中。</p>
+<h3 id="append"><a href="#append" class="headerlink" title="append"></a>append</h3><p>在原有的值基础上新增字符串到末尾。</p>
+<h3 id="size"><a href="#size" class="headerlink" title="size"></a>size</h3><p>获取指定字符串的长度。</p>
+<h3 id="setBit"><a href="#setBit" class="headerlink" title="setBit"></a>setBit</h3><p>key键对应的值value对应的ascii码,在offset的位置(从左向右数)变为value。</p>
+
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
       <a href="/2018/09/30/travel-to-xn/">
   <time datetime="2018-09-30T06:10:19.000Z">
     2018-09-30
@@ -747,7 +803,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 10px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Travel/" style="font-size: 13.33px;">Travel</a> <a href="/tags/distributed/" style="font-size: 13.33px;">distributed</a> <a href="/tags/原/" style="font-size: 16.67px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 13.33px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Travel/" style="font-size: 13.33px;">Travel</a> <a href="/tags/distributed/" style="font-size: 13.33px;">distributed</a> <a href="/tags/原/" style="font-size: 16.67px;">原</a>
   </div>
 </div>
 
@@ -756,6 +812,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2018/10/20/redis-common/">Redis日常操作整理</a>
+      </li>
     
       <li>
         <a href="/2018/09/30/travel-to-xn/">【原】十一游青海</a>
@@ -771,10 +831,6 @@
     
       <li>
         <a href="/2018/08/27/auth/">Http鉴权罗列</a>
-      </li>
-    
-      <li>
-        <a href="/2018/08/23/distribut-lock/">分布式锁</a>
       </li>
     
   </ul>
