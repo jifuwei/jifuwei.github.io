@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>从循环依赖探寻Spring IOC源码 | 无知是天堂</title>
+  <title>【原】从循环依赖探寻Spring IOC源码 | 无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
@@ -21,15 +21,15 @@
   <meta name="description" content="起因公司最近新起了一个项目，算是现有业务系统的升级版本，支持国际化，新的设计对现有系统不支持的功能都涵盖了，领导寄予厚望 本人也参与了其中债权模块的时间轴设计实现，但是由于现有老项目维护和开发，没有精力投入新项目的开发，可惜了。 这几天闲来无事，想着看看项目初版即将成型，索性更新源码观摩一下，看到了如下极品代码： 大海里面也有小虾米，我们抱着包容的态度来看这段代码：  标记1，循环依赖 标记2，自">
 <meta name="keywords" content="Spring">
 <meta property="og:type" content="article">
-<meta property="og:title" content="从循环依赖探寻Spring IOC源码">
+<meta property="og:title" content="【原】从循环依赖探寻Spring IOC源码">
 <meta property="og:url" content="http://yoursite.com/2018/10/20/spring-init/index.html">
 <meta property="og:site_name" content="无知是天堂">
 <meta property="og:description" content="起因公司最近新起了一个项目，算是现有业务系统的升级版本，支持国际化，新的设计对现有系统不支持的功能都涵盖了，领导寄予厚望 本人也参与了其中债权模块的时间轴设计实现，但是由于现有老项目维护和开发，没有精力投入新项目的开发，可惜了。 这几天闲来无事，想着看看项目初版即将成型，索性更新源码观摩一下，看到了如下极品代码： 大海里面也有小虾米，我们抱着包容的态度来看这段代码：  标记1，循环依赖 标记2，自">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://yoursite.com/images/spring1.jpeg">
-<meta property="og:updated_time" content="2018-10-20T04:08:40.561Z">
+<meta property="og:updated_time" content="2018-10-20T04:50:49.742Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="从循环依赖探寻Spring IOC源码">
+<meta name="twitter:title" content="【原】从循环依赖探寻Spring IOC源码">
 <meta name="twitter:description" content="起因公司最近新起了一个项目，算是现有业务系统的升级版本，支持国际化，新的设计对现有系统不支持的功能都涵盖了，领导寄予厚望 本人也参与了其中债权模块的时间轴设计实现，但是由于现有老项目维护和开发，没有精力投入新项目的开发，可惜了。 这几天闲来无事，想着看看项目初版即将成型，索性更新源码观摩一下，看到了如下极品代码： 大海里面也有小虾米，我们抱着包容的态度来看这段代码：  标记1，循环依赖 标记2，自">
 <meta name="twitter:image" content="http://yoursite.com/images/spring1.jpeg">
   
@@ -73,7 +73,7 @@
     
     
   
-    <h1 class="title">从循环依赖探寻Spring IOC源码</h1>
+    <h1 class="title">【原】从循环依赖探寻Spring IOC源码</h1>
   
 
   </header>
@@ -145,11 +145,11 @@
   <ul class="entry">
     
       <li>
-        <a href="/2018/10/20/spring-init/">从循环依赖探寻Spring IOC源码</a>
+        <a href="/2018/10/20/spring-init/">【原】从循环依赖探寻Spring IOC源码</a>
       </li>
     
       <li>
-        <a href="/2018/10/20/redis-common/">Redis日常操作整理</a>
+        <a href="/2018/10/20/redis-common/">【原】Redis日常操作整理</a>
       </li>
     
       <li>

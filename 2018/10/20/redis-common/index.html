@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>Redis日常操作整理 | 无知是天堂</title>
+  <title>【原】Redis日常操作整理 | 无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
@@ -18,14 +18,14 @@
   <meta name="description" content="起因昨天运维监控线上某服务redis打到100%，业务日志瞬间connect refused，差不多半个小时清理后，缓存服务恢复正常 运维提供了一大批没有设置过期时间的key前来告状，其中有个‘key’半个月，存储了8G的内容，且没有过期时间，真乃神人也，我所在的业务模块，也被拔出好几个key存在问题 现总结如下 如何实现某段时间的限流这次排查下来，有基础代码很有问题，最有意思的是限流操作部分代码">
 <meta name="keywords" content="Redis,Cache">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Redis日常操作整理">
+<meta property="og:title" content="【原】Redis日常操作整理">
 <meta property="og:url" content="http://yoursite.com/2018/10/20/redis-common/index.html">
 <meta property="og:site_name" content="无知是天堂">
 <meta property="og:description" content="起因昨天运维监控线上某服务redis打到100%，业务日志瞬间connect refused，差不多半个小时清理后，缓存服务恢复正常 运维提供了一大批没有设置过期时间的key前来告状，其中有个‘key’半个月，存储了8G的内容，且没有过期时间，真乃神人也，我所在的业务模块，也被拔出好几个key存在问题 现总结如下 如何实现某段时间的限流这次排查下来，有基础代码很有问题，最有意思的是限流操作部分代码">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-10-20T02:51:11.183Z">
+<meta property="og:updated_time" content="2018-10-20T04:51:00.650Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Redis日常操作整理">
+<meta name="twitter:title" content="【原】Redis日常操作整理">
 <meta name="twitter:description" content="起因昨天运维监控线上某服务redis打到100%，业务日志瞬间connect refused，差不多半个小时清理后，缓存服务恢复正常 运维提供了一大批没有设置过期时间的key前来告状，其中有个‘key’半个月，存储了8G的内容，且没有过期时间，真乃神人也，我所在的业务模块，也被拔出好几个key存在问题 现总结如下 如何实现某段时间的限流这次排查下来，有基础代码很有问题，最有意思的是限流操作部分代码">
   
   
@@ -68,7 +68,7 @@
     
     
   
-    <h1 class="title">Redis日常操作整理</h1>
+    <h1 class="title">【原】Redis日常操作整理</h1>
   
 
   </header>
@@ -136,11 +136,11 @@
   <ul class="entry">
     
       <li>
-        <a href="/2018/10/20/spring-init/">从循环依赖探寻Spring IOC源码</a>
+        <a href="/2018/10/20/spring-init/">【原】从循环依赖探寻Spring IOC源码</a>
       </li>
     
       <li>
-        <a href="/2018/10/20/redis-common/">Redis日常操作整理</a>
+        <a href="/2018/10/20/redis-common/">【原】Redis日常操作整理</a>
       </li>
     
       <li>
