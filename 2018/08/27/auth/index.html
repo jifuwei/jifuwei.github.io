@@ -10,22 +10,23 @@
     <meta name="author" content="jifuwei">
   
   
-    <meta name="description" content="简介http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份.
-显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对服务器页增添了额外的压力.为了解决无状态带来的鉴权问题,大牛们设计多种方案
-1.cookieCookie是储存在客户端的一串字符,一般说来大小不超过4kb.比如我们常见的">
+    <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371
+
+简介http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份.
+显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对">
   
-  <meta name="description" content="简介http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份. 显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对服务器页增添了额外的压力.为了解决无状态带来的鉴权问题,大牛们设计多种方案 1.cookieCookie是储存在客户端的一串字符,一般说来大小不超过4kb.比如我们常见的">
+  <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  简介http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份. 显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对">
 <meta name="keywords" content="Auth,Http">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Http鉴权罗列">
 <meta property="og:url" content="http://yoursite.com/2018/08/27/auth/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="简介http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份. 显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对服务器页增添了额外的压力.为了解决无状态带来的鉴权问题,大牛们设计多种方案 1.cookieCookie是储存在客户端的一串字符,一般说来大小不超过4kb.比如我们常见的">
+<meta property="og:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  简介http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份. 显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-08-27T09:14:04.210Z">
+<meta property="og:updated_time" content="2018-10-22T06:10:35.038Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Http鉴权罗列">
-<meta name="twitter:description" content="简介http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份. 显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对服务器页增添了额外的压力.为了解决无状态带来的鉴权问题,大牛们设计多种方案 1.cookieCookie是储存在客户端的一串字符,一般说来大小不超过4kb.比如我们常见的">
+<meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  简介http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份. 显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -74,7 +75,10 @@
   
   <div class="entry">
     
-      <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份.</p>
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份.</p>
 <p>显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对服务器页增添了额外的压力.为了解决无状态带来的鉴权问题,大牛们设计多种方案</p>
 <h2 id="1-cookie"><a href="#1-cookie" class="headerlink" title="1.cookie"></a>1.cookie</h2><p>Cookie是储存在客户端的一串字符,一般说来大小不超过4kb.<br>比如我们常见的记住密码功能,或者一些基于之前输入的提醒和默认配置,就是通过cookie来实现的,cookie简单说来就是一种本地存储方法.<br>但是这里存储的信息常用来进行鉴权操作.cookie只能保存文本信息,浏览器可以禁止cookie.cookie的期限可以被自由设定,可以是仅仅一次浏览起效,也可以长达一年.<br>如果是短期的,那么这些信息会被存储在内存中,如果是长期则会存储在硬盘上.cookie的起效范围是路径下的所有子路径.不允许其他来源的访问.</p>
 <p>单纯的采用cookie来认证身份会带来一个比较麻烦的问题,就是伪造比较容易.<br>因为这样处理,cookie中必然要带有身份信息,但是服务器也要解析这个身份信息,所以必然要在原理上支持双向的编码和解码,那么这个信息很容易被破解和进一步伪造.<br>想一想,如果想要解决这个问题,我们常用的方案应该是加一个secret,而这个secret应该是放在服务器上的,服务器返回这样一个带有secret编码的字符串,而在服务器端再带上这个secret反向解密,如此一来,问题不就解决了吗?确实如此,但是这不代表cookie就安全,因为这已经不叫cookie了,而是我们要讲的第二个对象:session.</p>

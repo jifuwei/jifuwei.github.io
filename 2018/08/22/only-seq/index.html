@@ -10,25 +10,26 @@
     <meta name="author" content="jifuwei">
   
   
-    <meta name="description" content="简介在复杂分布式系统中，往往需要对大量的数据和消息进行唯一标识。业务系统对ID号的要求有哪些？
+    <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371
+
+简介在复杂分布式系统中，往往需要对大量的数据和消息进行唯一标识。业务系统对ID号的要求有哪些？
 
 全局唯一性：不能出现重复的ID号，既然是唯一标识，这是最基本的要求。
-趋势递增：在MySQL InnoDB引擎中使用的是聚集索引，由于多数RDBMS使用B-tree的数据结构来存储索引数据，在主键的选择上面我们应该尽量使用有序的主键保证写入性能。
-单调递增：保证下一个ID一定大于上一个ID，例如事务版">
+趋势递增：在MySQL InnoDB引擎中使用的是聚集索引，由">
   
-  <meta name="description" content="简介在复杂分布式系统中，往往需要对大量的数据和消息进行唯一标识。业务系统对ID号的要求有哪些？  全局唯一性：不能出现重复的ID号，既然是唯一标识，这是最基本的要求。 趋势递增：在MySQL InnoDB引擎中使用的是聚集索引，由于多数RDBMS使用B-tree的数据结构来存储索引数据，在主键的选择上面我们应该尽量使用有序的主键保证写入性能。 单调递增：保证下一个ID一定大于上一个ID，例如事务版">
-<meta name="keywords" content="Java,distributed">
+  <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  简介在复杂分布式系统中，往往需要对大量的数据和消息进行唯一标识。业务系统对ID号的要求有哪些？  全局唯一性：不能出现重复的ID号，既然是唯一标识，这是最基本的要求。 趋势递增：在MySQL InnoDB引擎中使用的是聚集索引，由">
+<meta name="keywords" content="distributed,Java">
 <meta property="og:type" content="article">
 <meta property="og:title" content="分布式系统的全局ID">
 <meta property="og:url" content="http://yoursite.com/2018/08/22/only-seq/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="简介在复杂分布式系统中，往往需要对大量的数据和消息进行唯一标识。业务系统对ID号的要求有哪些？  全局唯一性：不能出现重复的ID号，既然是唯一标识，这是最基本的要求。 趋势递增：在MySQL InnoDB引擎中使用的是聚集索引，由于多数RDBMS使用B-tree的数据结构来存储索引数据，在主键的选择上面我们应该尽量使用有序的主键保证写入性能。 单调递增：保证下一个ID一定大于上一个ID，例如事务版">
+<meta property="og:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  简介在复杂分布式系统中，往往需要对大量的数据和消息进行唯一标识。业务系统对ID号的要求有哪些？  全局唯一性：不能出现重复的ID号，既然是唯一标识，这是最基本的要求。 趋势递增：在MySQL InnoDB引擎中使用的是聚集索引，由">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://yoursite.com/images/snowflake.png">
-<meta property="og:updated_time" content="2018-08-22T08:50:59.824Z">
+<meta property="og:updated_time" content="2018-10-22T06:11:00.130Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="分布式系统的全局ID">
-<meta name="twitter:description" content="简介在复杂分布式系统中，往往需要对大量的数据和消息进行唯一标识。业务系统对ID号的要求有哪些？  全局唯一性：不能出现重复的ID号，既然是唯一标识，这是最基本的要求。 趋势递增：在MySQL InnoDB引擎中使用的是聚集索引，由于多数RDBMS使用B-tree的数据结构来存储索引数据，在主键的选择上面我们应该尽量使用有序的主键保证写入性能。 单调递增：保证下一个ID一定大于上一个ID，例如事务版">
+<meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  简介在复杂分布式系统中，往往需要对大量的数据和消息进行唯一标识。业务系统对ID号的要求有哪些？  全局唯一性：不能出现重复的ID号，既然是唯一标识，这是最基本的要求。 趋势递增：在MySQL InnoDB引擎中使用的是聚集索引，由">
 <meta name="twitter:image" content="http://yoursite.com/images/snowflake.png">
   
   
@@ -78,7 +79,10 @@
   
   <div class="entry">
     
-      <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>在复杂分布式系统中，往往需要对大量的数据和消息进行唯一标识。业务系统对ID号的要求有哪些？</p>
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>在复杂分布式系统中，往往需要对大量的数据和消息进行唯一标识。业务系统对ID号的要求有哪些？</p>
 <ul>
 <li>全局唯一性：不能出现重复的ID号，既然是唯一标识，这是最基本的要求。</li>
 <li>趋势递增：在MySQL InnoDB引擎中使用的是聚集索引，由于多数RDBMS使用B-tree的数据结构来存储索引数据，在主键的选择上面我们应该尽量使用有序的主键保证写入性能。</li>

@@ -10,21 +10,23 @@
     <meta name="author" content="jifuwei">
   
   
-    <meta name="description" content="大纲一.Java中的ThreadPoolExecutor类二.深入剖析线程池实现原理三.五种线程池四.向线程池提交任务及合理配置
-一.Java中的ThreadPoolExecutor类在ThreadPoolExecutor类中提供了四个构造方法：123456789101112131415public class ThreadPoolExecutor extends AbstractExecutor">
+    <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371
+
+大纲一.Java中的ThreadPoolExecutor类二.深入剖析线程池实现原理三.五种线程池四.向线程池提交任务及合理配置
+一.Java中的ThreadPoolExecutor类在ThreadPoolExecutor类中提供">
   
-  <meta name="description" content="大纲一.Java中的ThreadPoolExecutor类二.深入剖析线程池实现原理三.五种线程池四.向线程池提交任务及合理配置 一.Java中的ThreadPoolExecutor类在ThreadPoolExecutor类中提供了四个构造方法：123456789101112131415public class ThreadPoolExecutor extends AbstractExecutor">
+  <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  大纲一.Java中的ThreadPoolExecutor类二.深入剖析线程池实现原理三.五种线程池四.向线程池提交任务及合理配置 一.Java中的ThreadPoolExecutor类在ThreadPoolExecutor类中提供">
 <meta name="keywords" content="Java">
 <meta property="og:type" content="article">
 <meta property="og:title" content="线程池的使用">
 <meta property="og:url" content="http://yoursite.com/2018/08/18/ThreadPoolExecutor/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="大纲一.Java中的ThreadPoolExecutor类二.深入剖析线程池实现原理三.五种线程池四.向线程池提交任务及合理配置 一.Java中的ThreadPoolExecutor类在ThreadPoolExecutor类中提供了四个构造方法：123456789101112131415public class ThreadPoolExecutor extends AbstractExecutor">
+<meta property="og:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  大纲一.Java中的ThreadPoolExecutor类二.深入剖析线程池实现原理三.五种线程池四.向线程池提交任务及合理配置 一.Java中的ThreadPoolExecutor类在ThreadPoolExecutor类中提供">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-08-21T01:34:51.880Z">
+<meta property="og:updated_time" content="2018-10-22T06:11:18.910Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="线程池的使用">
-<meta name="twitter:description" content="大纲一.Java中的ThreadPoolExecutor类二.深入剖析线程池实现原理三.五种线程池四.向线程池提交任务及合理配置 一.Java中的ThreadPoolExecutor类在ThreadPoolExecutor类中提供了四个构造方法：123456789101112131415public class ThreadPoolExecutor extends AbstractExecutor">
+<meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  大纲一.Java中的ThreadPoolExecutor类二.深入剖析线程池实现原理三.五种线程池四.向线程池提交任务及合理配置 一.Java中的ThreadPoolExecutor类在ThreadPoolExecutor类中提供">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -73,7 +75,10 @@
   
   <div class="entry">
     
-      <h3 id="大纲"><a href="#大纲" class="headerlink" title="大纲"></a>大纲</h3><p>一.Java中的ThreadPoolExecutor类<br>二.深入剖析线程池实现原理<br>三.五种线程池<br>四.向线程池提交任务及合理配置</p>
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<h3 id="大纲"><a href="#大纲" class="headerlink" title="大纲"></a>大纲</h3><p>一.Java中的ThreadPoolExecutor类<br>二.深入剖析线程池实现原理<br>三.五种线程池<br>四.向线程池提交任务及合理配置</p>
 <h3 id="一-Java中的ThreadPoolExecutor类"><a href="#一-Java中的ThreadPoolExecutor类" class="headerlink" title="一.Java中的ThreadPoolExecutor类"></a>一.Java中的ThreadPoolExecutor类</h3><p>在ThreadPoolExecutor类中提供了四个构造方法：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadPoolExecutor</span> <span class="keyword">extends</span> <span class="title">AbstractExecutorService</span> </span>&#123;</span><br><span class="line">    .....</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ThreadPoolExecutor</span><span class="params">(<span class="keyword">int</span> corePoolSize,<span class="keyword">int</span> maximumPoolSize,<span class="keyword">long</span> keepAliveTime,TimeUnit unit,</span></span></span><br><span class="line"><span class="function"><span class="params">            BlockingQueue&lt;Runnable&gt; workQueue)</span></span>;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ThreadPoolExecutor</span><span class="params">(<span class="keyword">int</span> corePoolSize,<span class="keyword">int</span> maximumPoolSize,<span class="keyword">long</span> keepAliveTime,TimeUnit unit,</span></span></span><br><span class="line"><span class="function"><span class="params">            BlockingQueue&lt;Runnable&gt; workQueue,ThreadFactory threadFactory)</span></span>;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ThreadPoolExecutor</span><span class="params">(<span class="keyword">int</span> corePoolSize,<span class="keyword">int</span> maximumPoolSize,<span class="keyword">long</span> keepAliveTime,TimeUnit unit,</span></span></span><br><span class="line"><span class="function"><span class="params">            BlockingQueue&lt;Runnable&gt; workQueue,RejectedExecutionHandler handler)</span></span>;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ThreadPoolExecutor</span><span class="params">(<span class="keyword">int</span> corePoolSize,<span class="keyword">int</span> maximumPoolSize,<span class="keyword">long</span> keepAliveTime,TimeUnit unit,</span></span></span><br><span class="line"><span class="function"><span class="params">        BlockingQueue&lt;Runnable&gt; workQueue,ThreadFactory threadFactory,RejectedExecutionHandler handler)</span></span>;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <p>ThreadPoolExecutor继承了AbstractExecutorService类，并提供了四个构造器，事实上，通过观察每个构造器的源码具体实现，发现前面三个构造器都是调用的第四个构造器进行的初始化工作。</p>
 <p>名词释义：</p>

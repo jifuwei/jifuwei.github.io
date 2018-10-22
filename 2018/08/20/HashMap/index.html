@@ -10,21 +10,23 @@
     <meta name="author" content="jifuwei">
   
   
-    <meta name="description" content="大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题
-1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输出，该输出就是散列值。 这种转换是一种压缩映射，也就是，散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，所以不可能从散列值来唯一的确定输入值。简单的说">
+    <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371
+
+大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题
+1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输">
   
-  <meta name="description" content="大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输出，该输出就是散列值。 这种转换是一种压缩映射，也就是，散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，所以不可能从散列值来唯一的确定输入值。简单的说">
+  <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输">
 <meta name="keywords" content="Java">
 <meta property="og:type" content="article">
 <meta property="og:title" content="HashMap剖析">
 <meta property="og:url" content="http://yoursite.com/2018/08/20/HashMap/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输出，该输出就是散列值。 这种转换是一种压缩映射，也就是，散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，所以不可能从散列值来唯一的确定输入值。简单的说">
+<meta property="og:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-09-06T07:46:06.966Z">
+<meta property="og:updated_time" content="2018-10-22T06:10:55.382Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="HashMap剖析">
-<meta name="twitter:description" content="大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输出，该输出就是散列值。 这种转换是一种压缩映射，也就是，散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，所以不可能从散列值来唯一的确定输入值。简单的说">
+<meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -73,7 +75,10 @@
   
   <div class="entry">
     
-      <h2 id="大纲"><a href="#大纲" class="headerlink" title="大纲"></a>大纲</h2><p>1.HashMap的实现原理<br>2.HashMap是如何解决hash冲突的问题</p>
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<h2 id="大纲"><a href="#大纲" class="headerlink" title="大纲"></a>大纲</h2><p>1.HashMap的实现原理<br>2.HashMap是如何解决hash冲突的问题</p>
 <h2 id="1-HashMap的实现原理"><a href="#1-HashMap的实现原理" class="headerlink" title="1.HashMap的实现原理"></a>1.HashMap的实现原理</h2><h3 id="1-1-哈希"><a href="#1-1-哈希" class="headerlink" title="1.1.哈希"></a>1.1.哈希</h3><p>Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输出，该输出就是散列值。 这种转换是一种压缩映射，也就是，散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，所以不可能从散列值来唯一的确定输入值。简单的说就是一种将任意长度的消息压缩到某一固定长度的消息摘要的函数。</p>
 <h3 id="1-2-HashMap的数据结构"><a href="#1-2-HashMap的数据结构" class="headerlink" title="1.2.HashMap的数据结构"></a>1.2.HashMap的数据结构</h3><p>在Java中，保存数据有两种比较简单的数据结构：数组和链表。</p>
 <ul>
