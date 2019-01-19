@@ -21,11 +21,11 @@
 <meta name="keywords" content="Java,JVM">
 <meta property="og:type" content="article">
 <meta property="og:title" content="JVM——垃圾收集器">
-<meta property="og:url" content="http://yoursite.com/2019/01/17/jvm/index.html">
+<meta property="og:url" content="http://yoursite.com/2019/01/17/jvm-gc/index.html">
 <meta property="og:site_name" content="无知是天堂">
 <meta property="og:description" content="1.垃圾收集器与内存分配策略1.1对象已死么？堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“ 1.1.1引用计数法给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的缺点：  循环引用无法回收  1.1.2可达性分析法（主流实现）通过一系列称为”GC ROOTs“的对象作为起始点，向下搜索，但一个对象到GC Roots">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-01-19T06:56:18.129Z">
+<meta property="og:updated_time" content="2019-01-19T06:57:45.681Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="JVM——垃圾收集器">
 <meta name="twitter:description" content="1.垃圾收集器与内存分配策略1.1对象已死么？堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“ 1.1.1引用计数法给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的缺点：  循环引用无法回收  1.1.2可达性分析法（主流实现）通过一系列称为”GC ROOTs“的对象作为起始点，向下搜索，但一个对象到GC Roots">
@@ -62,7 +62,7 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/01/17/jvm/">
+      <a href="/2019/01/17/jvm-gc/">
   <time datetime="2019-01-17T06:18:22.000Z">
     2019-01-17
   </time>
@@ -234,7 +234,7 @@
   <ul class="entry">
     
       <li>
-        <a href="/2019/01/17/jvm/">JVM——垃圾收集器</a>
+        <a href="/2019/01/17/jvm-gc/">JVM——垃圾收集器</a>
       </li>
     
       <li>
