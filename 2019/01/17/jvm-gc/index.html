@@ -10,25 +10,25 @@
     <meta name="author" content="jifuwei">
   
   
-    <meta name="description" content="1.垃圾收集器与内存分配策略1.1对象已死么？堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“
+    <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371
+
+1.1对象已死么？堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“
 1.1.1引用计数法给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的缺点：
 
-循环引用无法回收
-
-1.1.2可达性分析法（主流实现）通过一系列称为”GC ROOTs“的对象作为起始点，向下搜索，但一个对象到GC Roots">
+循">
   
-  <meta name="description" content="1.垃圾收集器与内存分配策略1.1对象已死么？堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“ 1.1.1引用计数法给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的缺点：  循环引用无法回收  1.1.2可达性分析法（主流实现）通过一系列称为”GC ROOTs“的对象作为起始点，向下搜索，但一个对象到GC Roots">
+  <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  1.1对象已死么？堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“ 1.1.1引用计数法给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的缺点：  循">
 <meta name="keywords" content="Java,JVM">
 <meta property="og:type" content="article">
 <meta property="og:title" content="JVM——垃圾收集器">
 <meta property="og:url" content="http://yoursite.com/2019/01/17/jvm-gc/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="1.垃圾收集器与内存分配策略1.1对象已死么？堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“ 1.1.1引用计数法给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的缺点：  循环引用无法回收  1.1.2可达性分析法（主流实现）通过一系列称为”GC ROOTs“的对象作为起始点，向下搜索，但一个对象到GC Roots">
+<meta property="og:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  1.1对象已死么？堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“ 1.1.1引用计数法给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的缺点：  循">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-01-19T06:57:45.681Z">
+<meta property="og:updated_time" content="2019-01-19T10:36:08.253Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="JVM——垃圾收集器">
-<meta name="twitter:description" content="1.垃圾收集器与内存分配策略1.1对象已死么？堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“ 1.1.1引用计数法给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的缺点：  循环引用无法回收  1.1.2可达性分析法（主流实现）通过一系列称为”GC ROOTs“的对象作为起始点，向下搜索，但一个对象到GC Roots">
+<meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  1.1对象已死么？堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“ 1.1.1引用计数法给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的缺点：  循">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -77,7 +77,10 @@
   
   <div class="entry">
     
-      <h2 id="1-垃圾收集器与内存分配策略"><a href="#1-垃圾收集器与内存分配策略" class="headerlink" title="1.垃圾收集器与内存分配策略"></a>1.垃圾收集器与内存分配策略</h2><h3 id="1-1对象已死么？"><a href="#1-1对象已死么？" class="headerlink" title="1.1对象已死么？"></a>1.1对象已死么？</h3><p>堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“</p>
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<h3 id="1-1对象已死么？"><a href="#1-1对象已死么？" class="headerlink" title="1.1对象已死么？"></a>1.1对象已死么？</h3><p>堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“</p>
 <h4 id="1-1-1引用计数法"><a href="#1-1-1引用计数法" class="headerlink" title="1.1.1引用计数法"></a>1.1.1引用计数法</h4><p>给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的<br>缺点：</p>
 <ul>
 <li>循环引用无法回收</li>
@@ -223,7 +226,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 13.33px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 10px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Travel/" style="font-size: 13.33px;">Travel</a> <a href="/tags/distributed/" style="font-size: 13.33px;">distributed</a> <a href="/tags/原/" style="font-size: 16.67px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 13.33px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 13.33px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Travel/" style="font-size: 13.33px;">Travel</a> <a href="/tags/distributed/" style="font-size: 13.33px;">distributed</a> <a href="/tags/原/" style="font-size: 16.67px;">原</a>
   </div>
 </div>
 
@@ -232,6 +235,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/01/19/jvm-distribute-recycle/">JVM——内存分配与回收策略</a>
+      </li>
     
       <li>
         <a href="/2019/01/17/jvm-gc/">JVM——垃圾收集器</a>
@@ -247,10 +254,6 @@
     
       <li>
         <a href="/2018/09/30/travel-to-xn/">【原】十一游青海</a>
-      </li>
-    
-      <li>
-        <a href="/2018/09/11/travel-step-20181001/">【原】国庆旅游攻略规划</a>
       </li>
     
   </ul>
