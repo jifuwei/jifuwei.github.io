@@ -1,0 +1,217 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>JVM——虚拟机字节码执行引擎 | 无知是天堂</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="jifuwei">
+  
+  
+    <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371
+
+1.运行时栈帧结构栈帧（Stack Frame是用于支持方法调用和方法执行的数据结构。它是虚拟机运行时数据区中的虚拟机栈的栈元素，存储了方法的局部变量表、操作数栈、动态链接和方法返回地址等信息。每一个方法从调用开始到执行完成的过程">
+  
+  <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  1.运行时栈帧结构栈帧（Stack Frame是用于支持方法调用和方法执行的数据结构。它是虚拟机运行时数据区中的虚拟机栈的栈元素，存储了方法的局部变量表、操作数栈、动态链接和方法返回地址等信息。每一个方法从调用开始到执行完成的过程">
+<meta name="keywords" content="Java,JVM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM——虚拟机字节码执行引擎">
+<meta property="og:url" content="http://yoursite.com/2019/01/22/jvm-bytecode-engine/index.html">
+<meta property="og:site_name" content="无知是天堂">
+<meta property="og:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  1.运行时栈帧结构栈帧（Stack Frame是用于支持方法调用和方法执行的数据结构。它是虚拟机运行时数据区中的虚拟机栈的栈元素，存储了方法的局部变量表、操作数栈、动态链接和方法返回地址等信息。每一个方法从调用开始到执行完成的过程">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2018/jpeg/155206/1541065156986-952228bd-7316-49d0-b33b-8f344f4c20f1.jpeg">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2018/png/155206/1541065183366-ff0089fd-789d-4355-8e74-12f94bf2acad.png">
+<meta property="og:updated_time" content="2019-01-22T13:01:53.942Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JVM——虚拟机字节码执行引擎">
+<meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  1.运行时栈帧结构栈帧（Stack Frame是用于支持方法调用和方法执行的数据结构。它是虚拟机运行时数据区中的虚拟机栈的栈元素，存储了方法的局部变量表、操作数栈、动态链接和方法返回地址等信息。每一个方法从调用开始到执行完成的过程">
+<meta name="twitter:image" content="https://cdn.nlark.com/yuque/0/2018/jpeg/155206/1541065156986-952228bd-7316-49d0-b33b-8f344f4c20f1.jpeg">
+  
+  
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  <!--[if lt IE 9]><script src="//cdn.bootcss.com/html5shiv/3.7.0/html5shiv.min.js"></script><![endif]-->
+  
+  
+</head>
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">无知是天堂</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2019/01/22/jvm-bytecode-engine/">
+  <time datetime="2019-01-22T12:14:33.000Z">
+    2019-01-22
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">JVM——虚拟机字节码执行引擎</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<h2 id="1-运行时栈帧结构"><a href="#1-运行时栈帧结构" class="headerlink" title="1.运行时栈帧结构"></a>1.运行时栈帧结构</h2><p><strong>栈帧（Stack Frame</strong>是用于支持方法调用和方法执行的数据结构。它是虚拟机运行时数据区中的虚拟机栈的栈元素，存储了方法的局部变量表、操作数栈、动态链接和方法返回地址等信息。每一个方法从调用开始到执行完成的过程，就对应着一个栈帧在虚拟机栈里面从入栈道出栈的过程。<br><img src="https://cdn.nlark.com/yuque/0/2018/jpeg/155206/1541065156986-952228bd-7316-49d0-b33b-8f344f4c20f1.jpeg" alt=""></p>
+<h2 id="局部变量表"><a href="#局部变量表" class="headerlink" title="局部变量表"></a>局部变量表</h2><p>局部变量表是一组变量值存储空间，用于存放方法的参数和方法类定义的局部变量。</p>
+<p>它是以变量槽（Variable Slot）为最小单位，每一个Slot（32位）都应该能放一个 boolean 、byte 、char 、float 、 reference 、 short 、 int 或 returnAddress 类型数据。而至于 long 、double 两种数据则被规定为是64位数据（连续两个32位）。<br>reference类型数据可能食32位，也可能是64位数据</p>
+<h2 id="操作数栈"><a href="#操作数栈" class="headerlink" title="操作数栈"></a>操作数栈</h2><p>也被称之为操作栈，是一个先进先出（FIFO）的栈。</p>
+<p>操作数栈的最大深度也在编译的时候就被写入到code属性的 max_stacks 数据项之中。</p>
+<p>在概念模型中，两个栈帧相互之间是完全独立的，但是大多数虚拟机会做一些优化处理，令两个栈帧出现一部分重叠，这样在方法调用时就可以公用一部分数据，无须进行额外的参数复制传递的操作。如下图示：<br><img src="https://cdn.nlark.com/yuque/0/2018/png/155206/1541065183366-ff0089fd-789d-4355-8e74-12f94bf2acad.png" alt=""></p>
+<h2 id="动态连接"><a href="#动态连接" class="headerlink" title="动态连接"></a>动态连接</h2><p>每个栈帧都包含一个运行时常量池中指向该栈帧所属方法的引用，这是为了支持方法调用过程中的动态连接。</p>
+<h2 id="方法返回地址"><a href="#方法返回地址" class="headerlink" title="方法返回地址"></a>方法返回地址</h2><p>当一个方法被执行时，有两种方式推出这个方法：</p>
+<ul>
+<li>正常完成出口（Normal Method Invocation Completion）</li>
+<li>异常完成出口（Abrupt Method Invocation Completion）</li>
+</ul>
+<h2 id="附加信息"><a href="#附加信息" class="headerlink" title="附加信息"></a>附加信息</h2><p>虚拟机规范允许具体的虚拟机实现增加一些规范里没有描述的信息到栈帧之中。</p>
+<h2 id="2-方法调用"><a href="#2-方法调用" class="headerlink" title="2.方法调用"></a>2.方法调用</h2><p>确定被调用方法的版本（即调用哪一个方法）。</p>
+<h2 id="方法解析"><a href="#方法解析" class="headerlink" title="方法解析"></a>方法解析</h2><p>调用目标在程序写好、编译器进行编译时就确定下来，这种方法的调用称之为解析（Resolution）。<br>简单总结就是：编译器可知，运行期不可变。<br>在Java中符合这种要求的方法主要有：静态方法和私有方法</p>
+<h2 id="分派"><a href="#分派" class="headerlink" title="分派"></a>分派</h2><h3 id="静态分派"><a href="#静态分派" class="headerlink" title="静态分派"></a>静态分派</h3><p><code>Human man = new Man();</code><br>静态类型：<code>Human</code><br>实际类型：<code>Man</code><br>在编译阶段，Javac编译器就根据参数的静态类型决定使用哪个重载版本。</p>
+<h3 id="动态分派"><a href="#动态分派" class="headerlink" title="动态分派"></a>动态分派</h3><p>在运行期间根据实际类型确定方法执行版本的分配过程称为动态分派。</p>
+<h3 id="单分派与多分派"><a href="#单分派与多分派" class="headerlink" title="单分派与多分派"></a>单分派与多分派</h3><p>单分派是根据一个宗量对目标方法进行选择。</p>
+<p>多分派则是根据多于一个的宗量对目标方法进行选择。</p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/JVM/">JVM</a>, <a class="tags-link" href="/tags/Java/">Java</a>
+  </div>
+
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  
+  <div id="sidebar" class="widgets-right">
+  
+
+  
+<div class="widget tagcloud">
+  <h3 class="title">tagcloud</h3>
+  <div class="entry">
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.5px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 17.5px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Travel/" style="font-size: 12.5px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12.5px;">distributed</a> <a href="/tags/原/" style="font-size: 15px;">原</a>
+  </div>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">recent_posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2019/01/22/jvm-bytecode-engine/">JVM——虚拟机字节码执行引擎</a>
+      </li>
+    
+      <li>
+        <a href="/2019/01/20/jvm-load-class/">JVM——虚拟机加载类机制</a>
+      </li>
+    
+      <li>
+        <a href="/2019/01/20/jvm-class-structure/">JVM——类文件结构</a>
+      </li>
+    
+      <li>
+        <a href="/2019/01/19/jvm-tools/">JVM——虚拟机性能监控与故障处理工具</a>
+      </li>
+    
+      <li>
+        <a href="/2019/01/19/jvm-distribute-recycle/">JVM——内存分配与回收策略</a>
+      </li>
+    
+  </ul>
+</div>
+
+</div>
+  
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2019 <a href="/">jifuwei</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://blog.dafengning.com/" target="_blank">Chong Zi</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//lib.sinaapp.com/js/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+<div id="rightfix" style="display:none;">
+
+
+<a href="javascript:void(0)" id="gotop" class="fix_btn" onclick="gotop();" title="回到顶部"><i></i></a>
+<script>
+  function gotop(){
+    $('html,body').animate({
+        scrollTop : '0px'
+      }, 800);
+  }
+  $(function(){
+    _rightfix = $('#rightfix');
+    $(window).scroll(function(){
+      $sollTop = document.documentElement.scrollTop + document.body.scrollTop;
+      if($sollTop > 350){
+        _rightfix.show();
+      }else{
+        _rightfix.hide();
+      }
+    });
+  });
+</script>
+
+</div>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>
