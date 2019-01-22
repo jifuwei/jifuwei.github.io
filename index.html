@@ -59,6 +59,153 @@
   <header>
     
       <div class="icon"></div>
+      <a href="/2019/01/20/jvm-load-class/">
+  <time datetime="2019-01-20T09:08:10.000Z">
+    2019-01-20
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2019/01/20/jvm-load-class/">JVM——虚拟机加载类机制</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<p>虚拟机把描述类的数据从Class文件加载到内存，并对数据进行校验、转换解析和初始化，最终形成可以被虚拟机直接使用的Java类型，这就是虚拟机的类的加载机制。</p>
+<h2 id="类的加载时机"><a href="#类的加载时机" class="headerlink" title="类的加载时机"></a>类的加载时机</h2><p><img src="https://cdn.nlark.com/yuque/0/2018/jpeg/155206/1541062624122-dc4cd2bd-c685-43d4-8fa6-e7a6ce231a6d.jpeg" alt=""></p>
+<ul>
+<li>加载（Loading）：按照虚拟机规范，有且只有以下四种情况下必须立即对类进行“初始化”：</li>
+<li>遇到new、getstatic、putstatic或invokestatic这4条字节码指令时，如果类没有初始化，则需要先出发其初始化。生成这4条指令的典型场景是：使用 new 关键字实例化对象的时候、读取或设置一个类的静态字段的时候（被final修饰、已在编译期把结果放入常量池的静态字段除外）、以及调用一个类的静态方法的时候</li>
+<li>使用 java.lang.reflect 包的方法对类进行反射调用的时候</li>
+<li>当初始化一个类时，如果发现它的父类还没有进行初始化，则需要先触发其父类进行初始化</li>
+<li>当虚拟机启动时，用户需要指定一个要执行的主类（包含main方法的类），虚拟机会先初始化这个类</li>
+</ul>
+<h2 id="类的加载过程"><a href="#类的加载过程" class="headerlink" title="类的加载过程"></a>类的加载过程</h2><p>加载、验证、准备、解析、初始化</p>
+<h3 id="加载"><a href="#加载" class="headerlink" title="加载"></a>加载</h3><p>三件事：</p>
+<ul>
+<li>通过一个类的全限定名来获取定义这个类对应的二进制字节流</li>
+<li>将这个类的二进制字节流所代表的静态存储结构转换为方法区的运行时数据结构</li>
+<li>在Java堆中生成一个代表这个类的 java.lang.Class 对象，作为方法区这些数据的访问入口。</li>
+</ul>
+<p>虚拟机其实并未限定具体二进制字节流从哪里获取，不是必须从一个Class文件中获取，以此诞生了：</p>
+<ul>
+<li>从ZIP包中读取，最终变为日后JAR、EAR、WAR格式的基础</li>
+<li>从网络中获取，典型场景是Applet</li>
+<li>运行时计算生成，典型的就是动态代理技术</li>
+<li>由其他文件生成，典型的场景是JSP应用，有JSP生成对应的Class类</li>
+<li>从数据库中读取</li>
+<li>….</li>
+</ul>
+<p>开发人员可以自定义类加载器去完成，即重写一个类加载器的<code>loanClass()</code>方法</p>
+<h3 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h3><p>验证是虚拟机对自身保护的一项重要工作。</p>
+<ul>
+<li>文件格式验证，验证字节流是否符合Class文件格式规范，并且能被当前版本的虚拟机处理。</li>
+<li>元数据验证，对字节码描述的信息进行语义分析，以保证其描述的信息符合Java语言规范要求。</li>
+<li>字节码验证，主要工作是进行数据流和控制流分析，保证被校验类的方法不会危害到虚拟机的安全。</li>
+<li>符号引用验证，可以看作是对类自身以外（常量池中的各种符号引用）的信息进行匹配性的校验。</li>
+</ul>
+<h2 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h2><p>准备阶段是正式为类变量分配内存并设置类变量初始值的阶段，这些内存都将在方法区中进行分配。</p>
+<h2 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h2><p>是虚拟机将常量池中的符号引用替换为直接引用的过程。<br>解析动作主要针对类或接口、字段、类方法、接口方法四类符号引用分别进行。</p>
+<h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p>真正开始执行类中定义的Java程序代码（或者说是字节码）。</p>
+<h2 id="类加载器"><a href="#类加载器" class="headerlink" title="类加载器"></a>类加载器</h2><p>类加载过程中的<strong>通过一个类的全限定名来获取描述这个类的二进制字节流”这个动作是放在Java虚拟机的外部来实现的，以便于让应用程序自己来决定如何去获取所需要的类，实现这个动作的代码模块被称为*“类加载器</strong>。</p>
+<h2 id="类和类加载器"><a href="#类和类加载器" class="headerlink" title="类和类加载器"></a>类和类加载器</h2><p>类加载器虽然只用于实现类的加载动作，但是它的作用却远远不限于此，比较两个类是否“相等”，不仅仅要确认这两个类是否来源于同一个class文件，还需要加载这两个类的类加载器相同。</p>
+<h2 id="双亲委派模型"><a href="#双亲委派模型" class="headerlink" title="双亲委派模型"></a>双亲委派模型</h2><p>站在虚拟机的角度，只存在两种类加载器：</p>
+<ul>
+<li>启动类加载器（Bootstrap ClassLoader），使用C++实现，是虚拟机的一部分</li>
+<li>其他类加载器，由Java语言实现，独立于虚拟机之外的，全部继承自抽象类 java.lang.ClassLoader</li>
+</ul>
+<p>从开发人员的角度，类加载器可以划分得更细致一些：</p>
+<ul>
+<li>启动类加载器（Bootstrap ClassLoader）：负责将存放在 &lt;JAVA_HOME&gt;\lib 目录中的，或者被 -Xbootclasspath 参数所指定的路径中的，并且是虚拟机识别的类库加载到虚拟机内存中。</li>
+<li>扩展类加载器（Extension ClassLoader）：负责加载 &lt;JAVA_HOME&gt;\lib\ext 目录下的，或者被 java.ext.dirs 系统变量所指定的路径中的所有类库，开发者可以直接使用扩展类加载器。</li>
+<li>应用程序类加载器（Application ClassLoader）：负责加载用户类路径（ClassPath）上所指定的类库，一般情况下这个就是程序中默认的类加载器。</li>
+</ul>
+<p>以上加载器互相配合来加载我们自己的应用程序，如果有必要，我们还可以加入自己定义的加载器。这些加载器之间的关系一般如下图示：<br><img src="https://cdn.nlark.com/yuque/0/2018/png/155206/1541062642968-64815811-71b5-4003-82ae-738d0df7fc78.png" alt=""></p>
+<p>类加载器的<strong>双亲委派模型（Parent Delegation Model）</strong>：要求除了顶层的启动类加载器外，其余的类加载器都必须有自己的父类加载器。（⚠️，这里类加载器之间的父子关系一般不会以继承（Inheritance）来实现，而是使用组合（Composition）来复用父加载器的代码）。这种模型被广泛使用于几乎所有的Java程序中，但是它并不是一个强制性的约束，只是Java设计者推荐给开发者使用的一种类加载器实现方式。<br>双亲委派模型的具体工作过程是：如果一个类收到了加载请求，它首先不会尝试自己去加载这个类，而是把这个请求委派给他的父类加载器去完成，每一层次的加载类都是如此，因此所有的加载请求都会传递给最顶层的启动类加载器中，只有当父加载器反馈自己无法完成这个加载请求（它的搜索范围内找不到需要加载的类）时，子类才会尝试自己去加载。<br>好处：java类随着它的类加载器一起具备了一种带有优先层级的层次关系，保证了Java程序的稳定运行。</p>
+<p><strong>好处：使用双亲委派模型来组织类加载职期间的关系，随着他的类加载器一起具备了一种带有优先级的层次关系。例如<code>java.lang.Object</code>，他存在rt.jar之中，无论哪个类加载器都要加载这个类，最终都是为派给处于模型最顶端的启动类加载器进行加载，因此Object类在程序的各种类加载器环境中都是同一个类。相反，如果没有使用双亲委派模型，由各个加载器自行加载的话，如果用户自己编写了一个称谓Java.lang.Object的类，并放在程序的ClassPath中，那系统将会出现多个不同的Object类，Java类型体系中最基础的行为无法保证，应用程序将变得一片混乱</strong></p>
+
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2019/01/20/jvm-class-structure/">
+  <time datetime="2019-01-20T03:29:12.000Z">
+    2019-01-20
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2019/01/20/jvm-class-structure/">JVM——类文件结构</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<p>现在越来越多的程序语言选择了与操作系统无关和机器指令无关的、平台中立的格式作为程序编译后的存储格式。</p>
+<h2 id="Class类文件的结构"><a href="#Class类文件的结构" class="headerlink" title="Class类文件的结构"></a>Class类文件的结构</h2><p>Class文件是一组以8位字节为基础单位的二进制流，各个数据项目严格按照顺序紧凑地排列在Class文件中，中间没有添加任何分隔符。当遇到需要占用8位字节以上空间的数据项时，则会按照高位在前的方式分割成若干个8位字节进行存储。<br>按照Java虚拟机规范，Class文件格式采用一种类似于C语言结构体的伪结构来存储，这种结构中只有两种数据类型：无符号数和表。</p>
+<ul>
+<li>无符号数属于基本的数据类型，以u1、u2、u4、u8来分别代表1个字节、2个字节、4个字节、和8个字节的无符号数，无符号数可以用来描述数字、索引引用、数量值、或者按照UTF-8编码构成字符串值。</li>
+<li>表是由多个无符号数或其他表作为数据项构成的复合数据类型，所有的表都习惯性地以”_info”结尾。表用于描述有层次关系的复合数据结构的数据，整个Class文件本质上就是一张表</li>
+</ul>
+<p>无论是无符号数还是表，当需要描述同一类型单数量不定的多个数据时，经常会使用一个前置的容量计数器加若干个连续的数据项的形式，这时候称这一系列连续的某一类型的数据位某一类型的集合。</p>
+<p>代码文件：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 一个类可以抽象为：数据、指令、控制</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorldDemo</span> </span>&#123;</span><br><span class="line">    <span class="comment">//常量、静态变量</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> i=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">int</span> k=<span class="number">0</span>;</span><br><span class="line">    <span class="comment">//成员变量</span></span><br><span class="line">    <span class="keyword">private</span> Object obj = <span class="keyword">new</span> Object();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> sss=<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//局部变量</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">methodOne</span><span class="params">(<span class="keyword">int</span> i)</span></span>&#123;</span><br><span class="line">        <span class="keyword">int</span> j=<span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> sum=i+j;</span><br><span class="line">        Object acb =obj;</span><br><span class="line">        <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">        methodTwo();</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">methodTwo</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        File file = <span class="keyword">new</span> File(<span class="string">""</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">methodThree</span><span class="params">()</span></span>&#123;</span><br><span class="line">        methodThree();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        methodThree();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>.class文件的二进制内容<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line">cafe babe <span class="number">0000</span> <span class="number">0034</span> <span class="number">0041</span> <span class="number">0</span>a00 <span class="number">0300</span> <span class="number">2f</span>09</span><br><span class="line"><span class="number">000</span>d <span class="number">0030</span> <span class="number">0700</span> <span class="number">3109</span> <span class="number">000</span>d <span class="number">0032</span> <span class="number">0900</span> <span class="number">0</span>d00</span><br><span class="line"><span class="number">330</span>a <span class="number">0034</span> <span class="number">0035</span> <span class="number">0</span>a00 <span class="number">0</span>d00 <span class="number">3607</span> <span class="number">0037</span> <span class="number">0800</span></span><br><span class="line"><span class="number">380</span>a <span class="number">0008</span> <span class="number">0039</span> <span class="number">0</span>a00 <span class="number">0</span>d00 <span class="number">3</span>a09 <span class="number">000</span>d <span class="number">003</span>b</span><br><span class="line"><span class="number">0700</span> <span class="number">3</span>c01 <span class="number">0001</span> <span class="number">6901</span> <span class="number">0001</span> <span class="number">4901</span> <span class="number">000</span>d <span class="number">436f</span></span><br><span class="line"><span class="number">6e73</span> <span class="number">7461</span> <span class="number">6e74</span> <span class="number">5661</span> <span class="number">6</span>c75 <span class="number">6503</span> <span class="number">0000</span> <span class="number">0000</span></span><br><span class="line"><span class="number">0100</span> <span class="number">016</span>b <span class="number">0100</span> <span class="number">036f</span> <span class="number">626</span>a <span class="number">0100</span> <span class="number">124</span>c <span class="number">6</span>a61</span><br><span class="line"><span class="number">7661</span> <span class="number">2f</span>6c <span class="number">616</span>e <span class="number">672f</span> <span class="number">4f</span>62 <span class="number">6</span>a65 <span class="number">6374</span> <span class="number">3</span>b01</span><br><span class="line"><span class="number">0003</span> <span class="number">7373</span> <span class="number">7301</span> <span class="number">0006</span> <span class="number">3</span>c69 <span class="number">6e69</span> <span class="number">743</span>e <span class="number">0100</span></span><br><span class="line"><span class="number">0328</span> <span class="number">2956</span> <span class="number">0100</span> <span class="number">0443</span> <span class="number">6f</span>64 <span class="number">6501</span> <span class="number">000f</span> <span class="number">4</span>c69</span><br><span class="line"><span class="number">6e65</span> <span class="number">4e75</span> <span class="number">6</span>d62 <span class="number">6572</span> <span class="number">5461</span> <span class="number">626</span>c <span class="number">6501</span> <span class="number">0012</span></span><br><span class="line"><span class="number">4</span>c6f <span class="number">6361</span> <span class="number">6</span>c56 <span class="number">6172</span> <span class="number">6961</span> <span class="number">626</span>c <span class="number">6554</span> <span class="number">6162</span></span><br><span class="line"><span class="number">6</span>c65 <span class="number">0100</span> <span class="number">0474</span> <span class="number">6869</span> <span class="number">7301</span> <span class="number">0018</span> <span class="number">4</span>c63 <span class="number">6f</span>6d</span><br><span class="line"><span class="number">2f</span>6a <span class="number">766</span>d <span class="number">2f</span>48 <span class="number">656</span>c <span class="number">6</span>c6f <span class="number">576f</span> <span class="number">726</span>c <span class="number">6444</span></span><br><span class="line"><span class="number">656</span>d <span class="number">6f</span>3b <span class="number">0100</span> <span class="number">096</span>d <span class="number">6574</span> <span class="number">686f</span> <span class="number">644f</span> <span class="number">6e65</span></span><br><span class="line"><span class="number">0100</span> <span class="number">0428</span> <span class="number">4929</span> <span class="number">5601</span> <span class="number">0001</span> <span class="number">6</span>a01 <span class="number">0003</span> <span class="number">7375</span></span><br><span class="line"><span class="number">6</span>d01 <span class="number">0003</span> <span class="number">6163</span> <span class="number">6201</span> <span class="number">0005</span> <span class="number">7374</span> <span class="number">6172</span> <span class="number">7401</span></span><br><span class="line"><span class="number">0001</span> <span class="number">4</span>a01 <span class="number">0009</span> <span class="number">6</span>d65 <span class="number">7468</span> <span class="number">6f</span>64 <span class="number">5477</span> <span class="number">6f</span>01</span><br><span class="line"><span class="number">0004</span> <span class="number">6669</span> <span class="number">6</span>c65 <span class="number">0100</span> <span class="number">0e4</span>c <span class="number">6</span>a61 <span class="number">7661</span> <span class="number">2f</span>69</span><br><span class="line"><span class="number">6f</span>2f <span class="number">4669</span> <span class="number">6</span>c65 <span class="number">3</span>b01 <span class="number">000</span>b <span class="number">6</span>d65 <span class="number">7468</span> <span class="number">6f</span>64</span><br><span class="line"><span class="number">5468</span> <span class="number">7265</span> <span class="number">6501</span> <span class="number">0004</span> <span class="number">6</span>d61 <span class="number">696</span>e <span class="number">0100</span> <span class="number">1628</span></span><br><span class="line"><span class="number">5</span>b4c <span class="number">6</span>a61 <span class="number">7661</span> <span class="number">2f</span>6c <span class="number">616</span>e <span class="number">672f</span> <span class="number">5374</span> <span class="number">7269</span></span><br><span class="line"><span class="number">6e67</span> <span class="number">3</span>b29 <span class="number">5601</span> <span class="number">0004</span> <span class="number">6172</span> <span class="number">6773</span> <span class="number">0100</span> <span class="number">135</span>b</span><br><span class="line"><span class="number">4</span>c6a <span class="number">6176</span> <span class="number">612f</span> <span class="number">6</span>c61 <span class="number">6e67</span> <span class="number">2f</span>53 <span class="number">7472</span> <span class="number">696</span>e</span><br><span class="line"><span class="number">673</span>b <span class="number">0100</span> <span class="number">083</span>c <span class="number">636</span>c <span class="number">696</span>e <span class="number">6974</span> <span class="number">3e01</span> <span class="number">000</span>a</span><br><span class="line"><span class="number">536f</span> <span class="number">7572</span> <span class="number">6365</span> <span class="number">4669</span> <span class="number">6</span>c65 <span class="number">0100</span> <span class="number">1348</span> <span class="number">656</span>c</span><br><span class="line"><span class="number">6</span>c6f <span class="number">576f</span> <span class="number">726</span>c <span class="number">6444</span> <span class="number">656</span>d <span class="number">6f</span>2e <span class="number">6</span>a61 <span class="number">7661</span></span><br><span class="line"><span class="number">0</span>c00 <span class="number">1600</span> <span class="number">170</span>c <span class="number">000</span>e <span class="number">000f</span> <span class="number">0100</span> <span class="number">106</span>a <span class="number">6176</span></span><br><span class="line"><span class="number">612f</span> <span class="number">6</span>c61 <span class="number">6e67</span> <span class="number">2f</span>4f <span class="number">626</span>a <span class="number">6563</span> <span class="number">740</span>c <span class="number">0013</span></span><br><span class="line"><span class="number">0014</span> <span class="number">0</span>c00 <span class="number">1500</span> <span class="number">0f</span>07 <span class="number">003</span>d <span class="number">0</span>c00 <span class="number">3e00</span> <span class="number">3f</span>0c</span><br><span class="line"><span class="number">0024</span> <span class="number">0017</span> <span class="number">0100</span> <span class="number">0</span>c6a <span class="number">6176</span> <span class="number">612f</span> <span class="number">696f</span> <span class="number">2f</span>46</span><br><span class="line"><span class="number">696</span>c <span class="number">6501</span> <span class="number">0000</span> <span class="number">0</span>c00 <span class="number">1600</span> <span class="number">400</span>c <span class="number">0027</span> <span class="number">0017</span></span><br><span class="line"><span class="number">0</span>c00 <span class="number">1200</span> <span class="number">0f</span>01 <span class="number">0016</span> <span class="number">636f</span> <span class="number">6</span>d2f <span class="number">6</span>a76 <span class="number">6</span>d2f</span><br><span class="line"><span class="number">4865</span> <span class="number">6</span>c6c <span class="number">6f</span>57 <span class="number">6f</span>72 <span class="number">6</span>c64 <span class="number">4465</span> <span class="number">6</span>d6f <span class="number">0100</span></span><br><span class="line"><span class="number">106</span>a <span class="number">6176</span> <span class="number">612f</span> <span class="number">6</span>c61 <span class="number">6e67</span> <span class="number">2f</span>53 <span class="number">7973</span> <span class="number">7465</span></span><br><span class="line"><span class="number">6</span>d01 <span class="number">0011</span> <span class="number">6375</span> <span class="number">7272</span> <span class="number">656</span>e <span class="number">7454</span> <span class="number">696</span>d <span class="number">654</span>d</span><br><span class="line"><span class="number">696</span>c <span class="number">6</span>c69 <span class="number">7301</span> <span class="number">0003</span> <span class="number">2829</span> <span class="number">4</span>a01 <span class="number">0015</span> <span class="number">284</span>c</span><br><span class="line"><span class="number">6</span>a61 <span class="number">7661</span> <span class="number">2f</span>6c <span class="number">616</span>e <span class="number">672f</span> <span class="number">5374</span> <span class="number">7269</span> <span class="number">6e67</span></span><br><span class="line"><span class="number">3</span>b29 <span class="number">5600</span> <span class="number">2100</span> <span class="number">0</span>d00 <span class="number">0300</span> <span class="number">0000</span> <span class="number">0400</span> <span class="number">1200</span></span><br><span class="line"><span class="number">0e00</span> <span class="number">0f</span>00 <span class="number">0100</span> <span class="number">1000</span> <span class="number">0000</span> <span class="number">0200</span> <span class="number">1100</span> <span class="number">0</span>a00</span><br><span class="line"><span class="number">1200</span> <span class="number">0f</span>00 <span class="number">0000</span> <span class="number">0200</span> <span class="number">1300</span> <span class="number">1400</span> <span class="number">0000</span> <span class="number">0200</span></span><br><span class="line"><span class="number">1500</span> <span class="number">0f</span>00 <span class="number">0000</span> <span class="number">0600</span> <span class="number">0100</span> <span class="number">1600</span> <span class="number">1700</span> <span class="number">0100</span></span><br><span class="line"><span class="number">1800</span> <span class="number">0000</span> <span class="number">5000</span> <span class="number">0300</span> <span class="number">0100</span> <span class="number">0000</span> <span class="number">1</span>a2a b700</span><br><span class="line"><span class="number">012</span>a <span class="number">03</span>b5 <span class="number">0002</span> <span class="number">2</span>abb <span class="number">0003</span> <span class="number">59</span>b7 <span class="number">0001</span> b500</span><br><span class="line"><span class="number">042</span>a <span class="number">03</span>b5 <span class="number">0005</span> b100 <span class="number">0000</span> <span class="number">0200</span> <span class="number">1900</span> <span class="number">0000</span></span><br><span class="line"><span class="number">1200</span> <span class="number">0400</span> <span class="number">0000</span> <span class="number">0800</span> <span class="number">0400</span> <span class="number">0</span>a00 <span class="number">0900</span> <span class="number">0</span>d00</span><br><span class="line"><span class="number">1400</span> <span class="number">0e00</span> <span class="number">1</span>a00 <span class="number">0000</span> <span class="number">0</span>c00 <span class="number">0100</span> <span class="number">0000</span> <span class="number">1</span>a00</span><br><span class="line"><span class="number">1</span>b00 <span class="number">1</span>c00 <span class="number">0000</span> <span class="number">0100</span> <span class="number">1</span>d00 <span class="number">1e00</span> <span class="number">0100</span> <span class="number">1800</span></span><br><span class="line"><span class="number">0000</span> <span class="number">8600</span> <span class="number">0200</span> <span class="number">0700</span> <span class="number">0000</span> <span class="number">1603</span> <span class="number">3</span>d1b <span class="number">1</span>c60</span><br><span class="line"><span class="number">3e2</span>a b400 <span class="number">043</span>a <span class="number">04</span>b8 <span class="number">0006</span> <span class="number">3705</span> <span class="number">2</span>ab7 <span class="number">0007</span></span><br><span class="line">b100 <span class="number">0000</span> <span class="number">0200</span> <span class="number">1900</span> <span class="number">0000</span> <span class="number">1</span>a00 <span class="number">0600</span> <span class="number">0000</span></span><br><span class="line"><span class="number">1200</span> <span class="number">0200</span> <span class="number">1300</span> <span class="number">0600</span> <span class="number">1400</span> <span class="number">0</span>c00 <span class="number">1500</span> <span class="number">1100</span></span><br><span class="line"><span class="number">1600</span> <span class="number">1500</span> <span class="number">1700</span> <span class="number">1</span>a00 <span class="number">0000</span> <span class="number">3e00</span> <span class="number">0600</span> <span class="number">0000</span></span><br><span class="line"><span class="number">1600</span> <span class="number">1</span>b00 <span class="number">1</span>c00 <span class="number">0000</span> <span class="number">0000</span> <span class="number">1600</span> <span class="number">0e00</span> <span class="number">0f</span>00</span><br><span class="line"><span class="number">0100</span> <span class="number">0200</span> <span class="number">1400</span> <span class="number">1f</span>00 <span class="number">0f</span>00 <span class="number">0200</span> <span class="number">0600</span> <span class="number">1000</span></span><br><span class="line"><span class="number">2000</span> <span class="number">0f</span>00 <span class="number">0300</span> <span class="number">0</span>c00 <span class="number">0</span>a00 <span class="number">2100</span> <span class="number">1400</span> <span class="number">0400</span></span><br><span class="line"><span class="number">1100</span> <span class="number">0500</span> <span class="number">2200</span> <span class="number">2300</span> <span class="number">0500</span> <span class="number">0200</span> <span class="number">2400</span> <span class="number">1700</span></span><br><span class="line"><span class="number">0100</span> <span class="number">1800</span> <span class="number">0000</span> <span class="number">4300</span> <span class="number">0300</span> <span class="number">0200</span> <span class="number">0000</span> <span class="number">0</span>bbb</span><br><span class="line"><span class="number">0008</span> <span class="number">5912</span> <span class="number">09</span>b7 <span class="number">000</span>a <span class="number">4</span>cb1 <span class="number">0000</span> <span class="number">0002</span> <span class="number">0019</span></span><br><span class="line"><span class="number">0000</span> <span class="number">000</span>a <span class="number">0002</span> <span class="number">0000</span> <span class="number">001</span>b <span class="number">000</span>a <span class="number">001</span>c <span class="number">001</span>a</span><br><span class="line"><span class="number">0000</span> <span class="number">0016</span> <span class="number">0002</span> <span class="number">0000</span> <span class="number">000</span>b <span class="number">001</span>b <span class="number">001</span>c <span class="number">0000</span></span><br><span class="line"><span class="number">000</span>a <span class="number">0001</span> <span class="number">0025</span> <span class="number">0026</span> <span class="number">0001</span> <span class="number">000</span>a <span class="number">0027</span> <span class="number">0017</span></span><br><span class="line"><span class="number">0001</span> <span class="number">0018</span> <span class="number">0000</span> <span class="number">0020</span> <span class="number">0000</span> <span class="number">0000</span> <span class="number">0000</span> <span class="number">0004</span></span><br><span class="line">b800 <span class="number">0</span>bb1 <span class="number">0000</span> <span class="number">0001</span> <span class="number">0019</span> <span class="number">0000</span> <span class="number">000</span>a <span class="number">0002</span></span><br><span class="line"><span class="number">0000</span> <span class="number">001f</span> <span class="number">0003</span> <span class="number">0020</span> <span class="number">0009</span> <span class="number">0028</span> <span class="number">0029</span> <span class="number">0001</span></span><br><span class="line"><span class="number">0018</span> <span class="number">0000</span> <span class="number">0032</span> <span class="number">0000</span> <span class="number">0001</span> <span class="number">0000</span> <span class="number">0004</span> b800</span><br><span class="line"><span class="number">0</span>bb1 <span class="number">0000</span> <span class="number">0002</span> <span class="number">0019</span> <span class="number">0000</span> <span class="number">000</span>a <span class="number">0002</span> <span class="number">0000</span></span><br><span class="line"><span class="number">0023</span> <span class="number">0003</span> <span class="number">0024</span> <span class="number">001</span>a <span class="number">0000</span> <span class="number">000</span>c <span class="number">0001</span> <span class="number">0000</span></span><br><span class="line"><span class="number">0004</span> <span class="number">002</span>a <span class="number">002</span>b <span class="number">0000</span> <span class="number">0008</span> <span class="number">002</span>c <span class="number">0017</span> <span class="number">0001</span></span><br><span class="line"><span class="number">0018</span> <span class="number">0000</span> <span class="number">001</span>d <span class="number">0001</span> <span class="number">0000</span> <span class="number">0000</span> <span class="number">0005</span> <span class="number">03</span>b3</span><br><span class="line"><span class="number">000</span>c b100 <span class="number">0000</span> <span class="number">0100</span> <span class="number">1900</span> <span class="number">0000</span> <span class="number">0600</span> <span class="number">0100</span></span><br><span class="line"><span class="number">0000</span> <span class="number">0b00</span> <span class="number">0100</span> <span class="number">2</span>d00 <span class="number">0000</span> <span class="number">0200</span> <span class="number">2</span>e</span><br></pre></td></tr></table></figure></p>
+<p>反编译<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javap -c -v HelloWorldDemo.class &gt;p.txt</span><br></pre></td></tr></table></figure></p>
+<p>结果<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br></pre></td><td class="code"><pre><span class="line">Classfile /j:/java-<span class="number">64</span>/jdk1.8/bin/HelloWorldDemo.class</span><br><span class="line">  Last modified <span class="number">2018</span>-<span class="number">10</span>-<span class="number">15</span>; size <span class="number">1149</span> bytes</span><br><span class="line">  MD5 checksum <span class="number">6096f</span>36225e1bb852ac023c4efa13a68</span><br><span class="line">  Compiled from <span class="string">"HelloWorldDemo.java"</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">com</span>.<span class="title">jvm</span>.<span class="title">HelloWorldDemo</span></span></span><br><span class="line">  minor version: 0</span><br><span class="line">  major version: <span class="number">52</span></span><br><span class="line">  flags: ACC_PUBLIC, ACC_SUPER</span><br><span class="line">Constant pool:</span><br><span class="line">   #1 = Methodref          #3.#47         // java/lang/Object."&lt;init&gt;":()V</span><br><span class="line">   #2 = Fieldref           #13.#48        // com/jvm/HelloWorldDemo.i:I</span><br><span class="line">   #3 = Class              #49            // java/lang/Object</span><br><span class="line">   #4 = Fieldref           #13.#50        // com/jvm/HelloWorldDemo.obj:Ljava/lang/Object;</span><br><span class="line">   #5 = Fieldref           #13.#51        // com/jvm/HelloWorldDemo.sss:I</span><br><span class="line">   #6 = Methodref          #52.#53        // java/lang/System.currentTimeMillis:()J</span><br><span class="line">   #7 = Methodref          #13.#54        // com/jvm/HelloWorldDemo.methodTwo:()V</span><br><span class="line">   #8 = Class              #55            // java/io/File</span><br><span class="line">   #9 = String             #56            //</span><br><span class="line">  #10 = Methodref          #8.#57         // java/io/File."&lt;init&gt;":(Ljava/lang/String;)V</span><br><span class="line">  #11 = Methodref          #13.#58        // com/jvm/HelloWorldDemo.methodThree:()V</span><br><span class="line">  #12 = Fieldref           #13.#59        // com/jvm/HelloWorldDemo.k:I</span><br><span class="line">  #13 = Class              #60            // com/jvm/HelloWorldDemo</span><br><span class="line">  #14 = Utf8               i</span><br><span class="line">  #15 = Utf8               I</span><br><span class="line">  #16 = Utf8               ConstantValue</span><br><span class="line">  #17 = Integer            0</span><br><span class="line">  #18 = Utf8               k</span><br><span class="line">  #19 = Utf8               obj</span><br><span class="line">  #20 = Utf8               Ljava/lang/Object;</span><br><span class="line">  #21 = Utf8               sss</span><br><span class="line">  #22 = Utf8               &lt;init&gt;</span><br><span class="line">  #23 = Utf8               ()V</span><br><span class="line">  #24 = Utf8               Code</span><br><span class="line">  #25 = Utf8               LineNumberTable</span><br><span class="line">  #26 = Utf8               LocalVariableTable</span><br><span class="line">  #27 = Utf8               this</span><br><span class="line">  #28 = Utf8               Lcom/jvm/HelloWorldDemo;</span><br><span class="line">  #29 = Utf8               methodOne</span><br><span class="line">  #30 = Utf8               (I)V</span><br><span class="line">  #31 = Utf8               j</span><br><span class="line">  #32 = Utf8               sum</span><br><span class="line">  #33 = Utf8               acb</span><br><span class="line">  #34 = Utf8               start</span><br><span class="line">  #35 = Utf8               J</span><br><span class="line">  #36 = Utf8               methodTwo</span><br><span class="line">  #37 = Utf8               file</span><br><span class="line">  #38 = Utf8               Ljava/io/File;</span><br><span class="line">  #39 = Utf8               methodThree</span><br><span class="line">  #40 = Utf8               main</span><br><span class="line">  #41 = Utf8               ([Ljava/lang/String;)V</span><br><span class="line">  #42 = Utf8               args</span><br><span class="line">  #43 = Utf8               [Ljava/lang/String;</span><br><span class="line">  #44 = Utf8               &lt;clinit&gt;</span><br><span class="line">  #45 = Utf8               SourceFile</span><br><span class="line">  #46 = Utf8               HelloWorldDemo.java</span><br><span class="line">  #47 = NameAndType        #22:#23        // "&lt;init&gt;":()V</span><br><span class="line">  #48 = NameAndType        #14:#15        // i:I</span><br><span class="line">  #49 = Utf8               java/lang/Object</span><br><span class="line">  #50 = NameAndType        #19:#20        // obj:Ljava/lang/Object;</span><br><span class="line">  #51 = NameAndType        #21:#15        // sss:I</span><br><span class="line">  #52 = Class              #61            // java/lang/System</span><br><span class="line">  #53 = NameAndType        #62:#63        // currentTimeMillis:()J</span><br><span class="line">  #54 = NameAndType        #36:#23        // methodTwo:()V</span><br><span class="line">  #55 = Utf8               java/io/File</span><br><span class="line">  #56 = Utf8</span><br><span class="line">  #57 = NameAndType        #22:#64        // "&lt;init&gt;":(Ljava/lang/String;)V</span><br><span class="line">  #58 = NameAndType        #39:#23        // methodThree:()V</span><br><span class="line">  #59 = NameAndType        #18:#15        // k:I</span><br><span class="line">  #60 = Utf8               com/jvm/HelloWorldDemo</span><br><span class="line">  #61 = Utf8               java/lang/System</span><br><span class="line">  #62 = Utf8               currentTimeMillis</span><br><span class="line">  #63 = Utf8               ()J</span><br><span class="line">  #64 = Utf8               (Ljava/lang/String;)V</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">public</span> com.jvm.HelloWorldDemo();</span><br><span class="line">    descriptor: ()V</span><br><span class="line">    flags: ACC_PUBLIC</span><br><span class="line">    Code:</span><br><span class="line">      stack=<span class="number">3</span>, locals=<span class="number">1</span>, args_size=<span class="number">1</span></span><br><span class="line">         <span class="number">0</span>: aload_0</span><br><span class="line">         1: invokespecial #1                  // Method java/lang/Object."&lt;init&gt;":()V</span><br><span class="line">         <span class="number">4</span>: aload_0</span><br><span class="line">         <span class="number">5</span>: iconst_0</span><br><span class="line">         6: putfield      #2                  // Field i:I</span><br><span class="line">         <span class="number">9</span>: aload_0</span><br><span class="line">        10: new           #3                  // class java/lang/Object</span><br><span class="line">        <span class="number">13</span>: dup</span><br><span class="line">        14: invokespecial #1                  // Method java/lang/Object."&lt;init&gt;":()V</span><br><span class="line">        17: putfield      #4                  // Field obj:Ljava/lang/Object;</span><br><span class="line">        <span class="number">20</span>: aload_0</span><br><span class="line">        <span class="number">21</span>: iconst_0</span><br><span class="line">        22: putfield      #5                  // Field sss:I</span><br><span class="line">        <span class="number">25</span>: <span class="keyword">return</span></span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line <span class="number">8</span>: <span class="number">0</span></span><br><span class="line">        line <span class="number">10</span>: <span class="number">4</span></span><br><span class="line">        line <span class="number">13</span>: <span class="number">9</span></span><br><span class="line">        line <span class="number">14</span>: <span class="number">20</span></span><br><span class="line">      LocalVariableTable:</span><br><span class="line">        Start  Length  Slot  Name   Signature</span><br><span class="line">            <span class="number">0</span>      <span class="number">26</span>     <span class="number">0</span>  <span class="keyword">this</span>   Lcom/jvm/HelloWorldDemo;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">methodOne</span><span class="params">(<span class="keyword">int</span>)</span></span>;</span><br><span class="line">    descriptor: (I)V</span><br><span class="line">    flags: ACC_PUBLIC</span><br><span class="line">    Code:</span><br><span class="line">      stack=<span class="number">2</span>, locals=<span class="number">7</span>, args_size=<span class="number">2</span></span><br><span class="line">         <span class="number">0</span>: iconst_0</span><br><span class="line">         <span class="number">1</span>: istore_2</span><br><span class="line">         <span class="number">2</span>: iload_1</span><br><span class="line">         <span class="number">3</span>: iload_2</span><br><span class="line">         <span class="number">4</span>: iadd</span><br><span class="line">         <span class="number">5</span>: istore_3</span><br><span class="line">         <span class="number">6</span>: aload_0</span><br><span class="line">         7: getfield      #4                  // Field obj:Ljava/lang/Object;</span><br><span class="line">        <span class="number">10</span>: astore        <span class="number">4</span></span><br><span class="line">        12: invokestatic  #6                  // Method java/lang/System.currentTimeMillis:()J</span><br><span class="line">        <span class="number">15</span>: lstore        <span class="number">5</span></span><br><span class="line">        <span class="number">17</span>: aload_0</span><br><span class="line">        18: invokespecial #7                  // Method methodTwo:()V</span><br><span class="line">        <span class="number">21</span>: <span class="keyword">return</span></span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line <span class="number">18</span>: <span class="number">0</span></span><br><span class="line">        line <span class="number">19</span>: <span class="number">2</span></span><br><span class="line">        line <span class="number">20</span>: <span class="number">6</span></span><br><span class="line">        line <span class="number">21</span>: <span class="number">12</span></span><br><span class="line">        line <span class="number">22</span>: <span class="number">17</span></span><br><span class="line">        line <span class="number">23</span>: <span class="number">21</span></span><br><span class="line">      LocalVariableTable:</span><br><span class="line">        Start  Length  Slot  Name   Signature</span><br><span class="line">            <span class="number">0</span>      <span class="number">22</span>     <span class="number">0</span>  <span class="keyword">this</span>   Lcom/jvm/HelloWorldDemo;</span><br><span class="line">            <span class="number">0</span>      <span class="number">22</span>     <span class="number">1</span>     i   I</span><br><span class="line">            <span class="number">2</span>      <span class="number">20</span>     <span class="number">2</span>     j   I</span><br><span class="line">            <span class="number">6</span>      <span class="number">16</span>     <span class="number">3</span>   sum   I</span><br><span class="line">           <span class="number">12</span>      <span class="number">10</span>     <span class="number">4</span>   acb   Ljava/lang/Object;</span><br><span class="line">           <span class="number">17</span>       <span class="number">5</span>     <span class="number">5</span> start   J</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(java.lang.String[])</span></span>;</span><br><span class="line">    descriptor: ([Ljava/lang/String;)V</span><br><span class="line">    flags: ACC_PUBLIC, ACC_STATIC</span><br><span class="line">    Code:</span><br><span class="line">      stack=<span class="number">0</span>, locals=<span class="number">1</span>, args_size=<span class="number">1</span></span><br><span class="line">         0: invokestatic  #11                 // Method methodThree:()V</span><br><span class="line">         <span class="number">3</span>: <span class="keyword">return</span></span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line <span class="number">35</span>: <span class="number">0</span></span><br><span class="line">        line <span class="number">36</span>: <span class="number">3</span></span><br><span class="line">      LocalVariableTable:</span><br><span class="line">        Start  Length  Slot  Name   Signature</span><br><span class="line">            <span class="number">0</span>       <span class="number">4</span>     <span class="number">0</span>  args   [Ljava/lang/String;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">static</span> &#123;&#125;;</span><br><span class="line">    descriptor: ()V</span><br><span class="line">    flags: ACC_STATIC</span><br><span class="line">    Code:</span><br><span class="line">      stack=<span class="number">1</span>, locals=<span class="number">0</span>, args_size=<span class="number">0</span></span><br><span class="line">         <span class="number">0</span>: iconst_0</span><br><span class="line">         1: putstatic     #12                 // Field k:I</span><br><span class="line">         <span class="number">4</span>: <span class="keyword">return</span></span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line <span class="number">11</span>: <span class="number">0</span></span><br><span class="line">&#125;</span><br><span class="line">SourceFile: <span class="string">"HelloWorldDemo.java"</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="魔数与Class文件的版本"><a href="#魔数与Class文件的版本" class="headerlink" title="魔数与Class文件的版本"></a>魔数与Class文件的版本</h2><p>每个Class文件的头4个字节称为魔数（Magic Number），它的唯一作用时用语确定这个文件是否作为一个能被虚拟机接受的Class文件。Class文件的魔数值是0xCAFEBABE（咖啡宝贝？）。<br>紧挨着魔数的4个字节存储的是Class文件的版本号：第5和6个字节是次版本号（Minor Version），第7和8个字节是主版本号（Major Version）。Java的版本号是从45开始的，以后每个大版本发布后，主版本号向上加1，高版本的JDK能向下兼容以前版本的Class文件，但不能运行以后版本的Class文件，即使文件格式并未发生变化。</p>
+<h2 id="常量池"><a href="#常量池" class="headerlink" title="常量池"></a>常量池</h2><p>紧接着主次版本号之后的是常量池入口，它是Class文件中与其它项目关联最紧密的数据类型，也是占用Class文件空间最大的数据项目之一，同时还是Class文件中第一个出现的表类型数据项目。<br>常量池中主要存放两大类常量：字面量（Literal）和符号引用（Symbolic Reference）。字面量比较接近Java语言的常量概念，如文本字符串、被声明为final的常量值等。而符号引用则属于编译原理方面的概念，包括了下面三类常量：</p>
+<ul>
+<li>类和接口的全限定名（Fully Quaified Name）</li>
+<li>字段的名称和描述</li>
+<li>方法的名称和描述符</li>
+</ul>
+<h2 id="访问标志"><a href="#访问标志" class="headerlink" title="访问标志"></a>访问标志</h2><p>访问标志（access_flag）：用于识别一些类或接口层次的访问信息，包括：这个Class是类还是接口，是否定义为public类型，是否定义为abstract类型，如果是类的话，是否被声明为final，等等。</p>
+<h2 id="类索引、父类索引、接口索引集合"><a href="#类索引、父类索引、接口索引集合" class="headerlink" title="类索引、父类索引、接口索引集合"></a>类索引、父类索引、接口索引集合</h2><p>类索引（this_class）和父类索引（super_class）都是一个u2类型的数据，而接口索引集合是一个u2类型的数据集合，class文件由这三个数据来确定这个类的继承关系。</p>
+<h2 id="字段表集合"><a href="#字段表集合" class="headerlink" title="字段表集合"></a>字段表集合</h2><p>字段表（field_info）：用于描述类或者接口的声明的变量，不包括方法的内部声明变量。<br>Java中一个字段（field）可以包含的信息包括：字段的作用域（public、private、protected）、类级别还是实例级别（static）、可变性（final）、并发可见性（volatile是否强制从主内存读写）、可否序列化（transient）、字段数据类型（基本类型、对象、数组）、名称。</p>
+<h2 id="方法表集合"><a href="#方法表集合" class="headerlink" title="方法表集合"></a>方法表集合</h2><p>方法表的结构如同 【Chapter 6.3.5 字段表集合】一样，一次包括了，访问标识（access_flag）、名称索引（name_index）、描述符索引（descriptor_index）、属性表集合（attributes）。</p>
+<h2 id="属性表集合"><a href="#属性表集合" class="headerlink" title="属性表集合"></a>属性表集合</h2><p>属性表集合（attribute_info）：用于描述某些场景（Class文件、字段表、方法表）的专有信息。</p>
+
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
       <a href="/2019/01/19/jvm-tools/">
   <time datetime="2019-01-19T10:43:49.000Z">
     2019-01-19
@@ -853,214 +1000,6 @@
 
 
   
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2018/08/27/auth/">
-  <time datetime="2018-08-27T08:54:11.000Z">
-    2018-08-27
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2018/08/27/auth/">Http鉴权罗列</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <blockquote>
-<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
-</blockquote>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份.</p>
-<p>显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对服务器页增添了额外的压力.为了解决无状态带来的鉴权问题,大牛们设计多种方案</p>
-<h2 id="1-cookie"><a href="#1-cookie" class="headerlink" title="1.cookie"></a>1.cookie</h2><p>Cookie是储存在客户端的一串字符,一般说来大小不超过4kb.<br>比如我们常见的记住密码功能,或者一些基于之前输入的提醒和默认配置,就是通过cookie来实现的,cookie简单说来就是一种本地存储方法.<br>但是这里存储的信息常用来进行鉴权操作.cookie只能保存文本信息,浏览器可以禁止cookie.cookie的期限可以被自由设定,可以是仅仅一次浏览起效,也可以长达一年.<br>如果是短期的,那么这些信息会被存储在内存中,如果是长期则会存储在硬盘上.cookie的起效范围是路径下的所有子路径.不允许其他来源的访问.</p>
-<p>单纯的采用cookie来认证身份会带来一个比较麻烦的问题,就是伪造比较容易.<br>因为这样处理,cookie中必然要带有身份信息,但是服务器也要解析这个身份信息,所以必然要在原理上支持双向的编码和解码,那么这个信息很容易被破解和进一步伪造.<br>想一想,如果想要解决这个问题,我们常用的方案应该是加一个secret,而这个secret应该是放在服务器上的,服务器返回这样一个带有secret编码的字符串,而在服务器端再带上这个secret反向解密,如此一来,问题不就解决了吗?确实如此,但是这不代表cookie就安全,因为这已经不叫cookie了,而是我们要讲的第二个对象:session.</p>
-<h2 id="2-session"><a href="#2-session" class="headerlink" title="2.session"></a>2.session</h2><p>通过上面说的东西,我们已经能够获得身份信息,额外的,我们还可以把更复杂形式的信息都存储进来,因为这里没有cookie的纯文本限制.<br>但是刚才说的带有secret编码的字符串也就是sessionid,依然要存储在客户端.<br>是不是意味着session必定要依赖cookie呢?不是!想一想,我们实际上需要的是在每一次请求(至少是需要判定身份状态的请求中),都带上这个字符串,我们有以下这几种解决方案:</p>
-<ul>
-<li>cookie</li>
-<li>表单隐藏字段:在form中放置一个隐藏的域</li>
-<li>url重写:在url后边加上session的query段</li>
-</ul>
-<p>Session也可以设定有效时间.其实际的存储可以在内存、缓存、文件中.通过类似//可能具体实现不同.//hash表的数据结构存储.cookie是一个存在的实体,session是一种机制.</p>
-<h2 id="3-token"><a href="#3-token" class="headerlink" title="3.token"></a>3.token</h2><p>使用基于 Token 的身份验证方法，在服务端不需要存储用户的登录记录。大概的流程是这样的：</p>
-<ul>
-<li>客户端使用用户名跟密码请求登录</li>
-<li>服务端收到请求，去验证用户名与密码</li>
-<li>验证成功后，服务端会签发一个 Token，再把这个 Token 发送给客户端</li>
-<li>客户端收到 Token 以后可以把它存储起来，比如放在 Cookie 里或者 Local Storage 里</li>
-<li>客户端每次向服务端请求资源的时候需要带着服务端签发的 Token</li>
-<li>服务端收到请求，然后去验证客户端请求里面带着的 Token，如果验证成功，就向客户端返回请求的数据</li>
-</ul>
-<p>可以看出来,这里的token与sessionid有些类似,其区别:</p>
-<ul>
-<li>sessionid是带着之前的状态的,在服务器端可以getSession(sessionid)</li>
-<li>token是在登录验证之后发放的一个包含着用户基本信息的较长的字符串,用处是验证身份以及简化后续获取信息的难度.</li>
-<li>token机制更灵活,可以实现跨域</li>
-</ul>
-<p>此种方案多用于APP等客户端登录使用，一般过期时间是1个月</p>
-<h2 id="4-JWT"><a href="#4-JWT" class="headerlink" title="4.JWT"></a>4.JWT</h2><p>Jwt简单说来是一种token的具体实现规范!<br>Jwt标准的token有三个部分,中间用点分隔开，并且都会使用 Base64 编码:<br>JWT 的三个部分依次如下：</p>
-<ul>
-<li>Header（头部）</li>
-<li>Payload（负载）</li>
-<li>Signature（签名）</li>
-</ul>
-<h3 id="4-1-Header"><a href="#4-1-Header" class="headerlink" title="4.1.Header"></a>4.1.Header</h3><p>Header 部分是一个 JSON 对象，描述 JWT 的元数据，通常是下面的样子。<br><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"alg"</span>: <span class="string">"HS256"</span>,</span><br><span class="line">  <span class="attr">"typ"</span>: <span class="string">"JWT"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>上面代码中，alg属性表示签名的算法（algorithm），默认是 HMAC SHA256（写成 HS256）；typ属性表示这个令牌（token）的类型（type），JWT 令牌统一写为JWT。</p>
-<p>最后，将上面的 JSON 对象使用 Base64URL 算法（详见后文）转成字符串。</p>
-<h3 id="4-2-Payload"><a href="#4-2-Payload" class="headerlink" title="4.2.Payload"></a>4.2.Payload</h3><p>Payload 部分也是一个 JSON 对象，用来存放实际需要传递的数据。JWT 规定了7个官方字段，供选用。</p>
-<ul>
-<li>iss (issuer)：签发人</li>
-<li>exp (expiration time)：过期时间</li>
-<li>sub (subject)：主题</li>
-<li>aud (audience)：受众</li>
-<li>nbf (Not Before)：生效时间</li>
-<li>iat (Issued At)：签发时间</li>
-<li>jti (JWT ID)：编号</li>
-</ul>
-<p>注意，JWT 默认是不加密的，任何人都可以读到，所以不要把秘密信息放在这个部分。</p>
-<p>这个 JSON 对象也要使用 Base64URL 算法转成字符串。</p>
-<h3 id="4-3-Signature"><a href="#4-3-Signature" class="headerlink" title="4.3.Signature"></a>4.3.Signature</h3><p>Signature 部分是对前两部分的签名，防止数据篡改。<br>首先，需要指定一个密钥（secret）。这个密钥只有服务器才知道，不能泄露给用户。然后，使用 Header 里面指定的签名算法（默认是 HMAC SHA256），按照下面的公式产生签名。</p>
-<p>算出签名以后，把 Header、Payload、Signature 三个部分拼成一个字符串，每个部分之间用”点”（<code>.</code>）分隔，就可以返回给用户。</p>
-<h3 id="4-4-JWT-的使用方式"><a href="#4-4-JWT-的使用方式" class="headerlink" title="4.4.JWT 的使用方式"></a>4.4.JWT 的使用方式</h3><p>客户端收到服务器返回的 JWT，可以储存在 Cookie 里面，也可以储存在 localStorage。</p>
-<p>此后，客户端每次与服务器通信，都要带上这个 JWT。你可以把它放在 Cookie 里面自动发送，但是这样不能跨域，所以更好的做法是放在 HTTP 请求的头信息Authorization字段里面。</p>
-<p>几个特点:</p>
-<ul>
-<li>JWT 默认是不加密，但也是可以加密的。生成原始 Token 以后，可以用密钥再加密一次。</li>
-<li>JWT 不加密的情况下，不能将秘密数据写入 JWT。</li>
-<li>JWT 不仅可以用于认证，也可以用于交换信息。有效使用 JWT，可以降低服务器查询数据库的次数。</li>
-<li>WT 的最大缺点是，由于服务器不保存 session 状态，因此无法在使用过程中废止某个 token，或者更改 token 的权限。也就是说，一旦 JWT 签发了，在到期之前就会始终有效，除非服务器部署额外的逻辑。</li>
-<li>JWT 本身包含了认证信息，一旦泄露，任何人都可以获得该令牌的所有权限。为了减少盗用，JWT 的有效期应该设置得比较短。对于一些比较重要的权限，使用时应该再次对用户进行认证。</li>
-<li>为了减少盗用，JWT 不应该使用 HTTP 协议明码传输，要使用 HTTPS 协议传输。</li>
-</ul>
-<h2 id="5-oauth2"><a href="#5-oauth2" class="headerlink" title="5.oauth2"></a>5.oauth2</h2><p>简单来说,oauth是用来向第三方平台提供可以细致的权限管理的一种方案.</p>
-<p>如何直接向第三方提供账号和密码,可能存在的问题有:</p>
-<ul>
-<li>不安全</li>
-<li>无法更细致的限制授权范围和有效期</li>
-<li>只有修改密码才能收回权限</li>
-<li>一个第三方程序被破解将会导致用户密码泄漏</li>
-</ul>
-<p>OAuth的基本思路如下:<br>OAuth在”客户端”与”服务提供商”之间，设置了一个授权层（authorization layer）。”客户端”不能直接登录”服务提供商”，只能登录授权层，以此将用户与客户端区分开来。”客户端”登录授权层所用的令牌（token），与用户的密码不同。用户可以在登录的时候，指定授权层令牌的权限范围和有效期。”客户端”登录授权层以后，”服务提供商”根据令牌的权限范围和有效期，向”客户端”开放用户储存的资料。</p>
-
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2018/08/23/distribut-lock/">
-  <time datetime="2018-08-23T08:47:59.000Z">
-    2018-08-23
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2018/08/23/distribut-lock/">分布式锁</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <blockquote>
-<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
-</blockquote>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>在高并发场景中，我们需要对资源上锁。比如在秒杀商品时，大量请求过来，不上锁可能导致超卖等现象的发生。<br>分布式系统由独立的服务器通过网络松散耦合组成。在这个系统中每个服务器都是一台独立的主机，服务器之间通过内部网络连接。分布式系统有以下几个特点：</p>
-<ul>
-<li>可扩展性：可通过横向水平扩展提高系统的性能和吞吐量。</li>
-<li>高可靠性：高容错，即使系统中一台或几台故障，系统仍可提供服务。</li>
-<li>高并发性：各机器并行独立处理和计算。</li>
-<li>廉价高效：多台小型机而非单台高性能机。</li>
-</ul>
-<p>基于分布式系统的这些特征，有两种问题逐渐成为了分布式环境中需要重点关注和解决的典型问题：</p>
-<ul>
-<li>互斥性问题（资源竞争）</li>
-<li>幂等性问题（结果一致）</li>
-</ul>
-<h2 id="多线程环境解决方案及原理"><a href="#多线程环境解决方案及原理" class="headerlink" title="多线程环境解决方案及原理"></a>多线程环境解决方案及原理</h2><h3 id="1-ReentrantLock"><a href="#1-ReentrantLock" class="headerlink" title="1.ReentrantLock"></a>1.ReentrantLock</h3><p>ReentrantLock主要利用CAS+CLH队列来实现。它支持公平锁和非公平锁，两者的实现类似。</p>
-<ul>
-<li>CAS：Compare and Swap，比较并交换。CAS有3个操作数：内存值V、预期值A、要修改的新值B。当且仅当预期值A和内存值V相同时，将内存值V修改为B，否则什么都不做。该操作是一个原子操作，被广泛的应用在Java的底层实现中。在Java中，CAS主要是由sun.misc.Unsafe这个类通过JNI调用CPU底层指令实现。</li>
-<li>CLH队列：带头结点的双向非循环链表</li>
-</ul>
-<p>ReentrantLock的基本实现可以概括为：先通过CAS尝试获取锁。如果此时已经有线程占据了锁，那就加入CLH队列并且被挂起。当锁被释放之后，排在CLH队列队首的线程会被唤醒，然后CAS再次尝试获取锁。在这个时候，如果：</p>
-<ul>
-<li>非公平锁：如果同时还有另一个线程进来尝试获取，那么有可能会让这个线程抢先获取；</li>
-<li>公平锁：如果同时还有另一个线程进来尝试获取，当它发现自己不是在队首的话，就会排到队尾，由队首的线程获取到锁。</li>
-</ul>
-<h3 id="2-synchronized"><a href="#2-synchronized" class="headerlink" title="2.synchronized"></a>2.synchronized</h3><p>在Java语言中存在两种内建的synchronized语法：synchronized语句、synchronized方法</p>
-<ul>
-<li>synchronized语句：当源代码被编译成字节码的时候，会在同步块的入口位置和退出位置分别插入monitorenter和monitorexit字节码指令;</li>
-<li>synchronized方法：在Class文件的方法表中将该方法的access_flags字段中的synchronized标志位置1。这个在specification中没有明确说明。</li>
-</ul>
-<h2 id="分布式环境下的解决方案——分布式锁"><a href="#分布式环境下的解决方案——分布式锁" class="headerlink" title="分布式环境下的解决方案——分布式锁"></a>分布式环境下的解决方案——分布式锁</h2><h3 id="分布式锁基本条件"><a href="#分布式锁基本条件" class="headerlink" title="分布式锁基本条件"></a>分布式锁基本条件</h3><p>锁的实现有很多共通之处，它们都需要满足一些最基本的条件</p>
-<ul>
-<li>需要有存储锁的空间，并且锁的空间是可以访问到的。</li>
-<li>锁需要被唯一标识。</li>
-<li>锁要有至少两种状态</li>
-</ul>
-<h3 id="分布式锁进阶条件"><a href="#分布式锁进阶条件" class="headerlink" title="分布式锁进阶条件"></a>分布式锁进阶条件</h3><p>如果分布式锁的实现，还能再解决上面的三个问题，那么就可以算是一个相对完整的分布式锁了。然而，在实际的系统环境中，还会对分布式锁有更高级的要求。</p>
-<ul>
-<li>可重入：线程中的可重入，指的是外层函数获得锁之后，内层也可以获得锁，ReentrantLock和synchronized都是可重入锁；衍生到分布式环境中，一般仍然指的是线程的可重入，在绝大多数分布式环境中，都要求分布式锁是可重入的。</li>
-<li>惊群效应（Herd Effect）：在分布式锁中，惊群效应指的是，在有多个请求等待获取锁的时候，一旦占有锁的线程释放之后，如果所有等待的方都同时被唤醒，尝试抢占锁。但是这样的情况会造成比较大的开销，那么在实现分布式锁的时候，应该尽量避免惊群效应的产生。</li>
-<li>公平锁和非公平锁：不同的需求，可能需要不同的分布式锁。非公平锁普遍比公平锁开销小。但是业务需求如果必须要锁的竞争者按顺序获得锁，那么就需要实现公平锁。</li>
-<li>阻塞锁和自旋锁：针对不同的使用场景，阻塞锁和自旋锁的效率也会有所不同。阻塞锁会有上下文切换，如果并发量比较高且临界区的操作耗时比较短，那么造成的性能开销就比较大了。但是如果临界区操作耗时比较长，一直保持自旋，也会对CPU造成更大的负荷。</li>
-</ul>
-<h3 id="实现方案"><a href="#实现方案" class="headerlink" title="实现方案"></a>实现方案</h3><h4 id="1-乐观锁"><a href="#1-乐观锁" class="headerlink" title="1.乐观锁"></a>1.乐观锁</h4><p>大多数是基于数据版本(version)的记录机制实现的。一般是通过为数据库表添加一个 “version”字段来实现读取出数据时，将此版本号一同读出，之后更新时，对此版本号加1。在更新过程中，会对版本号进行比较，如果是一致的，没有发生改变，则会成功执行本次操作；如果版本号不一致，则会更新失败。<br>缺点：</p>
-<ul>
-<li>这种操作方式，使原本一次的update操作，必须变为2次操作: select版本号一次；update一次。增加了数据库操作的次数。</li>
-<li>如果业务场景中的一次业务流程中，多个资源都需要用保证数据一致性，那么如果全部使用基于数据库资源表的乐观锁，就要让每个资源都有一张资源表，这个在实际使用场景中肯定是无法满足的。而且这些都基于数据库操作，在高并发的要求下，对数据库连接的开销一定是无法忍受的。</li>
-<li>乐观锁机制往往基于系统中的数据存储逻辑，因此可能会造成脏数据被更新到数据库中。在系统设计阶段，我们应该充分考虑到这些情况出现的可能性，并进行相应调整，如将乐观锁策略在数据库存储过程中实现，对外只开放基于此存储过程的数据更新途径，而不是将数据库表直接对外公开。 </li>
-</ul>
-<h4 id="2-悲观锁"><a href="#2-悲观锁" class="headerlink" title="2.悲观锁"></a>2.悲观锁</h4><p>总是假设最坏的情况，每次取数据时都认为其他线程会修改，所以都会加锁（读锁、写锁、行锁等），当其他线程想要访问数据时，都需要阻塞挂起。可以依靠数据库实现，如行锁、读锁和写锁等，都是在操作之前加锁，在Java中，synchronized的思想也是悲观锁<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">status</span> <span class="keyword">from</span> t_goods <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">1</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure></p>
-<p>优点与不足<br>悲观并发控制实际上是“先取锁再访问”的保守策略，为数据处理的安全提供了保证。但是在效率方面，处理加锁的机制会让数据库产生额外的开销，还有增加产生死锁的机会；另外，在只读型事务处理中由于不会产生冲突，也没必要使用锁，这样做只能增加系统负载；还有会降低了并行性，一个事务如果锁定了某行数据，其他事务就必须等待该事务处理完才可以处理那行数</p>
-<h4 id="3-Redis的实现"><a href="#3-Redis的实现" class="headerlink" title="3.Redis的实现"></a>3.Redis的实现</h4><p>Redis的分布式缓存特性使其成为了分布式锁的一种基础实现。通过Redis中是否存在某个锁ID，则可以判断是否上锁。为了保证判断锁是否存在的原子性，保证只有一个线程获取同一把锁，Redis有SETNX（即SET if Not<br>eXists）和GETSET（先写新值，返回旧值，原子性操作，可以用于分辨是不是首次操作）操作。<br>为了防止主机宕机或网络断开之后的死锁，Redis没有ZK那种天然的实现方式，只能依赖设置超时时间来规避。</p>
-<p>以下是一种比较普遍但不太完善的Redis分布式锁的实现步骤</p>
-<ul>
-<li>线程A发送SETNX lock.orderid 尝试获得锁，如果锁不存在，则set并获得锁。</li>
-<li>如果锁存在，则再判断锁的值（时间戳）是否大于当前时间，如果没有超时，则等待一下再重试。</li>
-<li>如果已经超时了，在用GETSET lock.{orderid} 来尝试获取锁，如果这时候拿到的时间戳仍旧超时，则说明已经获得锁了。</li>
-<li>如果在此之前，另一个线程C快一步执行了上面的操作，那么A拿到的时间戳是个未超时的值，这时A没有如期获得锁，需要再次等待或重试。</li>
-</ul>
-<h4 id="4-ZooKeeper的实现"><a href="#4-ZooKeeper的实现" class="headerlink" title="4.ZooKeeper的实现"></a>4.ZooKeeper的实现</h4><p>ZooKeeper（以下简称“ZK”）中有一种节点叫做顺序节点，假如我们在/lock/目录下创建3个节点，ZK集群会按照发起创建的顺序来创建节点，节点分别为/lock/0000000001、/lock/0000000002、/lock/0000000003。</p>
-<p>ZK中还有一种名为临时节点的节点，临时节点由某个客户端创建，当客户端与ZK集群断开连接，则该节点自动被删除。EPHEMERAL_SEQUENTIAL为临时顺序节点。</p>
-<p>根据ZK中节点是否存在，可以作为分布式锁的锁状态，以此来实现一个分布式锁，下面是分布式锁的基本逻辑：</p>
-<ul>
-<li>客户端调用create()方法创建名为“/dlm-locks/lockname/lock-”的临时顺序节点。</li>
-<li>客户端调用getChildren(“lockname”)方法来获取所有已经创建的子节点。</li>
-<li>客户端获取到所有子节点path之后，如果发现自己在步骤1中创建的节点是所有节点中序号最小的，那么就认为这个客户端获得了锁。</li>
-<li>如果创建的节点不是所有节点中需要最小的，那么则监视比自己创建节点的序列号小的最大的节点，进入等待。直到下次监视的子节点变更的时候，再进行子节点的获取，判断是否获取锁。</li>
-</ul>
-<p>参考：<br><a href="https://tech.meituan.com/distributed_system_mutually_exclusive_idempotence_cerberus_gtis.html" target="_blank" rel="noopener">分布式系统互斥性与幂等性问题的分析与解决</a><br><a href="https://www.jianshu.com/p/535efcab356d" target="_blank" rel="noopener">Java分布式锁三种实现方案</a></p>
-
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
 
   <nav id="pagination">
   
@@ -1080,7 +1019,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 13.33px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 16.67px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Travel/" style="font-size: 13.33px;">Travel</a> <a href="/tags/distributed/" style="font-size: 13.33px;">distributed</a> <a href="/tags/原/" style="font-size: 16.67px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.5px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 17.5px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Travel/" style="font-size: 12.5px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12.5px;">distributed</a> <a href="/tags/原/" style="font-size: 15px;">原</a>
   </div>
 </div>
 
@@ -1089,6 +1028,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/01/20/jvm-load-class/">JVM——虚拟机加载类机制</a>
+      </li>
+    
+      <li>
+        <a href="/2019/01/20/jvm-class-structure/">JVM——类文件结构</a>
+      </li>
     
       <li>
         <a href="/2019/01/19/jvm-tools/">JVM——虚拟机性能监控与故障处理工具</a>
@@ -1100,14 +1047,6 @@
     
       <li>
         <a href="/2019/01/17/jvm-gc/">JVM——垃圾收集器</a>
-      </li>
-    
-      <li>
-        <a href="/2018/10/20/spring-init/">从循环依赖探寻Spring IOC源码</a>
-      </li>
-    
-      <li>
-        <a href="/2018/10/20/redis-common/">Redis日常操作整理</a>
       </li>
     
   </ul>
