@@ -59,6 +59,140 @@
   <header>
     
       <div class="icon"></div>
+      <a href="/2019/01/24/single/">
+  <time datetime="2019-01-24T02:57:52.000Z">
+    2019-01-24
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2019/01/24/single/">Java单例模式多种实现及对比</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<p>单例模式算是设计模式中最容易理解，也是最容易手写代码的模式了吧。但是其中的坑却不少</p>
+<h2 id="懒汉式-线程不安全"><a href="#懒汉式-线程不安全" class="headerlink" title="懒汉式 线程不安全"></a>懒汉式 线程不安全</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">LazySingleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> LazySingleton instance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">LazySingleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> LazySingleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">            instance = <span class="keyword">new</span> LazySingleton();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用了懒加载模式，但是却存在致命的问题。当有多个线程并行调用 getInstance() 的时候，就会创建多个实例。也就是说在多线程下不能正常工作。</p>
+<h2 id="懒汉式-线程安全"><a href="#懒汉式-线程安全" class="headerlink" title="懒汉式 线程安全"></a>懒汉式 线程安全</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">LazySafeSingleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> LazySafeSingleton instance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">LazySafeSingleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> LazySafeSingleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123; <span class="comment">// synchronized lock threads</span></span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">            instance = <span class="keyword">new</span> LazySafeSingleton();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>虽然做到了线程安全，并且解决了多实例的问题，但是它并不高效。因为在任何时候只能有一个线程调用 getInstance() 方法</p>
+<h2 id="双重检验锁-Double-Check"><a href="#双重检验锁-Double-Check" class="headerlink" title="双重检验锁 Double Check"></a>双重检验锁 Double Check</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">LazyDoubleCheckSingleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> LazyDoubleCheckSingleton instance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">LazyDoubleCheckSingleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> LazyDoubleCheckSingleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123; <span class="comment">// single check</span></span><br><span class="line">            <span class="keyword">synchronized</span> (LazyDoubleCheckSingleton.class) &#123;</span><br><span class="line">                <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123; <span class="comment">// double check</span></span><br><span class="line">                    instance = <span class="keyword">new</span> LazyDoubleCheckSingleton();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>双重检验锁模式（double checked locking pattern），是一种使用同步块加锁的方法。程序员称其为双重检查锁，因为会有两次检查 instance == null，一次是在同步块外，一次是在同步块内。为什么在同步块内还要再检验一次？因为可能会有多个线程一起进入同步块外的 if，如果在同步块内不进行二次检验的话就会生成多个实例了。</p>
+<p>很可惜，它是有问题。主要在于instance = new Singleton()这句，这并非是一个原子操作，事实上在 JVM 中这句话大概做了下面 3 件事情:</p>
+<ul>
+<li>1.给 instance 分配内存</li>
+<li>2.调用 Singleton 的构造函数来初始化成员变量</li>
+<li>3.将instance对象指向分配的内存空间（执行完这步 instance 就为非 null 了）</li>
+</ul>
+<p>但是在 JVM 的即时编译器中存在指令重排序的优化。也就是说上面的第二步和第三步的顺序是不能保证的，最终的执行顺序可能是 1-2-3 也可能是 1-3-2。如果是后者，则在 3 执行完毕、2 未执行之前，被线程二抢占了，这时 instance 已经是非 null 了（但却没有初始化），所以线程二会直接返回 instance，然后使用，然后顺理成章地报错。</p>
+<p>将 instance 变量声明成 volatile 就可以了<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">LazyDoubleCheckFinalSingleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> LazyDoubleCheckFinalSingleton instance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">LazyDoubleCheckFinalSingleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> LazyDoubleCheckFinalSingleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123; <span class="comment">// single check</span></span><br><span class="line">            <span class="keyword">synchronized</span> (LazyDoubleCheckFinalSingleton.class) &#123;</span><br><span class="line">                <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123; <span class="comment">// double check</span></span><br><span class="line">                    instance = <span class="keyword">new</span> LazyDoubleCheckFinalSingleton();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>使用 volatile 的主要原因是其另一个特性：禁止指令重排序优化。也就是说，在 volatile 变量的赋值操作后面会有一个内存屏障（生成的汇编代码上），读操作不会被重排序到内存屏障之前。比如上面的例子，取操作必须在执行完 1-2-3 之后或者 1-3-2 之后，不存在执行到 1-3 然后取到值的情况。从「先行发生原则」的角度理解的话，就是对于一个 volatile 变量的写操作都先行发生于后面对这个变量的读操作</p>
+<h2 id="饿汉式"><a href="#饿汉式" class="headerlink" title="饿汉式"></a>饿汉式</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">HungrySingleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> HungrySingleton instance = <span class="keyword">new</span> HungrySingleton();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">HungrySingleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> HungrySingleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为单例的实例被声明成 static 和 final 变量了，在第一次加载类到内存中时就会初始化，所以创建实例本身是线程安全的。</p>
+<p>缺点是它不是一种懒加载模式（lazy initialization），单例会在加载类后一开始就被初始化，即使客户端没有调用 getInstance()方法。饿汉式的创建方式在一些场景中将无法使用：譬如 Singleton 实例的创建是依赖参数或者配置文件的，在 getInstance() 之前必须调用某个方法设置参数给它，那样这种单例写法就无法使用了。</p>
+<h2 id="静态内部类"><a href="#静态内部类" class="headerlink" title="静态内部类"></a>静态内部类</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">StaticNestedSingleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">SingletonHolder</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> StaticNestedSingleton INSTANCE = <span class="keyword">new</span> StaticNestedSingleton();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">StaticNestedSingleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> StaticNestedSingleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> SingletonHolder.INSTANCE;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这种写法仍然使用JVM本身机制保证了线程安全问题；由于 SingletonHolder 是私有的，除了 getInstance() 之外没有办法访问它，因此它是懒汉式的；同时读取实例的时候不会进行同步，没有性能缺陷；也不依赖 JDK 版本。</p>
+<h2 id="枚举"><a href="#枚举" class="headerlink" title="枚举"></a>枚举</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">enum</span> EasySingleton &#123;</span><br><span class="line">    INSTANCE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>很多人会对枚举法实现的单例模式很不理解。这里需要深入理解的是两个点：</p>
+<ul>
+<li>枚举类实现其实省略了private类型的构造函数</li>
+<li>枚举类的域(field)其实是相应的enum类型的一个实例对象</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">interface</span> <span class="title">ISingleton</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">enum</span> EasySingleton implements ISingleton &#123;</span><br><span class="line">    INSTANCE &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="comment">// do something</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ISingleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> EasySingleton.INSTANCE;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2019/01/23/jvm-memory-model/">
+  <time datetime="2019-01-23T06:07:05.000Z">
+    2019-01-23
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2019/01/23/jvm-memory-model/">JVM——内存模型与线程</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<p>衡量一个服务的性能高低好坏，美妙的事务处理数（Transactions Per Second, TPS）是最重要的指标之一，TPS值与程序的并发能力又有非常密切的关系。</p>
+<p>为什么需要定义内存模型？<br>屏蔽掉各种硬件和操作系统的内存访问差异，已实现让Java程序在各个平台下都能达到一致的内存访问效果。<br>在此之前之列的程序语言（如C/C++）都直接使用物理硬件和操作系统的内存模型，因此，会由于不同平台上的内存模型的差异，有可能导致程序在一套平台上并发完全正常，而在另外一套平台上并发访问经常出错。</p>
+<h2 id="主内存与工作内存"><a href="#主内存与工作内存" class="headerlink" title="主内存与工作内存"></a>主内存与工作内存</h2><p>Java内存模型主要目标是定义程序中各个变量的访问规则，即虚拟机中将变量存储到内存和从内存中取出变量这样的底层细节。</p>
+<p>Java内存模型规定了所有的变量都存储在主内存（Main Memory）中。每条内存还有自己的工作内存，保存了该线程使用到的变量的主内存副本拷贝，线程对变量的所有操作必须在自己的工作内存中进行，而不能直接读写主内存的变量。</p>
+<p>不同线程之间无法直接访问对方工作内存中的变量，线程间变量值的传递均需要通过主内存来完成。<br>线程、主内存、工作内存三者的交互如下：<br><img src="https://cdn.nlark.com/yuque/0/2018/png/155206/1541065286017-9b9c7304-4b83-4fb2-92c4-7d245416b511.png" alt=""></p>
+<h2 id="内存之间的交互操作"><a href="#内存之间的交互操作" class="headerlink" title="内存之间的交互操作"></a>内存之间的交互操作</h2><p>即变量如何从主内存拷贝到工作内存、如何从工作内存同步回主内存之类的实现细节，Java内存模型中定义8中操作完成，每种操作必须是原子的、不可再分的</p>
+<ul>
+<li>lock（锁定）：作用于主内存变量，吧一个变量标识为一个线程独占</li>
+<li>unlock（解锁）：做用户主内存，解锁变量，才能被其它线程锁定使用</li>
+<li>read（读取）：将主内存的变量传输到工作内存中，以便随后的load动作使用</li>
+<li>load（载入）：作用于工作内存变量，他把read操作从主内存中得到的值放入工作内存的变量副本中</li>
+<li>user（使用）：作用于工作内存变量，把工作内存中的一个变量值传递给执行引擎，每当虚拟机遇到一个需要使用变量值的字节码指令时将会执行这个操作</li>
+<li>assign（赋值）：作用于工作内存变量，把工作内存中一个变量的值传递给主内存中，一遍随后操作使用</li>
+<li>store（存储）：作用于工作变量，把工作变量的值传送到主内存中，一遍随后的write操作</li>
+<li>write（写入）：作用于主内存变量，把store操作从工作内存中得到的变量的值放入主内存中</li>
+</ul>
+<p>其中，read &amp; load、store &amp; write操作必须捆绑出现，且最终顺序一致</p>
+<h2 id="Volatile型变量的特殊规则"><a href="#Volatile型变量的特殊规则" class="headerlink" title="Volatile型变量的特殊规则"></a>Volatile型变量的特殊规则</h2><p>当一个变量定义为volatile之后，他将具备两种特性</p>
+<ul>
+<li>保证此变量对所有线程可见性，指当一条线程修改了这个变量的值，新值对于其他的线程来说是立即可知的。（Java里面的运算并不是原子的，如过在运算过程hold，那么GG了，出现缓存不一致的多线程脏数据问题了）</li>
+<li>禁止指令重排序：内存屏障(Memory Barrier），</li>
+</ul>
+<h2 id="指令重排"><a href="#指令重排" class="headerlink" title="指令重排"></a>指令重排</h2><p>计算机在执行程序时，为了提高性能，编译器和处理器的常常会对指令做重排，一般分以下3种</p>
+<ul>
+<li>编译器优化的重排：编译器在不改变单线程程序语义的前提下，可以重新安排语句的执行顺序。</li>
+<li>指令并行的重排：现代处理器采用了指令级并行技术来将多条指令重叠执行。如果不存在数据依赖性(即后一个执行的语句无需依赖前面执行的语句的结果)，处理器可以改变语句对应的机器指令的执行顺序</li>
+<li>内存系统的重排：由于处理器使用缓存和读写缓存冲区，这使得加载(load)和存储(store)操作看上去可能是在乱序执行，因为三级缓存的存在，导致内存与缓存的数据同步存在时间差。</li>
+</ul>
+<p>其中编译器优化的重排属于编译期重排，指令并行的重排和内存系统的重排属于处理器重排，在多线程环境中，这些重排优化可能会导致程序出现内存可见性问题，下面分别阐明这两种重排优化可能带来的问题</p>
+<h3 id="1）编译器重排"><a href="#1）编译器重排" class="headerlink" title="1）编译器重排"></a>1）编译器重排</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">线程 <span class="number">1</span>             线程 <span class="number">2</span></span><br><span class="line"><span class="number">1</span>： x2 = a ;      <span class="number">3</span>: x1 = b ;</span><br><span class="line"><span class="number">2</span>: b = <span class="number">1</span>;         <span class="number">4</span>: a = <span class="number">2</span> ;</span><br></pre></td></tr></table></figure>
+<p>两个线程同时执行，分别有1、2、3、4四段执行代码，其中1、2属于线程1 ， 3、4属于线程2 ，从程序的执行顺序上看，似乎不太可能出现x1 = 1 和x2 = 2 的情况，但实际上这种情况是有可能发现的，因为如果编译器对这段程序代码执行重排优化后，可能出现下列情况<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">线程 <span class="number">1</span>              线程 <span class="number">2</span></span><br><span class="line"><span class="number">2</span>: b = <span class="number">1</span>;          <span class="number">4</span>: a = <span class="number">2</span> ; </span><br><span class="line"><span class="number">1</span>：x2 = a ;        <span class="number">3</span>: x1 = b ;</span><br></pre></td></tr></table></figure></p>
+<p>这种执行顺序下就有可能出现x1 = 1 和x2 = 2 的情况，这也就说明在<strong>多线程环境</strong>下，由于编译器优化重排的存在，两个线程中使用的变量能否保证一致性是无法确定的。</p>
+<h3 id="2）处理器指令重排"><a href="#2）处理器指令重排" class="headerlink" title="2）处理器指令重排"></a>2）处理器指令重排</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MixedOrder</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">boolean</span> flag = <span class="keyword">false</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writer</span><span class="params">()</span></span>&#123;</span><br><span class="line">        a = <span class="number">1</span>;</span><br><span class="line">        flag = <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">read</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(flag)&#123;</span><br><span class="line">            <span class="keyword">int</span> i = a + <span class="number">1</span>；</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如上述代码，同时存在线程A和线程B对该实例对象进行操作，其中A线程调用写入方法，而B线程调用读取方法，由于指令重排等原因，可能导致程序执行顺序变为如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">线程A                    线程B</span><br><span class="line"> writer：                 read：</span><br><span class="line"> <span class="number">1</span>:flag = <span class="keyword">true</span>;           <span class="number">1</span>:flag = <span class="keyword">true</span>;</span><br><span class="line"> <span class="number">2</span>:a = <span class="number">1</span>;                 <span class="number">2</span>: a = <span class="number">0</span> ; <span class="comment">//误读</span></span><br><span class="line">                          <span class="number">3</span>: i = <span class="number">1</span> ;</span><br></pre></td></tr></table></figure></p>
+<p>由于指令重排的原因，线程A的flag置为true被提前执行了，而a赋值为1的程序还未执行完，此时线程B，恰好读取flag的值为true，直接获取a的值（此时B线程并不知道a为0）并执行i赋值操作，结果i的值为1，而不是预期的2，这就是多线程环境下，指令重排导致的程序乱序执行的结果。因此，请记住，指令重排只会保证单线程中串行语义的执行的一致性，但并不会关心多线程间的语义一致性。</p>
+
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
       <a href="/2019/01/22/jvm-bytecode-engine/">
   <time datetime="2019-01-22T12:14:33.000Z">
     2019-01-22
@@ -869,132 +1003,6 @@
 
 
   
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2018/09/30/travel-to-xn/">
-  <time datetime="2018-09-30T06:10:19.000Z">
-    2018-09-30
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2018/09/30/travel-to-xn/">十一游青海</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <blockquote>
-<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
-</blockquote>
-<h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><ul>
-<li>防晒，高原紫外线很毒</li>
-<li>唇膏，好像会开裂 真恶心啊~</li>
-<li>衣服准备好，10月份西宁气温3~14℃，感觉得带个羽绒服或者棉衣，稳</li>
-<li>围巾 老年人必备系列</li>
-<li>现金，不知西宁那边在线支付啥情况，以防万一</li>
-<li>寺庙或者僧侣避免拍照片，被打了怎么办，小命要紧</li>
-<li>高原反应，我觉得应该没啥问题T_T</li>
-</ul>
-<h2 id="交通"><a href="#交通" class="headerlink" title="交通"></a>交通</h2><h3 id="1-机场去市区"><a href="#1-机场去市区" class="headerlink" title="1.机场去市区"></a>1.机场去市区</h3><ul>
-<li>打车，30~40分钟，价格100+<br><img src="/images/taxi.jpeg" alt=""></li>
-<li>公交，首推机场大巴 差不多1个小时 价格21元<br><img src="/images/gj.jpeg" alt=""><br><img src="/images/gj-xx.jpeg" alt=""></li>
-</ul>
-<h2 id="游玩路线"><a href="#游玩路线" class="headerlink" title="游玩路线"></a>游玩路线</h2><h3 id="10月1日晚-神旺酒店附近"><a href="#10月1日晚-神旺酒店附近" class="headerlink" title="10月1日晚 神旺酒店附近"></a>10月1日晚 神旺酒店附近</h3><p>打开大众点评随便找点排行高的当地小吃，回来再更新</p>
-<h3 id="10月2日-西宁市区"><a href="#10月2日-西宁市区" class="headerlink" title="10月2日 西宁市区"></a>10月2日 西宁市区</h3><h4 id="0-塔尔寺-（70元门票-人）"><a href="#0-塔尔寺-（70元门票-人）" class="headerlink" title="0.塔尔寺 （70元门票/人）"></a>0.塔尔寺 （70元门票/人）</h4><ul>
-<li>简介<br>塔尔寺位于西宁湟中县，已有400多年历史，是藏传佛教格鲁派（黄教）最重要的寺院之一，还是黄教创始人宗喀巴大师的诞生地。寺院建筑恢宏、珍宝丰富，又能感受到浓郁的宗教氛围，是西宁最受欢迎的旅游目的地之一。<br><img src="/images/xn_tes.jpg" alt=""></li>
-<li>注意事项<br>寺内，转塔、转经筒都是顺时针的<br>塔尔寺内，只要是在经院内、大殿内，都不许拍照</li>
-<li>路线 （神旺酒店出发 -&gt; 塔尔寺）<br>打车 （30~40分钟）<br><img src="/images/s2t_taxi.jpeg" alt=""><br>公交车 （1个小时多一点儿）<br><img src="/images/s2t_gj.jpeg" alt=""><br><img src="/images/s2t_gj_xx.jpeg" alt=""></li>
-</ul>
-<h4 id="1-青海省博物馆（免费，需身份证换票）-这个作为备选，感觉很无聊"><a href="#1-青海省博物馆（免费，需身份证换票）-这个作为备选，感觉很无聊" class="headerlink" title="1.青海省博物馆（免费，需身份证换票）(这个作为备选，感觉很无聊~)"></a>1.青海省博物馆（免费，需身份证换票）(这个作为备选，感觉很无聊~)</h4><p>青海文化的代表作，分别是藏传佛教、青海现代科技发展和（新时代核心价值观下）民族团结、非遗文化、历代文物。唐卡记录了游牧民族的生活信仰。总之挺有青海省特色的，不要尝试和别的省博物馆做比较。</p>
-<h4 id="2-美食之旅"><a href="#2-美食之旅" class="headerlink" title="2.美食之旅"></a>2.美食之旅</h4><p>这一天剩下的行程就是去找吃的 哈哈哈！<br>吃什么详见最下面的美食区罗列</p>
-<h3 id="10月3日-未知结束日期-真景区游玩"><a href="#10月3日-未知结束日期-真景区游玩" class="headerlink" title="10月3日~未知结束日期 真景区游玩"></a>10月3日~未知结束日期 真景区游玩</h3><p>暂时还未想好是包车跟团还是自由行，看状态啦<br>先罗列出几个觉得可取的地点</p>
-<h4 id="0-青海湖"><a href="#0-青海湖" class="headerlink" title="0.青海湖"></a>0.青海湖</h4><p><img src="/images/xn_qhh.png" alt=""><br>青海湖去骑行就好了 交通不是很便利</p>
-<h4 id="1-茶卡盐湖"><a href="#1-茶卡盐湖" class="headerlink" title="1.茶卡盐湖"></a>1.茶卡盐湖</h4><p><img src="/images/xn_ckyh.jpeg" alt=""></p>
-<h4 id="2-祁连"><a href="#2-祁连" class="headerlink" title="2.祁连"></a>2.祁连</h4><p><img src="/images/xn_ql.jpeg" alt=""></p>
-<h4 id="3-张掖七彩丹霞"><a href="#3-张掖七彩丹霞" class="headerlink" title="3.张掖七彩丹霞"></a>3.张掖七彩丹霞</h4><p><img src="/images/xn_qcdx.jpeg" alt=""><br>这个地方感觉是经典</p>
-<h2 id="美食"><a href="#美食" class="headerlink" title="美食"></a>美食</h2><p>我一直觉得旅游不应该玩，应先吃，吃为主，玩为辅，稳得很~~</p>
-<h3 id="1-羊肉"><a href="#1-羊肉" class="headerlink" title="1.羊肉"></a>1.羊肉</h3><p>青海的羊肉名气不如新疆、内蒙，但味道是可以比肩他们甚至是超越的<br>地点：<br>1.白玉巷的“肉香不怕巷子深”（不是烤羊肉，而是手抓羊肉 味道五颗星！！！）<br>2.益鑫手抓羊肉<br><img src="/images/xn_yr.jpg" alt=""></p>
-<h3 id="2-酿皮"><a href="#2-酿皮" class="headerlink" title="2.酿皮"></a>2.酿皮</h3><p>和凉皮很像<br>地点：生莲酿皮（全市很多家店，百度吧）<br><img src="/images/xn_np.jpeg" alt=""></p>
-<h3 id="3-羊肠面（早餐）"><a href="#3-羊肠面（早餐）" class="headerlink" title="3.羊肠面（早餐）"></a>3.羊肠面（早餐）</h3><p>只有早上才营业<br>地点：尕晋娃（五星推荐），虎台店或者小桥店<br><img src="/images/xn_ycm.jpg" alt=""></p>
-<h3 id="4-羊、牛杂碎（早餐）"><a href="#4-羊、牛杂碎（早餐）" class="headerlink" title="4.羊、牛杂碎（早餐）"></a>4.羊、牛杂碎（早餐）</h3><p>只有早上营业，不同于南方的牛杂清汤，这里的做法放了胡椒面等，别具风格<br>地点：<br>1.脂肪街的马而沙牛杂<br>2.南川西路砖厂路口，六一继业羊杂碎</p>
-<h3 id="5-炕羊排"><a href="#5-炕羊排" class="headerlink" title="5.炕羊排"></a>5.炕羊排</h3><p>青海西宁，羊肉当然是最好的选择，现在市面的羊肉摊良莠不齐，味道差异之大如同天壤<br>地点：交通巷北口眼镜炕羊排（交通巷北口往里50米，街道东侧）<br><img src="/images/xn_kyp.jpg" alt=""></p>
-<h3 id="6-酸奶"><a href="#6-酸奶" class="headerlink" title="6.酸奶"></a>6.酸奶</h3><p>外地人都很喜欢喝<br>地点：德禄<br><img src="/images/xn_sn.jpg" alt=""></p>
-<h3 id="7-甜醅"><a href="#7-甜醅" class="headerlink" title="7.甜醅"></a>7.甜醅</h3><p>青海特色！！！很好喝，一定要喝的<br>地点：德禄</p>
-
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2018/09/11/travel-step-20181001/">
-  <time datetime="2018-09-11T12:21:01.000Z">
-    2018-09-11
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2018/09/11/travel-step-20181001/">国庆旅游攻略规划</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <blockquote>
-<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
-</blockquote>
-<h2 id="出游选择"><a href="#出游选择" class="headerlink" title="出游选择"></a>出游选择</h2><p>国庆高峰，不能瞎选，筛选目标如下：</p>
-<ul>
-<li>人少点</li>
-<li>适合国庆玩的地方</li>
-<li>景色没点，吃的当然要多点（吃为主，玩为辅）</li>
-<li>适合两个人</li>
-<li>距离当前位置远一点</li>
-</ul>
-<h2 id="备选地点：稻城亚丁"><a href="#备选地点：稻城亚丁" class="headerlink" title="备选地点：稻城亚丁"></a>备选地点：稻城亚丁</h2><h3 id="1-简介"><a href="#1-简介" class="headerlink" title="1.简介"></a>1.简介</h3><p>说在青藏高原雪山深处的一个隐秘地方，有一个被双层雪山环抱王国，那里有雪山、冰川、峡谷、森林、草甸、湖泊、金矿及纯净的空气，这个王国就是香巴拉王国，被称为水蓝色的星球上的最后一片净土，也就是今天的稻城亚丁。在稻城亚丁，极目远跳，天地浩瀚无垠，乱石铺天盖地，憾人心魄，1145个高山湖泊散落于嶙峋乱石间，碧蓝如玉，景色极为壮观，因而稻城亚丁被誉为最后的香巴拉。（马蜂窝拷贝来的，姑且认为真实度五五开~）</p>
-<h3 id="2-最佳旅行时间"><a href="#2-最佳旅行时间" class="headerlink" title="2.最佳旅行时间"></a>2.最佳旅行时间</h3><p>春夏秋最佳，冬季气候较为恶劣</p>
-<h3 id="3-欣赏一下"><a href="#3-欣赏一下" class="headerlink" title="3.欣赏一下"></a>3.欣赏一下</h3><p><img src="/images/travel_1.jpeg" alt=""><br><img src="/images/travel_2.jpeg" alt=""><br><img src="/images/travel_3.jpeg" alt=""></p>
-<h3 id="4-如何去"><a href="#4-如何去" class="headerlink" title="4.如何去"></a>4.如何去</h3><p>跟团啦，这么远而且是高原，万一有个啥高原反应就很头疼了，此处在马蜂窝看的套餐，可参考如下：</p>
-<h4 id="4-1-参考行程"><a href="#4-1-参考行程" class="headerlink" title="4.1.参考行程"></a>4.1.参考行程</h4><ul>
-<li>第1天 成都市-四姑娘山-丹巴县(目的地海拔1800m)<br>成都98km卧龙自然保护区60km巴郎山47km日隆镇143km甲居藏寨<br>途经：映秀地震遗址(车观)、卧龙自然保护区(沿途欣赏巴郎山高原草甸)、巴郎山(天气好有机会看见巴郎山云海漫漫)、(到达日隆镇游玩)四姑娘山双桥沟，当天住在甲居藏寨。<br>1.早上7点半成都市内赠送住宿地点集合出发，沿途成都平原风光。<br>2.四姑娘山双桥沟：建议游玩时间3个小时，双桥沟门票80+观光车80。<br>3.备注：天气好可以早巴郎山猫壁梁观四姑娘山全景。<br>4.甲居藏寨：晚上入住甲居藏寨，次日早起自由活动甲居藏寨参观。<br>住宿：丹巴甲居藏寨或金河大酒店或同级—早/午/晚餐敬请自理<br><img src="/images/travel_4_1.jpeg" alt=""></li>
-<li>第2天 丹巴–亚丁香格里拉镇(目的地海拔2600m)<br>丹巴110km八美镇55km新都桥173km理塘95km稻城海子山109km亚丁香格里拉镇<br>1.八美：沿途游玩/观赏/参观(莲花宝地/惠远寺，八美土林+远眺雅拉雪山)。<br>2.塔公草原/塔公寺：位于四川康定县城西北部113公里处，海拔3730m，建议游玩时间90分钟，景点无门票，塔公寺20￥；<br>3.新都桥：川藏线经典沿途风光,游玩方式自定,好的风光集中在早上和上午或下午以及黄昏…。<br>4.海子山：共有1145个大小湖泊,其规模在中国是很大的,因高山湖泊藏族又叫海子,所以得名海子山。<br>5.川藏南线风光;沿途风景根据不同的天气实时更新…主要集中在早上和上午或下午以及黄昏…。<br>住宿：贡嘎酒店或同级—早/午/晚餐敬请自理<br><img src="/images/travel_4_2.jpeg" alt=""></li>
-<li>第3天 亚丁景区一日游住香格里拉镇(目的地海拔2600m)<br>早起，直接进入亚丁景区接待中心，购买亚丁景区门票、观光车票，进入景区，当日全天游玩亚丁风景区。<br>►亚丁风景名胜区：位于稻城县日瓦乡,海拔3500m～4000m;建议在景区游览8个小时。<br>►稻城亚丁，被誉为“人间最后的净土”，一路上都是最为原始的景色。在这里不可错过的景色：仙乃日雪山、央迈永雪山、夏诺多吉雪山、珍珠海、牛奶海、五色海;<br>►亚丁景点门票150￥+观光车120￥+景区电瓶车上行80/下行40+亚丁景区骑马150￥以上<br>►►►亚丁风景区游玩方式：<br>1、购买门票后乘景区环保车到亚丁村;<br>2、徒步20分钟到亚丁冲古寺;<br>3、乘上行电瓶车约30分钟到三座雪山的中央(洛绒牛场);<br>4、休整40分钟，感觉自己适应高海拔地区后可以继续往牛奶海和五色海游玩(海拔4700米)，请及时返回…<br>住宿：贡嘎酒店/扎西旅游酒店或同级—午/晚餐敬请自理<br><img src="/images/travel_4_3.jpeg" alt=""></li>
-<li>第4天 稻城日瓦乡–新都桥(目的地海拔3300m)<br>日瓦乡→76km稻城县→180km理塘县→135km雅江县→79km新都桥/康定城<br>►稻城风光：位于稻城县境内，平均海拔3600m，在公路两旁长达100km的季节性景点，风景优美的免费景点；<br>►理塘长青春科尔寺：地址位于世界高城理塘县0km，建议参观时间90分钟，中国康巴藏族地区的黄教寺庙，门票免费；<br>温馨提示：如果旅游者有高山反应，当日目的地住宿可以灵活调整到康定城/海拔2760m。<br>住宿：新都桥大观景酒店或同级—午/晚餐敬请自理<br><img src="/images/travel_4_4.jpeg" alt=""></li>
-<li>第5天 新都桥–成都市(目的地海拔500m)<br>新都桥→78km康定→40km红石公园→89km石棉县→266km成都市<br>主要靓点：新都桥风光、折多山、康定溜溜的城、红石公园;<br>►新都桥：川藏线经典沿途风光,游玩方式自定,好的风光集中在上午;<br>►四川红石滩：位于磨西镇,距离海螺沟20km/康定76km,海拔2000m上；建议游玩时间90分钟,景点门票60￥;<br>►►►温馨提示：建议早上06点半出发,沿途风景集中在上午,石棉到成都全程高速,抵达成都正常时间约17点;<br>红石公园如遇修路或其它原因受到交通管制则改道走泸定方向到当天目的地。<br>►►►最后一天返回成都市内参考时间是下午16点-19点之间，请合理安排您的日程（如当天有班机返回，请定21点后成都起飞的航班或列车，机场属于当天返回成都顺路方向，可以直接送到机场..）。<br>►成都市内(返回当天住宿自理)—午/晚餐敬请自理<br>请在行程最后1天中午前通过网评对我们这次的旅行提出您的宝贵意见…便于我们对后面的旅行工作做得越来越好<br><img src="/images/travel_4_5.jpeg" alt=""></li>
-</ul>
-<h4 id="4-2-价格感人"><a href="#4-2-价格感人" class="headerlink" title="4.2.价格感人"></a>4.2.价格感人</h4><p>国庆感人价格，出去就是被砍的 gay的很~<br><img src="/images/travel_5_1.png" alt=""></p>
-
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
 
   <nav id="pagination">
   
@@ -1025,6 +1033,14 @@
   <ul class="entry">
     
       <li>
+        <a href="/2019/01/24/single/">Java单例模式多种实现及对比</a>
+      </li>
+    
+      <li>
+        <a href="/2019/01/23/jvm-memory-model/">JVM——内存模型与线程</a>
+      </li>
+    
+      <li>
         <a href="/2019/01/22/jvm-bytecode-engine/">JVM——虚拟机字节码执行引擎</a>
       </li>
     
@@ -1034,14 +1050,6 @@
     
       <li>
         <a href="/2019/01/20/jvm-class-structure/">JVM——类文件结构</a>
-      </li>
-    
-      <li>
-        <a href="/2019/01/19/jvm-tools/">JVM——虚拟机性能监控与故障处理工具</a>
-      </li>
-    
-      <li>
-        <a href="/2019/01/19/jvm-distribute-recycle/">JVM——内存分配与回收策略</a>
       </li>
     
   </ul>
