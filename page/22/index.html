@@ -4,29 +4,22 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>HashMap剖析 | 无知是天堂</title>
+  <title>无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
   
   
-    <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371
-
-大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题
-1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输">
-  
-  <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输">
-<meta name="keywords" content="Java">
-<meta property="og:type" content="article">
-<meta property="og:title" content="HashMap剖析">
-<meta property="og:url" content="http://yoursite.com/2018/08/20/HashMap/index.html">
+  <meta name="description" content="JAVA Blog">
+<meta property="og:type" content="website">
+<meta property="og:title" content="无知是天堂">
+<meta property="og:url" content="http://yoursite.com/page/22/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输">
+<meta property="og:description" content="JAVA Blog">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-10-22T06:10:55.382Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="HashMap剖析">
-<meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  大纲1.HashMap的实现原理2.HashMap是如何解决hash冲突的问题 1.HashMap的实现原理1.1.哈希Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输">
+<meta name="twitter:title" content="无知是天堂">
+<meta name="twitter:description" content="JAVA Blog">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -56,7 +49,13 @@
   </nav>
   <div class="clearfix"></div>
 </header>
-    <div class="content"><article class="post">
+    <div class="content">
+
+
+
+
+  
+    <article class="post">
   <header>
     
       <div class="icon"></div>
@@ -68,7 +67,7 @@
     
     
   
-    <h1 class="title">HashMap剖析</h1>
+    <h1 class="title"><a href="/2018/08/20/HashMap/">HashMap剖析</a></h1>
   
 
   </header>
@@ -98,19 +97,27 @@
 
     
   </div>
-  <footer>
+  <footer class="end-sep">
     
       
-      
-  <div class="tags">
-    <a class="tags-link" href="/tags/Java/">Java</a>
-  </div>
-
       
     
     <div class="clearfix"></div>
   </footer>
 </article>
+
+
+  
+
+  <nav id="pagination">
+  
+    <a href="/page/21/" class="prev">Prev</a>
+  
+  
+    <a href="/page/23/" class="next">Next</a>
+  
+  <div class="clearfix"></div>
+</nav>
 
 </div>
   </div>
