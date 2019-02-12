@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/01/16/jvm-memory-and-overflow-exception/">
-  <time datetime="2019-01-16T06:18:22.000Z">
-    2019-01-16
+      <a href="/2019/01/17/jvm-gc/">
+  <time datetime="2019-01-17T06:18:22.000Z">
+    2019-01-17
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/01/16/jvm-memory-and-overflow-exception/">JVM——内存区域与内存溢出异常</a></h1>
+    <h1 class="title"><a href="/2019/01/17/jvm-gc/">JVM——垃圾收集器</a></h1>
   
 
   </header>
@@ -77,74 +77,128 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<h2 id="运行时数据区"><a href="#运行时数据区" class="headerlink" title="运行时数据区"></a>运行时数据区</h2><p><img src="https://cdn.nlark.com/yuque/0/2018/png/155206/1537513446564-0e16fc60-18f3-4c11-bd57-6874fae3393c.png" alt=""></p>
-<h3 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a>程序计数器</h3><p>程序计数器（Program Counter Register）</p>
+<h3 id="1-1对象已死么？"><a href="#1-1对象已死么？" class="headerlink" title="1.1对象已死么？"></a>1.1对象已死么？</h3><p>堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“</p>
+<h4 id="1-1-1引用计数法"><a href="#1-1-1引用计数法" class="headerlink" title="1.1.1引用计数法"></a>1.1.1引用计数法</h4><p>给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的<br>缺点：</p>
 <ul>
-<li>作用 记录当前线程所执行到的字节码的行号。字节码解释器工作的时候就是通过改变这个计数器的值来选取下一条需要执行的字节码指令。</li>
-<li>意义 JVM的多线程是通过线程轮流切换并分配处理器来实现的，对于我们来说的并行事实上一个处理器也只会执行一条线程中的指令。所以，为了保证各线程指令的安全顺利执行，每条线程都有独立的私有的程序计数器。</li>
-<li>存储内容 当线程中执行的是一个Java方法时，程序计数器中记录的是正在执行的线程的虚拟机字节码指令的地址。 当线程中执行的是一个本地方法时，程序计数器中的值为空。</li>
-<li>可能出现异常 此内存区域是唯一一个在JVM上不会发生内存溢出异常（OutOfMemoryError）的区域。</li>
+<li>循环引用无法回收</li>
 </ul>
-<h3 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a>虚拟机栈</h3><p>Java虚拟机栈（Java Virtual Machine Stack）</p>
+<h4 id="1-1-2可达性分析法（主流实现）"><a href="#1-1-2可达性分析法（主流实现）" class="headerlink" title="1.1.2可达性分析法（主流实现）"></a>1.1.2可达性分析法（主流实现）</h4><p>通过一系列称为”GC ROOTs“的对象作为起始点，向下搜索，但一个对象到GC Roots没有任何引用链相连，则证明对象不可用</p>
+<p>包括：</p>
 <ul>
-<li>作用 描述Java方法执行的内存模型。每个方法在执行的同时都会开辟一段内存区域用于存放方法运行时所需的数据，成为栈帧，一个栈帧包含如：局部变量表、操作数栈、动态链接、方法出口等信息。</li>
-<li>意义 JVM是基于栈的，所以每个方法从调用到执行结束，就对应着一个栈帧在虚拟机栈中入栈和出栈的整个过程。</li>
-<li>存储内容 局部变量表（编译期可知的各种基本数据类型、引用类型和指向一条字节码指令的returnAddress类型）、操作数栈、动态链接、方法出口等信息。 值得注意的是：局部变量表所需的内存空间在编译期间完成分配。在方法运行的阶段是不会改变局部变量表的大小的。</li>
-<li>可能出现的异常 如果线程请求的栈深度大于虚拟机所允许的深度，将抛出StackOverflowError异常。 如果在动态扩展内存的时候无法申请到足够的内存，就会抛出OutOfMemoryError异常。</li>
+<li>虚拟机栈（栈针中的本地变量表）中引用的对象</li>
+<li>方法区中类静态属性引用的对象</li>
+<li>方法区中常亮引用的对象</li>
+<li>本地方法栈中JNI（即Na</li>
 </ul>
-<h3 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a>本地方法栈</h3><p>本地方法栈（Native Method Stack）</p>
+<h4 id="1-1-3-对象引用"><a href="#1-1-3-对象引用" class="headerlink" title="1.1.3 对象引用"></a>1.1.3 对象引用</h4><p>定义：如果reference类型中存储的数值代表的是另外一块内存地址，就成这块内存代表一个引用。</p>
+<p>jdk1.2后，引用概念得到补充</p>
 <ul>
-<li>作用 为JVM所调用到的Nativa即本地方法服务。</li>
-<li>可能出现的异常 和虚拟机栈出现的异常很相像。</li>
+<li>强引用，如Object o = new Object()。垃圾收集器永远不会回收。</li>
+<li>软引用，还有用，但是非必须的对象。在系统将要发生内存溢出异常之前，将会把这些对象列进回收范围之中进行二次回收。若这次回收还是没有足够的内存，才会抛出异常。</li>
+<li>弱引用，非必须对象，比软引用强度再弱一些，只能生存到下次来及收集发生之前。</li>
+<li>虚引用，为一个对象设置虚引用关联的唯一目的是能在这个对象呗收集器回收时收到一个系统通知</li>
 </ul>
-<h3 id="Java堆"><a href="#Java堆" class="headerlink" title="Java堆"></a>Java堆</h3><p>Java堆（Java Heap）</p>
+<h4 id="1-1-4生存还是死亡"><a href="#1-1-4生存还是死亡" class="headerlink" title="1.1.4生存还是死亡"></a>1.1.4生存还是死亡</h4><p>即使在可达性分析法总不可达对象，也并非”非死不可“。暂处”缓刑“阶段。<br>真正宣告一个对象死亡，只是要经历两次标记过程：</p>
 <ul>
-<li>作用 所有线程共享一块内存区域，在虚拟机开启的时候创建。</li>
-<li>意义 1、存储对象实例，更好地分配内存。 2、垃圾回收（GC）。堆是垃圾收集器管理的主要区域。更好地回收内存。 <ul>
-<li>存储内容<br>  存放对象实例，几乎所有的对象实例都在这里进行分配。堆可以处于物理上不连续的内存空间，只要逻辑上是连续的就可以。<br>  值得注意的是：在JIT编译器等技术的发展下，所有对象都在堆上进行分配已变得不那么绝对。有些对象实例也可以分配在栈中。</li>
+<li>第一次筛选没有与GC Roots相关联的引用链，将被标记并且进行一次筛选，筛选条件是此对象是否有必要执行finalize()方法。当对象没有覆盖finalize()方法，或者finalize()方法已经被虚拟机调用过，则”没有必要执行“。</li>
+<li>若需要执行finalize()方法，则将这个对象放置在F-Queue队列中，稍后由虚拟机自动建立、低优先级的Finalizer线程去执行它。（不去关心他的运行结果，防止卡死队列任务）</li>
+<li>finalize()方法是对象逃脱死亡的最后一次机会，稍后GC将对F-Queue中的对象进行第二次小规模的标记，如果对象要在finalize()中成功拯救自己——只需重新与引用链上的任何对象建立联系即可，第二次标记是将会被移出队列</li>
+<li>如果对象这时还未成功逃脱，则基本回收了。</li>
 </ul>
-</li>
-<li>可能出现的异常<br>  实现堆可以是固定大小的，也可以通过设置配置文件设置该为可扩展的。<br>  如果堆上没有内存进行分配，并无法进行扩展时，将会抛出OutOfMemoryError异常。</li>
-</ul>
-<h3 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a>方法区</h3><p>方法区（Method Area）</p>
+<h3 id="1-2垃圾收集算法"><a href="#1-2垃圾收集算法" class="headerlink" title="1.2垃圾收集算法"></a>1.2垃圾收集算法</h3><h4 id="1-2-1标记-清除算法"><a href="#1-2-1标记-清除算法" class="headerlink" title="1.2.1标记-清除算法"></a>1.2.1标记-清除算法</h4><p>首先标记出需要回收的对象，在标记完成后统一回收被标记的对象。<br>不足：</p>
 <ul>
-<li>作用 用于存储运行时常量池、已被虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码等数据。</li>
-<li>意义 对运行时常量池、常量、静态变量等数据做出了规定。</li>
-<li>存储内容 运行时常量池（具有动态性）、已被虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码等数据。</li>
-<li>可能出现的异常 当方法区无法满足内存分配需求时，将抛出OutOfMemoryError异常。</li>
+<li>效率问题，标记和清除效率都不高</li>
+<li>空间问题，标记清除后会产生大量不连续的内存碎片，可能导致以后在程序中需要分配较大的对象时，无法找到足够连续的内存而不得不触发垃圾回收动作。</li>
 </ul>
-<h3 id="运行时常量池"><a href="#运行时常量池" class="headerlink" title="运行时常量池"></a>运行时常量池</h3><p>运行时常量池（Runtime Constant Pool）是方法区的一部分。Class文件除了有类的版本、字段、方法、接口等描述信息，还有一项信息就是常量池，用于存放编译时期生成的各种字面量和符号引用，这部分内容将在类加载后存放到方法区的运行时常量池。</p>
-<p>运行时常量池相对于Class文件常量池的另外一个重要特征是具备动态性，Java语言并不要求常量一定只能在编译期产生，也就是并非预置入Class文件中常量池的内容才能进入方法区运行时常量池，运行期间也可能将将新的常量放入池中，这种特性被开发人员利用的比较多的便是String类的intern()方法。</p>
-<p>既然运行时常量池是方法区的一部分，自然会受到方法区内存的限制，当常量池无法再申请到内存时将会抛出OutOfMemoryError异常。</p>
-<h2 id="对象访问"><a href="#对象访问" class="headerlink" title="对象访问"></a>对象访问</h2><p>对象访问在Java语言中无处不在，是最普通的程序行为，即使是最简单的访问，也涉及到Java栈、Java堆、方法区这三个重要的内存区域之间的关联关系，如下一句代码：<br><code>Object obj = new Object();</code></p>
-<p>假设这句代码出现在方法体中，那<code>Object obj</code>这部分的语义将会反映到Java栈（虚拟机栈）的本地变量中，作为一个Reference类型数据出现。</p>
-<p>而<code>new Object()</code>这部分的语义将会反映到Java堆中，形成一块儿存储了Object类型所有实例数据值（Instance Data，对象中各个实例字段的数据）的结构化内存，根据具体类型以及虚拟机实现的对象内存布局（Object Memory Layout）的不同，这块儿内存的大小是不固定的。</p>
-<p>另外，在Java堆中，还必须包含能包括能查到此对象类型数据（如，对象类型、父类、实现的接口、方法等）的地址信息，这些数据存储在方法区中。</p>
-<p>由于reference类型在Java虚拟机规范里只规定了一个指向对象的引用，并没有定义这个引用应该通过哪种方式去定位，以及访问到Java堆中的对象的具体位置，因此不同的虚拟机实现的对象访问方式会有所不同。</p>
-<p>主流的访问方式有两种：使用句柄和直接指针。</p>
+<h4 id="1-2-2复制算法"><a href="#1-2-2复制算法" class="headerlink" title="1.2.2复制算法"></a>1.2.2复制算法</h4><p>将内存按容量划分为大小相等的两块，每次只使用其中的一块。当这一块内存用完，将存活的对象复制到另一块上面，然后轻量掉所使用过的内存空间。</p>
+<p>现在商业虚拟机都采用这种算法来回收新生代，研究表明，新生代中的对象98%是”朝生夕死“的，不需要按照1:1的比例来划分内存空间。<br>将内存分为一块较大的Eden空间和两块较小的Survivor空间，每次使用Eden和其中一块Survivor。当回收时，将Eden和Survivor中还活着的对象复制到另外一块Survivor上，最后清理掉Eden和刚才用过的Survivor空间。<br>HotSpot虚拟机默认Eden和Survivor大小比例8:1，即只有10%的内存会被浪费。<br>若Survivor空间不够用时，则需要依赖其它内存进行担保分配。</p>
+<h4 id="1-2-3标记-整理算法"><a href="#1-2-3标记-整理算法" class="headerlink" title="1.2.3标记-整理算法"></a>1.2.3标记-整理算法</h4><p>根据老年代的特点（大多数都是存活的对象），标记存活的对象都向一端移动，然后清理掉便捷以外的内存。</p>
+<h4 id="1-2-4分代搜集算法"><a href="#1-2-4分代搜集算法" class="headerlink" title="1.2.4分代搜集算法"></a>1.2.4分代搜集算法</h4><p>商业虚拟机牢记手机都采用”分代收集“算法，这种算法没有什么新的思想，只是依据对象的存活周期的不同将内存划分为几块。<br>一般是把Java堆分为新生代和老年代，这样就可以根据各个年代的特点采用适当的算法。<br>新生代中每次会后都会有大批对象死去，只有少量对象存活，那就选用复制算法。<br>老年代对象存活率高，没有额外的空间对他进行分配担保，就必须使用”标记-清理“或者”标记-整理“算法回收。</p>
+<h3 id="1-3HotSpot算法实现"><a href="#1-3HotSpot算法实现" class="headerlink" title="1.3HotSpot算法实现"></a>1.3HotSpot算法实现</h3><h4 id="1-3-1枚举根节点"><a href="#1-3-1枚举根节点" class="headerlink" title="1.3.1枚举根节点"></a>1.3.1枚举根节点</h4><p>现在很多应用仅仅方法区就有数百兆，如果逐个检查这里面的引用，那么必然会消耗很多时间！<br>另外，可达性分析法对执行时间敏感还体现在GC停顿上：整个分析期间看起来就像被冻结在某个时间节点上，不可以出现分析过程中对象引用关系还在不断变化的情况！这点是导致GC进行时必须停顿所有之前Java执行的线程的重要原因。</p>
+<p>虚拟机并不需要一个不漏的检查完所有执行上下文和全局引用位置，虚拟机应当有办法得知哪些地方存放着对象的引用。在HotSpot中，是使用一组称为OopMap的数据结构来达到目的<br>类在加载完成后，HotSpot把对象内什么偏移量上是什么类型的数据计算出来，在JIT编译过程中，也会在特定的位置记录下栈和寄存器中哪些位置的引用。</p>
+<h4 id="1-3-2安全点"><a href="#1-3-2安全点" class="headerlink" title="1.3.2安全点"></a>1.3.2安全点</h4><p>HotSpot没有为每条指令生成OopMap；<br>在”特定的位置“记录信息到OopMap中，这些位置称为安全点，即程序运行时并非所有地方都停顿下来开始GC，只有到达安全点才进行。</p>
+<p>何时在GC发生时让所有的线程都”跑“到最近的安全点停顿下来</p>
 <ul>
-<li>句柄方式，Java堆中将会划分出一块内存作为句柄池，reference中存储的就是对象的句柄地址，而句柄中包含了对象实例数据和类型数据各自的具体地址信息，如下图：<br><img src="https://cdn.nlark.com/yuque/0/2018/jpeg/155206/1537514378850-a45c64c9-6a77-40a0-9775-fda49f9592b2.jpeg" alt=""></li>
-<li>指针方式，reference变量中直接存储的就是对象的地址，而Java堆对象的布局中就必须考虑如何防止访问类型数据的相关信息，如下图：<br><img src="https://cdn.nlark.com/yuque/0/2018/jpeg/155206/1537514387637-558f4c53-885b-4894-9ce7-a9d8b6f3c577.jpeg" alt=""></li>
+<li>抢先式中断：在发生GC时，停止全部的线程。如果发现线程中断的地方不在安全点上，就恢复线程，让它”跑“到安全点上。现在几乎没有虚拟机采用这种方法</li>
+<li>主动式中断：当GC需要中断线程时，不直接对线程操作，仅设置一个标志，各线程执行是主动去轮训这个标志，发现标志为真就中断挂起。此时位置就是安全点</li>
 </ul>
-<p>这两种对象的访问方式各有优势：</p>
+<h4 id="1-3-3安全区域"><a href="#1-3-3安全区域" class="headerlink" title="1.3.3安全区域"></a>1.3.3安全区域</h4><p>安全点无法避免”不执行”线程，所谓不执行的线程指没有分配CPU时间，典型的例子就是线程处于Sleep或者Bloacked状态，这时无法响应JVM请求，“走”到安全的地方中断挂起。<br>安全区域指在一段代码片段中，引用关系不会发生变化。在这个区域中任意的地方开始GC都是安全的。<br>在线程离开安全区域时，他要检查系统是否已经完成了根节点枚举（或者是整个GC的过程），如果完成了，则线程继续执行，否则挂起。</p>
+<h3 id="1-4垃圾收集器"><a href="#1-4垃圾收集器" class="headerlink" title="1.4垃圾收集器"></a>1.4垃圾收集器</h3><p>垃圾收集器是内存回收的具体实现<br>到现在为止还没有最好的收集器出现，更没有万能的收集器，只能选择具体应用最适合的收集器</p>
 <ul>
-<li>使用句柄访问方式的最大好处是reference中存贮的是稳定的句柄地址，在对象被移动（比如垃圾收集时，对象移动是非常普遍的行为）时只会改变句柄中的实例数据指针，而reference本身不需要被修改。</li>
-<li>使用直接指针访问方式的最大好处就是速度更快，它节省了一次指针定位的时间开销，由于对象的访问在Java中非常频繁，因此这类开销积少成多也是一项非常可观的执行成本。</li>
-<li>本书讨论的主要虚拟机Sun HotSpot，它是使用第二种方式进行对象访问的，但是从整个软件开发的范围来看，各种语言和框架使用句柄来访问的情况也十分常见。</li>
+<li>Serial</li>
+<li>ParNew</li>
+<li>Parallel Scavenge</li>
+<li>G1</li>
+<li>CMS</li>
+<li>Serial Old (MSC)</li>
+<li>Parallel Old</li>
 </ul>
-<h2 id="OutOfMemoryError异常"><a href="#OutOfMemoryError异常" class="headerlink" title="OutOfMemoryError异常"></a>OutOfMemoryError异常</h2><h3 id="Java堆溢出"><a href="#Java堆溢出" class="headerlink" title="Java堆溢出"></a>Java堆溢出</h3><p>可以通过限制Java堆的大小，设置为不可扩展（将堆的最小值参数-Xms和最大值参数-Xmx设置成一样即可避免堆自动扩展），通过参数-XX:+HeapDumpOnOutOfMemoryError可以让虚拟机在出现内存溢出异常时Dump出当前的内存堆转储快照以便以后进行分析。<br>Java堆内存的OOM异常是实际应用中最常见的内存溢出异常情况。出现Java堆内存溢出时，异常堆栈信息“java.lang.OutOfMemoryError”会跟着进一步提示“Java heap space”。如下图所示：<br><img src="https://cdn.nlark.com/yuque/0/2018/png/155206/1537439603826-a8b43296-733c-4978-9427-e6789b77d630.png" alt=""></p>
-<p>要解决这个区域的异常，一般的手段是首先通过内存映像分析工具（如Eclipse Memory Analyzer）对dump出的堆转储快照进行分析，重点是确认内存中的对象是否是必要的，也就是要先分清楚到底是出现了内存泄漏（Memory Leak）还是内存溢出（Memory Overflow）</p>
-<p>如果是内存泄漏，可进一步通过工具查看泄漏对象到GC Roots的引用链。于是就能找到泄漏对象是通过怎样的路径与GC Roots相关联并导致垃圾收集器无法自动回收它们的。掌握了泄漏对象的类型信息，以及GC Roots引用链的信息，就可以比较准确地定位出泄漏代码的位置。</p>
-<p>如果不存在泄漏，换句话说就是内存中的对象确实都还必须存活着，那就应当检查虚拟机的堆参数（Xmx和Xms），与机器物理内存对比看是否还可以调大，从代码上检查是否存在某些对象生命周期过长、持有状态时间过长的情况，尝试减少程序运行期间的内存消耗。</p>
-<h3 id="虚拟机栈和本地方法栈溢出"><a href="#虚拟机栈和本地方法栈溢出" class="headerlink" title="虚拟机栈和本地方法栈溢出"></a>虚拟机栈和本地方法栈溢出</h3><p>由于在HotSpot虚拟机中并不区分虚拟机栈和本地方法栈，因此对于HotSpot来说，-Xoss参数（设置本地方法栈大小）虽然存在，但实际上是无效的，栈容量只由-Xss参数设定。<br>关于虚拟机栈和本地方法栈，在Java虚拟机规范中描述了两种异常：</p>
+<p><img src="https://cdn.nlark.com/yuque/0/2018/jpeg/155206/1539684794863-6710ba03-2fca-4a3f-bb7a-3dccc12678ab.jpeg" alt=""></p>
+<h4 id="1-4-1Serial-收集器"><a href="#1-4-1Serial-收集器" class="headerlink" title="1.4.1Serial 收集器"></a>1.4.1Serial 收集器</h4><p>是一个单线程的收集器，“单线程”指不仅只会使用一个CPU或一条线程去完成垃圾收集工作，更重要的是在垃圾收集时，必须暂停其它所有的工作线程，直到收集结束。<br>依然是虚拟机运行在Client模式下的默认新生代的收集器。<br>优于其他收集器的地方：简单而高效（与其它收集器的单线程比）</p>
+<p>在用户的桌面应用场景中，分配给虚拟机管理的的内存一般来说不会太大，收集几十兆甚至一两百兆的新生代，停顿时间完全可以控制在及时毫秒最多一百毫秒内，只要不频繁发生，还是可以接受的。<br>Serial收集器对于运行在Client模式下的虚拟机来说是个很好的选择。<br><img src="https://pic.yupoo.com/crowhawk/6b90388c/6c281cf0.png" alt=""></p>
+<h4 id="1-4-2ParNew-收集器"><a href="#1-4-2ParNew-收集器" class="headerlink" title="1.4.2ParNew 收集器"></a>1.4.2ParNew 收集器</h4><p>ParNew搜集器是Serial收集器的多线程版本<br>是许多运行在Server模式下的虚拟机首选的新生代收集器，其中一个与性能无关的很重要原因是，除了Serial收集器外，目前只有他能与CMS收集器配合工作！</p>
+<p>ParNew收集器在单CPU的环境中绝对不会有比Serial收集器更好的效果，甚至由于存在线程的交互开销，该收集器在通过超线程技术实现的两个CPU的环境中都不能百分百的保证可以超越Serial收集器。<br>随着可以使用的CPU的数量的增加，他对于GC时系统资源的有效利用有很多好处。它默认开启的线程数与CPU的数量相同，在CPU非常多的环境下，可以限制使用-XX:ParallelGCThreads参数限制垃圾回收线程数。<br><img src="https://pic.yupoo.com/crowhawk/605f57b5/75122b84.png" alt=""></p>
+<h4 id="1-4-3Parallel-Scavenge-收集器"><a href="#1-4-3Parallel-Scavenge-收集器" class="headerlink" title="1.4.3Parallel Scavenge 收集器"></a>1.4.3Parallel Scavenge 收集器</h4><p>新生代收集器，也是使用复制算法的收集器，有时并行的多线程收集器。<br>Parallel Scavenge收集的目标是达到一个可控的吞吐量。吞吐量 = 运行用户代码时间 / (运行用户代码时间 + 垃圾回收时间)，虚拟机总共运行了100分钟，垃圾回收花掉1分钟，则吞吐量是99%。</p>
+<p>停顿时间越短就越适合需要与用户交互的程序，良好的响应速度能提升用户的体验，而高吞吐量则可以有效的利用CPU时间，尽快按成程序的运算任务，主要适合在后台运算而不需要太多交互的任务。</p>
+<p>Parallel Scavenge收集器提供了两个参数用于精确控制吞吐量，分别是控制最大垃圾收集停顿时间 </p>
 <ul>
-<li>如果线程请求的栈深度大于虚拟机所允许的最大深度，将抛出StackOverflowError异常。</li>
-<li>如果虚拟机在扩展栈时无法申请到足够的内存空间，则抛出OutOfMemoryError异常。</li>
+<li><code>-XX:MaxGCPauseMillis</code> 值是大于0的毫秒数，GC停顿时间是以牺牲吞吐量和新生代空间来换取的：系统把新生代调小一些，收集300M新生代肯定比收集500M快吧，这也是直接导致垃圾收集发生的更频繁，原来10秒收集一次、每次停顿100毫秒，现在变成5秒收集一次、每次停顿70毫秒。停顿的时间在下降，但是吞吐量也降下来了。</li>
+<li><code>-XX:GCTimeRatio</code> 值是大于0切小于100的整数，也就是垃圾收集时间占总时间的比率，相当于是吞吐量的倒数。如果把参数设置为19，那么允许的最大GC时间就是占总时间的5%（即1 / (1 + 19)），默认值为99，即1%的垃圾回收时间。</li>
+<li><code>-XX:+UseAdaptiveSizePolicy</code> 开关参数，当参数打开之后，就不需要指定新生代大小（-Xmn）、Eden与Survivor区的比例、晋升老年代对象的年龄等细节参数了，即GC自适应调节策略。自适应调节策略也是Parallel Scavenge收集器与ParNew收集器的一个重要区别！</li>
 </ul>
-<p>这里把异常分为两种情况，实际上却存在着一些互相重叠的地方：当栈空间无法分配时，到底是内存太小，还是已使用的栈空间太大，其本质只是对同一事件的两种表述而已。</p>
-<h3 id="运行时常量池溢出"><a href="#运行时常量池溢出" class="headerlink" title="运行时常量池溢出"></a>运行时常量池溢出</h3><p>如果要向运行时常量池中添加内容，最简单的方法是使用String.intern()这个Native方法。该方法的作用时：如果池中包含了一个等于此String对象的字符串，则返回代表池中这个字符串的String对象；否则，将此String对象包含的字符串添加到常量池中，并且返回此String对象的引用。由于常量池分配在方法区内，我们可以通过-XX:PermSize和-XX:MaxPermSize限制方法区的大小，从而间接限制其中常量池的容量。</p>
-<h3 id="方法区溢出"><a href="#方法区溢出" class="headerlink" title="方法区溢出"></a>方法区溢出</h3><p>方法区用于存放Class相关的信息，如类名、访问修饰符、常量池、字段描述、方法描述等。生成大量的动态类区填充方法区，可以触发此区域的溢出异常。<br>方法区溢出是一种常见的内存溢出异常，一个类如果要被垃圾收集器回收，判定的条件比较苛刻。在经常动态生成大量Class的应用中，需要特别注意类的回收状况。这类场景除了CGLib字节码增强外，还有大量JSP或者基于OSGi的应用等。</p>
-<h3 id="本机直接内存溢出"><a href="#本机直接内存溢出" class="headerlink" title="本机直接内存溢出"></a>本机直接内存溢出</h3><p>DirectMemory可以通过-XX:MaxDirectMemorySize指定，如果不指定，则默认与Java堆的最大值（-Xmx指定）一样。</p>
+<h4 id="1-4-4Serial-Old-收集器"><a href="#1-4-4Serial-Old-收集器" class="headerlink" title="1.4.4Serial Old 收集器"></a>1.4.4Serial Old 收集器</h4><p>Serial Old是Serial收集器的老年代版本，他同样是单线程收集器，使用“标记-整理”算法。<br>主要是给Client模式下的虚拟机使用。<br>如果在Server模式下，主要两个用途：</p>
+<ul>
+<li>在JDK 1.5一级之前的版本中与Parallel Scavenge收集器搭配使用</li>
+<li>作为CMS收集器的后背方案，在并发收集发生Concurrent Mode Failure使用</li>
+</ul>
+<p><img src="https://pic.yupoo.com/crowhawk/6b90388c/6c281cf0.png" alt=""></p>
+<h4 id="1-4-5Parallel-Old-收集器"><a href="#1-4-5Parallel-Old-收集器" class="headerlink" title="1.4.5Parallel Old 收集器"></a>1.4.5Parallel Old 收集器</h4><p>Parallel Old是Parallel Scavenge收集器的老年代版本，使用多线程和“标记-整理”算法。<br>在注重吞吐量以及CPU资源敏感的场合，都可以优先考虑Parallel Scavenge加Parallel Old收集器。<br><img src="https://pic.yupoo.com/crowhawk/9a6b1249/b1800d45.png" alt=""></p>
+<h4 id="1-4-6CMS-收集器"><a href="#1-4-6CMS-收集器" class="headerlink" title="1.4.6CMS 收集器"></a>1.4.6CMS 收集器</h4><p>CMS（Concurrent Mark Sweep）收集器死一种以获得最短回收停顿时间为目标的收集器。目前很大的一部分Java应用集中在互联网站或者B/S系统的服务端上。这类应用尤其重视服务的响应速度，给用户带来更好的体验。</p>
+<p>从名字能看出，CMS收集器基于“标记-清除”算法实现，整个过程分为4步骤：</p>
+<ul>
+<li>初始标记</li>
+<li>并发标记</li>
+<li>重新标记</li>
+<li>并发清除</li>
+</ul>
+<p>其中，初始标记、重新标记仍然需要“Stop The World”。<br>初始标记只是标记一下GC Roots能直接关联到的对象，速度很快，<br>并发标记阶段就是进行GC Roots Tracing过程，<br>重新标记阶段则是为了修正并发标记区间因用户程序继续运作而导致标记产生变动的那一部分记录记录，这个阶段的停顿时间一般会比初始标记的稍长一些，但远比并发标记短。</p>
+<p>由于整个过程最长的并发标记和并发清除过程收集器都是可以与用户线程一期工作，所以，CMS收集器的内存回收过程是与用户线程一期并发执行的。</p>
+<p>缺点：</p>
+<ul>
+<li>对CPU资源非常敏感。在并发时。占用一部分线程资源（或者说CPU资源）而导致应用程序变慢，总吞吐量会降低。CMS默认启动的回收线程数是 （CPU数量 + 3）/ 4，也就是当COU时4以下时，并发回收时来及手机线程不少于25%的CPU资源，并随着CPU的数量上升而降低。但CPU不足4个时，对程序的影响很大，从而导致用户的程序的执行速度变慢。</li>
+<li>CMS收集器无法处理浮动的垃圾，可能出现“Concurrent Mode Failure”失败而导致另一次Full GC的产生。由于CMS并发清理阶段用户的线程还在运行着，伴随着程序运行阶段还会头新的垃圾不断的产生，这部分垃圾出现在标记之后。CMS无法在档次收集清理他们，只好留在下次清理。这部分垃圾就是“浮动垃圾”。也由于在垃圾收集阶段用户线程还需要运行，那就需要预留足够的内存空间给用户线程使用，因此CMS收集器不能像其它的收集器那样等到老年代几乎完全被填满了在收集，需要预留一部分。要是CMS运行期间预留的内存无法满足程序的需要，就会出现“Concurrent Mode Failure”失败，虚拟机启动后背预案：临时启动Serial Old收集器来重新进行老年代的垃圾收集，这样停顿时间就更长了</li>
+<li>CMS基于“标记-清除”，清除完会出现大量空间碎片。大对象分配会很麻烦，往往老年代还有很大的空间剩余，但是无法找到足够大的空间来分配当前对象，不得不提前触发一次Full GC，CMS提供<code>-XX:+UseCMSCompactAtFullCollection</code>开关参数，用于在CMS收集器顶不住要进行Full GC时开启内存的合并整理过程，内存整理过程无法并发的，空间碎片问题解决了，但是停顿时间不得不变长、</li>
+</ul>
+<p><img src="https://pic.yupoo.com/crowhawk/fffcf9a2/f60599b2.png" alt=""></p>
+<h4 id="1-4-7G1-收集器"><a href="#1-4-7G1-收集器" class="headerlink" title="1.4.7G1 收集器"></a>1.4.7G1 收集器</h4><p>G1收集器是当今收集器技术发展的最前沿成果之一。是一款服务端应用的垃圾收集器。<br>特点：</p>
+<ul>
+<li>并行与并发：G1能够充分利用多CPU、多核环境下的硬件优势，使用多个CPU来缩短Stop-The-World停顿时间，部分收集器原本需要停顿Java线程执行的GC动作，G1收集器仍然可以通过并发方式让Java程序继续执行</li>
+<li>分代收集：G1不需要其他的收集器配合就能独立的管理整个GC堆，但它能采用不同的方式去处理新建的对象和已经存活了一段时间、熬过多次GC的旧对象以获取更好的收集效果</li>
+<li>空间整理：与CMS的“标记-清理”算法不同，G1从整体看是基于“标记-整理”算法实现的收集器，从局部看是基于“复制”算法实现的，这两种短发都意味着G1运作期间不会产生内存空间碎片，手机后能提供规整的内存，分配大对象不会无法找到连续的内存空间而提前出发一次GC</li>
+<li>可预测的停：这是G1相对于CMS的另一大优势，G1除了追求停顿外，还建立了可预测的停顿时间模型，能让使用者明确指定在长度为M毫秒的时间片段内，消耗在垃圾收集上的时间不得超过N毫秒，这几乎是实时Java（RTSJ）的垃圾收集器特征了</li>
+</ul>
+<p>G1之前其它的收集器的范围都是整个新生代或者老年代，而G1不再是这样，他将整个Java堆划分为多个大小相等的独立区域（Region），虽然还保留有新生代和老年代的概念，但整个新生代和老年代不再是物理隔离了，他们都是一部分Region（不需要连续）的集合。</p>
+<p>G1之所以能预测停顿的时间模型，因为他可以计划的避免在整个Java堆中进行全区域的垃圾回收。<br>G1跟踪各个Region里面的垃圾堆积的价值大小（回收所获得的空间大小及回收所需要的时间的经验值），在后台维护一个优先列表，每次根据允许的手机时间，优先回收价值最大的Region（这也就是Garbage-First名称的由来），保证G1在有限的时间获取尽可能高的手机效率。</p>
+<p>G1收集器运作大致可划分为：</p>
+<ul>
+<li>初始标记</li>
+<li>并发标记</li>
+<li>最终标记</li>
+<li>筛选标记</li>
+</ul>
+<p>G1的前几个步骤和CMS有很多相似之处。出事阶段仅仅是标记一下GC Roots能直接关联到的对象，并且修改TAMS的值，让下一阶段用户程序并发运行时，能在正确可用的Region中创建对象，这阶段需要停顿线程，但耗时很短。</p>
+<p>并发标记阶段是从GC Root开始对对中对象进行可达性分析，找出存活的对象，这阶段耗时较长，但是可与用户程序并发执行。</p>
+<p>最终标记阶段是为了修正正在并发标记期间因用户程序继续运行而导致标记发生变动的那部分标记记录，虚拟机将这段时间对象变化记录在线程Remembered Set Logs里面，最终标记阶段需要吧Remembered Set Logs的数据合并到Remembered Set中，这阶段需要停顿线程，但是可以并行执行。</p>
+<p>筛选回收阶段首先对哥哥Region的回收价值和成本进行排序，根据用户所期望的GC停顿时间来指定回收计划，从Sun公司透露出来的信息看，这几段其实可以做到与用户程序一起并发执行，但是因为只回收一部分Region，时间是用户可控制的，而且停顿用户线程将大幅提供手机效率。</p>
+<h4 id="1-4-8GC-日志"><a href="#1-4-8GC-日志" class="headerlink" title="1.4.8GC 日志"></a>1.4.8GC 日志</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">0.756: [Full GC (System) 0.756: [CMS: 0K-&gt;1696K(204800K), 0.0347096 secs] 11488K-&gt;1696K(252608K), [CMS Perm : 10328K-&gt;10320K(131072K)], 0.0347949 secs] [Times: user=0.06 sys=0.00, real=0.05 secs]  </span><br><span class="line">1.728: [GC 1.728: [ParNew: 38272K-&gt;2323K(47808K), 0.0092276 secs] 39968K-&gt;4019K(252608K), 0.0093169 secs] [Times: user=0.01 sys=0.00, real=0.00 secs]  </span><br><span class="line">2.642: [GC 2.643: [ParNew: 40595K-&gt;3685K(47808K), 0.0075343 secs] 42291K-&gt;5381K(252608K), 0.0075972 secs] [Times: user=0.03 sys=0.00, real=0.02 secs]  </span><br><span class="line">4.349: [GC 4.349: [ParNew: 41957K-&gt;5024K(47808K), 0.0106558 secs] 43653K-&gt;6720K(252608K), 0.0107390 secs] [Times: user=0.03 sys=0.00, real=0.02 secs]  </span><br><span class="line">5.617: [GC 5.617: [ParNew: 43296K-&gt;7006K(47808K), 0.0136826 secs] 44992K-&gt;8702K(252608K), 0.0137904 secs] [Times: user=0.03 sys=0.00, real=0.02 secs]  </span><br><span class="line">7.429: [GC 7.429: [ParNew: 45278K-&gt;6723K(47808K), 0.0251993 secs] 46974K-&gt;10551K(252608K), 0.0252421 secs]</span><br></pre></td></tr></table></figure>
+<ul>
+<li>最前的数字<code>0.756</code>：”代表GC发生的时间，指从Java虚拟机启动以来经过的秒数</li>
+<li><code>[GC</code>和<code>[Full GC</code>说明这次垃圾回收的停顿类型。如果有<code>Full</code>则说明这次GC是发生了<code>Stop-The-World</code>的，如果调用<code>System.gc()</code>方法所触发的手机，那么将显示<code>[Full GC (System)</code></li>
+<li><code>[DefNew</code>、<code>[Tenured</code>、<code>Perm</code>表示GC所发生的区域，这里显示的区域名称使用的GC搜集器是密切相关的</li>
+<li>后面方括号内部的<code>43296K-&gt;7006K(47808K)</code>含义是“GC钱改区域内存已使用量-&gt;GC后改区域内存使用量（改内存区域总量）”。</li>
+<li>方括号外的<code>44992K-&gt;8702K(252608K)</code>表示GC前Java堆使用量-&gt; GC后Java堆使用量（Java对总量）</li>
+<li><code>0.0093169 secs</code>表示该内存区域GC所占用的时间，单位是秒。有的收集会给出具体数据，如<code>[Times: user=0.01 sys=0.00, real=0.00 secs]</code>分别代表用户态消耗CPU时间、内核态消耗CPU时间和操作从开始到结束所经过的墙钟时间</li>
+</ul>
 
     
   </div>
@@ -180,7 +234,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.5px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 17.5px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 17.5px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12.5px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12.5px;">distributed</a> <a href="/tags/原/" style="font-size: 15px;">原</a>
   </div>
 </div>
 
@@ -189,6 +243,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/02/12/spring-cloud-config/">spring-cloud-config</a>
+      </li>
     
       <li>
         <a href="/2019/02/12/spring-cloud-zuul/">spring-cloud-zuul</a>
@@ -204,10 +262,6 @@
     
       <li>
         <a href="/2019/01/28/spring-cloud-ribbon/">Spring Cloud——负载均衡 Ribbon</a>
-      </li>
-    
-      <li>
-        <a href="/2019/01/27/spring-cloud-eureka/">Spring Cloud——服务治理 Eureka</a>
       </li>
     
   </ul>

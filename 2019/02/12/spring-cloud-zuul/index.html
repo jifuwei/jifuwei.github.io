@@ -10,24 +10,26 @@
     <meta name="author" content="jifuwei">
   
   
-    <meta name="description" content="首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。
-首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来支持这样的 架构。当客户端应用单击某个功能的时候往往会发出 一些对微服务获取资源的请求到后端， 这些请求通过FS、 Nginx等设施的路由和负载均衡分配后，被转发到各个不">
+    <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371
+
+首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。
+首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来">
   
-  <meta name="description" content="首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。 首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来支持这样的 架构。当客户端应用单击某个功能的时候往往会发出 一些对微服务获取资源的请求到后端， 这些请求通过FS、 Nginx等设施的路由和负载均衡分配后，被转发到各个不">
+  <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。 首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来">
 <meta name="keywords" content="Java,Spring Cloud">
 <meta property="og:type" content="article">
 <meta property="og:title" content="spring-cloud-zuul">
 <meta property="og:url" content="http://yoursite.com/2019/02/12/spring-cloud-zuul/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。 首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来支持这样的 架构。当客户端应用单击某个功能的时候往往会发出 一些对微服务获取资源的请求到后端， 这些请求通过FS、 Nginx等设施的路由和负载均衡分配后，被转发到各个不">
+<meta property="og:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。 首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://s2.ax1x.com/2019/02/12/kdvFVx.png">
 <meta property="og:image" content="https://s2.ax1x.com/2019/02/12/kwFql6.png">
 <meta property="og:image" content="https://s2.ax1x.com/2019/02/12/kwkvvV.png">
-<meta property="og:updated_time" content="2019-02-12T12:08:04.165Z">
+<meta property="og:updated_time" content="2019-02-12T12:44:48.921Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="spring-cloud-zuul">
-<meta name="twitter:description" content="首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。 首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来支持这样的 架构。当客户端应用单击某个功能的时候往往会发出 一些对微服务获取资源的请求到后端， 这些请求通过FS、 Nginx等设施的路由和负载均衡分配后，被转发到各个不">
+<meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。 首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来">
 <meta name="twitter:image" content="https://s2.ax1x.com/2019/02/12/kdvFVx.png">
   
   
@@ -77,7 +79,10 @@
   
   <div class="entry">
     
-      <p><img src="https://s2.ax1x.com/2019/02/12/kdvFVx.png" alt=""><br>首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。</p>
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<p><img src="https://s2.ax1x.com/2019/02/12/kdvFVx.png" alt=""><br>首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。</p>
 <p>首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来支持这样的 架构。当客户端应用单击某个功能的时候往往会发出 一些对微服务获取资源的请求到后端， 这些请求通过FS、 Nginx等设施的路由和负载均衡分配后，被转发到各个不同的服务实例 上。 而为了让这些设施能够正确路由与分发请求， 运维人员需要手工维护这些路由规则与 服务实例列表， 当有实例增减或是IP地址变动等情况发生的时候， 也需要手工地去同步修 改这些信息以保持实例信息与中间件配置内容的一致性。 在系统规模不大的时候， 维护这 些信息的工作还不会太过复杂， 但是如果当系统规模不断增大， 那么这些看似简单的维护 任务会变得越来越难， 并且出现配置错误的概率也会逐渐增加。 很显然， 这样的做法并不 可取， 所以我们需要一套机制来有效降低维护路由规则与服务实例列表的难度。</p>
 <p>其次，我们再从开发入员的角度来看看，在这样的架构下，会产生一些怎样的问题呢? 大多数清况下， 为了保证对外服务的安全性， 我们在服务端实现的微服务接口， 往往都会 有一定的权限校验机制， 比如对用户登录状态的校验等; 同时为了防止客户端在发起请求 时被篡改等安全方面的考虑， 还会有一些签名校验的机制存在。 这时候， 由千使用了微服 务架构的理念， 我们将原本处千一个应用中的多个模块拆成了多个应用， 但是这些应用提供的接口都需要这些校验逻辑， 我们不得不在这些应用中都实现这样一套校验逻辑。 随着 微服务规模的扩大， 这些校验逻辑的冗余变得越来越多， 突然有一天我们发现这套校验逻 辑有个BUG需要修复，或者需要对其做一些扩展和优化，此时我们就不得不去每个应用里 修改这些逻辑，而这样的修改不仅会引起开发入员的抱怨，更会加重测试人员的负担。 所 以， 我们也需要一 套机制能够很好地解决微服务架构中， 对于微服务接口访问时各前置校 验的冗余问题。</p>
 <p>为了解决上面这些常见的架构问题，API网关的概念应运而生。API网关是一个更为 智能的应用服务器， 它的定义类似于面向对象设计模式中的Facade模式， 它的存在就像是 整个微服务架构系统的门面一样，所有的外部客户端访问都需要经过它来进行调度和过滤。 它除了要实现请求路由、 负载均衡、 校验过滤等功能之外， 还需要更多能力， 比如与服务 治理框架的结合、 请求转发时的熔断机制、 服务的聚合等一系列高级功能。</p>
@@ -189,7 +194,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.5px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 17.5px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 17.5px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12.5px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12.5px;">distributed</a> <a href="/tags/原/" style="font-size: 15px;">原</a>
   </div>
 </div>
 
@@ -198,6 +203,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/02/12/spring-cloud-config/">spring-cloud-config</a>
+      </li>
     
       <li>
         <a href="/2019/02/12/spring-cloud-zuul/">spring-cloud-zuul</a>
@@ -213,10 +222,6 @@
     
       <li>
         <a href="/2019/01/28/spring-cloud-ribbon/">Spring Cloud——负载均衡 Ribbon</a>
-      </li>
-    
-      <li>
-        <a href="/2019/01/27/spring-cloud-eureka/">Spring Cloud——服务治理 Eureka</a>
       </li>
     
   </ul>

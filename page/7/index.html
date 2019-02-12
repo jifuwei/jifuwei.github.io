@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/01/26/spring-cloud-init/">
-  <time datetime="2019-01-26T13:27:30.000Z">
-    2019-01-26
+      <a href="/2019/01/27/spring-cloud-SB/">
+  <time datetime="2019-01-27T06:44:38.000Z">
+    2019-01-27
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/01/26/spring-cloud-init/">Spring Cloud——纵览</a></h1>
+    <h1 class="title"><a href="/2019/01/27/spring-cloud-SB/">Spring Cloud——基础构建框架Spring Boot</a></h1>
   
 
   </header>
@@ -77,47 +77,31 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<h2 id="什么是微服务架构"><a href="#什么是微服务架构" class="headerlink" title="什么是微服务架构"></a>什么是微服务架构</h2><p>简单地说， 微服务是系统架构上的一种设计风格， 它的主旨是将一个原本独立的系统 拆分成多个小型服务，这些小型服务都在各自独立的进程中运行，服务之间通过基于HTTP 的RESTful API进行通信协作。 被拆分成的每一个小型服务都围绕着系统中的某一项或一 些耦合度较高的业务功能进行构建， 并且每个服务都维护着自身的数据存储、 业务开发、 自动化测试案例以及独立部署机制</p>
-<h2 id="如何实施微服务"><a href="#如何实施微服务" class="headerlink" title="如何实施微服务"></a>如何实施微服务</h2><ul>
-<li>服务组件化</li>
-<li>按业务组织团队</li>
-<li>做“产品” 的态度，每个小团队都应该以做产品的方式， 对其产品的整个生 命周期负责。 而不是以项目的模式，以完成开发与交付并将成果交接给维护者为最终目标。</li>
-<li>智能端点与哑管道，在微服务架构中， 通常会使用以下两种服务调用方式:<ul>
-<li>使用HTTP的RESTfulAPI或轻量级的消息发送协议， 实现信息传递与服 务调用的触发。</li>
-<li>通过在轻量级消息总线上传递消息， 类似 RabbitMQ 等 一 些提供可靠异步 交换的中间件。</li>
+<h2 id="命令行参数"><a href="#命令行参数" class="headerlink" title="命令行参数"></a>命令行参数</h2><p>在用命令行方式启动 SpringBoot 应用时， 连续的两个减号–就是对 app让ca巨on.proper巨es 中 的 属 性 值 进 行赋值 的标识。 所以 ， java -jar xxx.jar–server.por七=8888命令， 等价千在 app巨ca巨on.proper巨es 中添加<br>属性server.port= 8888</p>
+<h2 id="多环境配置"><a href="#多环境配置" class="headerlink" title="多环境配置"></a>多环境配置</h2><p>在 Spring Boot 中， 多环境配置的文件名需要满足 application-{profile}.<br>proper巨es的格式， 其中{profile}对应你的环境标识， 如下所示。</p>
+<ul>
+<li>app巨ca巨on-dev.proper巨es: 开发环境</li>
+<li>applica巨on-test.proper巨es: 测试环境</li>
+<li>app巨cation-prod.proper巨es: 生产环境</li>
 </ul>
-</li>
-<li>去中心化治理</li>
-<li>去中心化管理数据</li>
-<li>基础设施自动化</li>
-<li>容错设计</li>
+<p>至于具体哪个配置文件会被加载， 需要在 app巨ca巨on.properties 文件中通过 spring.profiles.active 属性来设置， 其 值 对应配置文件中的{profile}值。 如 spring.profiles.active= te江就会加载 app巨ca巨on士est.proper巨es配置<br>文件内容。</p>
+<h2 id="加载顺序"><a href="#加载顺序" class="headerlink" title="加载顺序"></a>加载顺序</h2><p>为了能够更合理地重写各属性的值 ， SpringBoo使用了下面这种较为特别的属性加载顺序：</p>
+<ul>
+<li>在 命令行中传入的参数。</li>
+<li>SPRING APPLICATION JSON中的属性。 SPRING_APPLICATION—JSON是以JSON格式配置在系统 环境变量中的内容。</li>
+<li>java:comp/env中的JNDI 属性。</li>
+<li>Java的系统属性， 可以通过System.getProperties()获得的内容。</li>
+<li>操作系统的环境变量 。</li>
+<li>通过random.*配置的随机属性。</li>
+<li>位于当前应用 jar 包之外，针对不同{profile}环境的配置文件内容，例如application-{profile}.properties或是YAML定义的配置文件。</li>
+<li>位于当前应用 jar 包之内，针对不同{profile}环境的配置文件内容，例如application-{profile}.properties或是YAML定义的配置文件。</li>
+<li>位于当前应用jar包之外的application.properties和YAML配置内容。</li>
+<li>位于当前应用jar包之内的application.properties和YAML配置内容。</li>
+<li>在@Configuration注解修改的类中，通过@PropertySource注解定义的属性。</li>
+<li>应用默认属性，使用SpringApplication.setDefaultProperties 定义的内容。</li>
 </ul>
-<h2 id="为什么选择Spring-Cloud"><a href="#为什么选择Spring-Cloud" class="headerlink" title="为什么选择Spring Cloud"></a>为什么选择Spring Cloud</h2><p>SpringCloud的出现，可以说是对微服务架构的巨大 支持和强有力的技术后盾。它不像<br>我们之前所列举的框架那样， 只是解决微服务中的某一个问题， 而是一个解决微服务架构 实施的综合性解决框架， 它整合了诸多被广泛实践和证明过的框架作为实施的基础部件，<br>又在该体系基础上创建了一些 非常优秀的边缘组件。</p>
-<p>SpringCloud也许对很多已经实施微服务并自成体系的团队不具备足够的吸引力，但是<br>对于还未实施微服务或是未成体系的团队，这必将是一个 非常有吸引力的框架选择。不论 其项目的发展目标，还是 Spring的强大背景，亦或其极高的社区活跃度，都是未来企业架 构师必须了解和接触的重要框架， 有 一 天成为微服务架构的标准解决方案也并非不可能。</p>
-<h2 id="Spring-Cloud简介"><a href="#Spring-Cloud简介" class="headerlink" title="Spring Cloud简介"></a>Spring Cloud简介</h2><ul>
-<li>SpringCloudConfig: 配置管理工具， 支持使用Git存储 配置内容， 可以使用它实现 应用配置的外部化存储， 并支持客户端配置信息刷新、 加密/解密配置内容 等。</li>
-<li>SpringCloudNetflix: 核心 组件， 对多个Netflix OSS开源套件进行整合<ul>
-<li>Eureka: 服务治理组件， 包含服务注册中心、 服务注册与发现机制的实现</li>
-<li>Hystrix: 容错管理组件，实现断路器模式， 帮助服务依赖中出现的延迟和为故障提供强大 的容错能力</li>
-<li>Ribbon: 客户端负载均衡的服务调用组件。</li>
-<li>Feign: 基于Ribbon 和 Hystrix 的声明式服务调用组件</li>
-<li>Zuul: 网关组件， 提供智能路由、 访问过滤等功能</li>
-<li>Archaius: 外部化配置组件</li>
-</ul>
-</li>
-<li>Spring Cloud Bus: 事件、 消息总线， 用于传播集群中的状态变化或事件， 以触发后续的处理， 比如用来动态刷新配置等</li>
-<li>Spring Cloud Cluster: 针对 ZooKeeper、 Redis、 Hazelcast、 Consul 的选举算法和通用状态模式的实现</li>
-<li>Spring Cloud Cloudfoundry: 与 Pivotal Cloudfoundry 的整合支持</li>
-<li>Spring Cloud Consul: 服务发现与配置管理工具</li>
-<li>Spring Cloud Stream: 通过 Redis、 Rabbit 或者 Kafka 实现的消费微服务， 可以通过 简单的声明式模型来发送和接收消息</li>
-<li>SpringCloudAWS: 用千简化整合AmazonWebService的组件</li>
-<li>Spring Cloud Security: 安全工具包， 提供在 Zuul 代理中对 0Auth2 客户端请求的中继器</li>
-<li>Spring Cloud Sleuth: Spring Cloud 应用的分布式跟踪实现， 可以完美整合 Zipkin</li>
-<li>SpringCloudZooKeeper: 基于ZooKeeper的服务发现与配置管理组件</li>
-<li>Spring Cloud Starters: Spring Cloud 的基础组件， 它是基于 Spring Boot 风格项目的基础依赖模块</li>
-<li>Spring Cloud CLI: 用于在 Groovy 中快速创建 Spring Cloud 应用的 Spring Boot CLI插件</li>
-</ul>
-<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>由于Brixton 版本包含了大部分的Spring Cloud 子项目， 并且均为Release版本， 所以 本文所有示例以及讲解内容的编写均采用 Brixton.SR5版本， 基千Spring Boot 1.3.7版本。</p>
+<p><strong>优先级按上面的顺序由高到低，越在前面优先级越高</strong></p>
+<h2 id="监控与管理"><a href="#监控与管理" class="headerlink" title="监控与管理"></a>监控与管理</h2><p>spring-boo七-starter-actuator 模块的实现对千实施微服务的中小团队来说， 可以有效地省去或大大减少监控系统在采集应用指标时的开发量。 当然， 它也并不是万能 的， 有时候也需要对其做 一些简单的扩展来帮助我们实现自身系统个性化的监控需求。 所 以， 在本节将详细介绍 一些关于 spring-boo七-s七ar七er-ac七uator 模块的内容， 包括 原生提供 的端点以及 一 些常用的扩展和配置方式等。</p>
 
     
   </div>
@@ -153,7 +137,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.5px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 17.5px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 17.5px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12.5px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12.5px;">distributed</a> <a href="/tags/原/" style="font-size: 15px;">原</a>
   </div>
 </div>
 
@@ -162,6 +146,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/02/12/spring-cloud-config/">spring-cloud-config</a>
+      </li>
     
       <li>
         <a href="/2019/02/12/spring-cloud-zuul/">spring-cloud-zuul</a>
@@ -177,10 +165,6 @@
     
       <li>
         <a href="/2019/01/28/spring-cloud-ribbon/">Spring Cloud——负载均衡 Ribbon</a>
-      </li>
-    
-      <li>
-        <a href="/2019/01/27/spring-cloud-eureka/">Spring Cloud——服务治理 Eureka</a>
       </li>
     
   </ul>
