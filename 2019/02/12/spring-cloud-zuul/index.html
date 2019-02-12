@@ -4,22 +4,31 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>无知是天堂</title>
+  <title>spring-cloud-zuul | 无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
   
   
-  <meta name="description" content="JAVA Blog">
-<meta property="og:type" content="website">
-<meta property="og:title" content="无知是天堂">
-<meta property="og:url" content="http://yoursite.com/index.html">
+    <meta name="description" content="首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。
+首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来支持这样的 架构。当客户端应用单击某个功能的时候往往会发出 一些对微服务获取资源的请求到后端， 这些请求通过FS、 Nginx等设施的路由和负载均衡分配后，被转发到各个不">
+  
+  <meta name="description" content="首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。 首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来支持这样的 架构。当客户端应用单击某个功能的时候往往会发出 一些对微服务获取资源的请求到后端， 这些请求通过FS、 Nginx等设施的路由和负载均衡分配后，被转发到各个不">
+<meta name="keywords" content="Java,Spring Cloud">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spring-cloud-zuul">
+<meta property="og:url" content="http://yoursite.com/2019/02/12/spring-cloud-zuul/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="JAVA Blog">
+<meta property="og:description" content="首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。 首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来支持这样的 架构。当客户端应用单击某个功能的时候往往会发出 一些对微服务获取资源的请求到后端， 这些请求通过FS、 Nginx等设施的路由和负载均衡分配后，被转发到各个不">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://s2.ax1x.com/2019/02/12/kdvFVx.png">
+<meta property="og:image" content="https://s2.ax1x.com/2019/02/12/kwFql6.png">
+<meta property="og:image" content="https://s2.ax1x.com/2019/02/12/kwkvvV.png">
+<meta property="og:updated_time" content="2019-02-12T12:08:04.165Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="无知是天堂">
-<meta name="twitter:description" content="JAVA Blog">
+<meta name="twitter:title" content="spring-cloud-zuul">
+<meta name="twitter:description" content="首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。 首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来支持这样的 架构。当客户端应用单击某个功能的时候往往会发出 一些对微服务获取资源的请求到后端， 这些请求通过FS、 Nginx等设施的路由和负载均衡分配后，被转发到各个不">
+<meta name="twitter:image" content="https://s2.ax1x.com/2019/02/12/kdvFVx.png">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -49,13 +58,7 @@
   </nav>
   <div class="clearfix"></div>
 </header>
-    <div class="content">
-
-
-
-
-  
-    <article class="post">
+    <div class="content"><article class="post">
   <header>
     
       <div class="icon"></div>
@@ -67,7 +70,7 @@
     
     
   
-    <h1 class="title"><a href="/2019/02/12/spring-cloud-zuul/">spring-cloud-zuul</a></h1>
+    <h1 class="title">spring-cloud-zuul</h1>
   
 
   </header>
@@ -162,25 +165,19 @@
 
     
   </div>
-  <footer class="end-sep">
+  <footer>
     
       
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/Java/">Java</a>, <a class="tags-link" href="/tags/Spring-Cloud/">Spring Cloud</a>
+  </div>
+
       
     
     <div class="clearfix"></div>
   </footer>
 </article>
-
-
-  
-
-  <nav id="pagination">
-  
-  
-    <a href="/page/2/" class="next">Next</a>
-  
-  <div class="clearfix"></div>
-</nav>
 
 </div>
   </div>
