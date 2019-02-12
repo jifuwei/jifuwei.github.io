@@ -4,22 +4,32 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>无知是天堂</title>
+  <title>Spring Cloud——容错保护 Hystrix | 无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
   
   
-  <meta name="description" content="JAVA Blog">
-<meta property="og:type" content="website">
-<meta property="og:title" content="无知是天堂">
-<meta property="og:url" content="http://yoursite.com/index.html">
+    <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371
+
+在微服务架构中， 存在着那么多的服务单元， 若 一个单元出现故障， 就很容易因依赖 关系而引发故障的蔓延，最终导致整个系统的瘫痪， 这样的架构相较传统架构更加不稳定。 为了解决这样的问题， 产生了断路器等一系列的服务保护机制。
+容">
+  
+  <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  在微服务架构中， 存在着那么多的服务单元， 若 一个单元出现故障， 就很容易因依赖 关系而引发故障的蔓延，最终导致整个系统的瘫痪， 这样的架构相较传统架构更加不稳定。 为了解决这样的问题， 产生了断路器等一系列的服务保护机制。 容">
+<meta name="keywords" content="Java,Spring Cloud">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring Cloud——容错保护 Hystrix">
+<meta property="og:url" content="http://yoursite.com/2019/01/29/spring-cloud-hystrix/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="JAVA Blog">
+<meta property="og:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  在微服务架构中， 存在着那么多的服务单元， 若 一个单元出现故障， 就很容易因依赖 关系而引发故障的蔓延，最终导致整个系统的瘫痪， 这样的架构相较传统架构更加不稳定。 为了解决这样的问题， 产生了断路器等一系列的服务保护机制。 容">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://s2.ax1x.com/2019/01/29/kQhPKS.png">
+<meta property="og:image" content="https://s2.ax1x.com/2019/01/29/kQTejP.png">
+<meta property="og:updated_time" content="2019-02-12T02:07:57.106Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="无知是天堂">
-<meta name="twitter:description" content="JAVA Blog">
+<meta name="twitter:title" content="Spring Cloud——容错保护 Hystrix">
+<meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  在微服务架构中， 存在着那么多的服务单元， 若 一个单元出现故障， 就很容易因依赖 关系而引发故障的蔓延，最终导致整个系统的瘫痪， 这样的架构相较传统架构更加不稳定。 为了解决这样的问题， 产生了断路器等一系列的服务保护机制。 容">
+<meta name="twitter:image" content="https://s2.ax1x.com/2019/01/29/kQhPKS.png">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -49,13 +59,7 @@
   </nav>
   <div class="clearfix"></div>
 </header>
-    <div class="content">
-
-
-
-
-  
-    <article class="post">
+    <div class="content"><article class="post">
   <header>
     
       <div class="icon"></div>
@@ -67,7 +71,7 @@
     
     
   
-    <h1 class="title"><a href="/2019/01/29/spring-cloud-hystrix/">Spring Cloud——容错保护 Hystrix</a></h1>
+    <h1 class="title">Spring Cloud——容错保护 Hystrix</h1>
   
 
   </header>
@@ -186,25 +190,19 @@
 
     
   </div>
-  <footer class="end-sep">
+  <footer>
     
       
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/Java/">Java</a>, <a class="tags-link" href="/tags/Spring-Cloud/">Spring Cloud</a>
+  </div>
+
       
     
     <div class="clearfix"></div>
   </footer>
 </article>
-
-
-  
-
-  <nav id="pagination">
-  
-  
-    <a href="/page/2/" class="next">Next</a>
-  
-  <div class="clearfix"></div>
-</nav>
 
 </div>
   </div>
