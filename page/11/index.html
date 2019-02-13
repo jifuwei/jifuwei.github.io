@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/01/22/jvm-bytecode-engine/">
-  <time datetime="2019-01-22T12:14:33.000Z">
-    2019-01-22
+      <a href="/2019/01/27/spring-cloud-SB/">
+  <time datetime="2019-01-27T06:44:38.000Z">
+    2019-01-27
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/01/22/jvm-bytecode-engine/">JVM——虚拟机字节码执行引擎</a></h1>
+    <h1 class="title"><a href="/2019/01/27/spring-cloud-SB/">Spring Cloud——基础构建框架Spring Boot</a></h1>
   
 
   </header>
@@ -77,25 +77,31 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<h2 id="1-运行时栈帧结构"><a href="#1-运行时栈帧结构" class="headerlink" title="1.运行时栈帧结构"></a>1.运行时栈帧结构</h2><p><strong>栈帧（Stack Frame</strong>是用于支持方法调用和方法执行的数据结构。它是虚拟机运行时数据区中的虚拟机栈的栈元素，存储了方法的局部变量表、操作数栈、动态链接和方法返回地址等信息。每一个方法从调用开始到执行完成的过程，就对应着一个栈帧在虚拟机栈里面从入栈道出栈的过程。<br><img src="https://cdn.nlark.com/yuque/0/2018/jpeg/155206/1541065156986-952228bd-7316-49d0-b33b-8f344f4c20f1.jpeg" alt=""></p>
-<h2 id="局部变量表"><a href="#局部变量表" class="headerlink" title="局部变量表"></a>局部变量表</h2><p>局部变量表是一组变量值存储空间，用于存放方法的参数和方法类定义的局部变量。</p>
-<p>它是以变量槽（Variable Slot）为最小单位，每一个Slot（32位）都应该能放一个 boolean 、byte 、char 、float 、 reference 、 short 、 int 或 returnAddress 类型数据。而至于 long 、double 两种数据则被规定为是64位数据（连续两个32位）。<br>reference类型数据可能食32位，也可能是64位数据</p>
-<h2 id="操作数栈"><a href="#操作数栈" class="headerlink" title="操作数栈"></a>操作数栈</h2><p>也被称之为操作栈，是一个先进先出（FIFO）的栈。</p>
-<p>操作数栈的最大深度也在编译的时候就被写入到code属性的 max_stacks 数据项之中。</p>
-<p>在概念模型中，两个栈帧相互之间是完全独立的，但是大多数虚拟机会做一些优化处理，令两个栈帧出现一部分重叠，这样在方法调用时就可以公用一部分数据，无须进行额外的参数复制传递的操作。如下图示：<br><img src="https://cdn.nlark.com/yuque/0/2018/png/155206/1541065183366-ff0089fd-789d-4355-8e74-12f94bf2acad.png" alt=""></p>
-<h2 id="动态连接"><a href="#动态连接" class="headerlink" title="动态连接"></a>动态连接</h2><p>每个栈帧都包含一个运行时常量池中指向该栈帧所属方法的引用，这是为了支持方法调用过程中的动态连接。</p>
-<h2 id="方法返回地址"><a href="#方法返回地址" class="headerlink" title="方法返回地址"></a>方法返回地址</h2><p>当一个方法被执行时，有两种方式推出这个方法：</p>
+<h2 id="命令行参数"><a href="#命令行参数" class="headerlink" title="命令行参数"></a>命令行参数</h2><p>在用命令行方式启动 SpringBoot 应用时， 连续的两个减号–就是对 app让ca巨on.proper巨es 中 的 属 性 值 进 行赋值 的标识。 所以 ， java -jar xxx.jar–server.por七=8888命令， 等价千在 app巨ca巨on.proper巨es 中添加<br>属性server.port= 8888</p>
+<h2 id="多环境配置"><a href="#多环境配置" class="headerlink" title="多环境配置"></a>多环境配置</h2><p>在 Spring Boot 中， 多环境配置的文件名需要满足 application-{profile}.<br>proper巨es的格式， 其中{profile}对应你的环境标识， 如下所示。</p>
 <ul>
-<li>正常完成出口（Normal Method Invocation Completion）</li>
-<li>异常完成出口（Abrupt Method Invocation Completion）</li>
+<li>app巨ca巨on-dev.proper巨es: 开发环境</li>
+<li>applica巨on-test.proper巨es: 测试环境</li>
+<li>app巨cation-prod.proper巨es: 生产环境</li>
 </ul>
-<h2 id="附加信息"><a href="#附加信息" class="headerlink" title="附加信息"></a>附加信息</h2><p>虚拟机规范允许具体的虚拟机实现增加一些规范里没有描述的信息到栈帧之中。</p>
-<h2 id="2-方法调用"><a href="#2-方法调用" class="headerlink" title="2.方法调用"></a>2.方法调用</h2><p>确定被调用方法的版本（即调用哪一个方法）。</p>
-<h2 id="方法解析"><a href="#方法解析" class="headerlink" title="方法解析"></a>方法解析</h2><p>调用目标在程序写好、编译器进行编译时就确定下来，这种方法的调用称之为解析（Resolution）。<br>简单总结就是：编译器可知，运行期不可变。<br>在Java中符合这种要求的方法主要有：静态方法和私有方法</p>
-<h2 id="分派"><a href="#分派" class="headerlink" title="分派"></a>分派</h2><h3 id="静态分派"><a href="#静态分派" class="headerlink" title="静态分派"></a>静态分派</h3><p><code>Human man = new Man();</code><br>静态类型：<code>Human</code><br>实际类型：<code>Man</code><br>在编译阶段，Javac编译器就根据参数的静态类型决定使用哪个重载版本。</p>
-<h3 id="动态分派"><a href="#动态分派" class="headerlink" title="动态分派"></a>动态分派</h3><p>在运行期间根据实际类型确定方法执行版本的分配过程称为动态分派。</p>
-<h3 id="单分派与多分派"><a href="#单分派与多分派" class="headerlink" title="单分派与多分派"></a>单分派与多分派</h3><p>单分派是根据一个宗量对目标方法进行选择。</p>
-<p>多分派则是根据多于一个的宗量对目标方法进行选择。</p>
+<p>至于具体哪个配置文件会被加载， 需要在 app巨ca巨on.properties 文件中通过 spring.profiles.active 属性来设置， 其 值 对应配置文件中的{profile}值。 如 spring.profiles.active= te江就会加载 app巨ca巨on士est.proper巨es配置<br>文件内容。</p>
+<h2 id="加载顺序"><a href="#加载顺序" class="headerlink" title="加载顺序"></a>加载顺序</h2><p>为了能够更合理地重写各属性的值 ， SpringBoo使用了下面这种较为特别的属性加载顺序：</p>
+<ul>
+<li>在 命令行中传入的参数。</li>
+<li>SPRING APPLICATION JSON中的属性。 SPRING_APPLICATION—JSON是以JSON格式配置在系统 环境变量中的内容。</li>
+<li>java:comp/env中的JNDI 属性。</li>
+<li>Java的系统属性， 可以通过System.getProperties()获得的内容。</li>
+<li>操作系统的环境变量 。</li>
+<li>通过random.*配置的随机属性。</li>
+<li>位于当前应用 jar 包之外，针对不同{profile}环境的配置文件内容，例如application-{profile}.properties或是YAML定义的配置文件。</li>
+<li>位于当前应用 jar 包之内，针对不同{profile}环境的配置文件内容，例如application-{profile}.properties或是YAML定义的配置文件。</li>
+<li>位于当前应用jar包之外的application.properties和YAML配置内容。</li>
+<li>位于当前应用jar包之内的application.properties和YAML配置内容。</li>
+<li>在@Configuration注解修改的类中，通过@PropertySource注解定义的属性。</li>
+<li>应用默认属性，使用SpringApplication.setDefaultProperties 定义的内容。</li>
+</ul>
+<p><strong>优先级按上面的顺序由高到低，越在前面优先级越高</strong></p>
+<h2 id="监控与管理"><a href="#监控与管理" class="headerlink" title="监控与管理"></a>监控与管理</h2><p>spring-boo七-starter-actuator 模块的实现对千实施微服务的中小团队来说， 可以有效地省去或大大减少监控系统在采集应用指标时的开发量。 当然， 它也并不是万能 的， 有时候也需要对其做 一些简单的扩展来帮助我们实现自身系统个性化的监控需求。 所 以， 在本节将详细介绍 一些关于 spring-boo七-s七ar七er-ac七uator 模块的内容， 包括 原生提供 的端点以及 一 些常用的扩展和配置方式等。</p>
 
     
   </div>
@@ -131,7 +137,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.5px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 17.5px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 17.5px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12.5px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12.5px;">distributed</a> <a href="/tags/原/" style="font-size: 15px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 18px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -142,23 +148,23 @@
   <ul class="entry">
     
       <li>
-        <a href="/2019/02/12/spring-cloud-config/">spring-cloud-config</a>
+        <a href="/2019/02/13/mq-reliable/">消息队列——可靠性</a>
       </li>
     
       <li>
-        <a href="/2019/02/12/spring-cloud-zuul/">spring-cloud-zuul</a>
+        <a href="/2019/02/13/mq-unique-consume/">消息队列——幂等性</a>
       </li>
     
       <li>
-        <a href="/2019/02/12/spring-cloud-feign/">spring-cloud-feign</a>
+        <a href="/2019/02/13/mq-high-available/">消息队列——高可用</a>
       </li>
     
       <li>
-        <a href="/2019/01/29/spring-cloud-hystrix/">Spring Cloud——容错保护 Hystrix</a>
+        <a href="/2019/02/13/mq-init/">消息队列——纵览</a>
       </li>
     
       <li>
-        <a href="/2019/01/28/spring-cloud-ribbon/">Spring Cloud——负载均衡 Ribbon</a>
+        <a href="/2019/02/12/spring-cloud-config/">Spring Cloud——配置中心 Config</a>
       </li>
     
   </ul>

@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/02/12/spring-cloud-feign/">
-  <time datetime="2019-02-12T02:09:10.000Z">
-    2019-02-12
+      <a href="/2019/02/13/mq-high-available/">
+  <time datetime="2019-02-13T12:45:03.000Z">
+    2019-02-13
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/02/12/spring-cloud-feign/">spring-cloud-feign</a></h1>
+    <h1 class="title"><a href="/2019/02/13/mq-high-available/">消息队列——高可用</a></h1>
   
 
   </header>
@@ -77,34 +77,27 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p>本章我们即将介绍的 Spring Cloud Feign 就是这样一个工具。 它基于Netflix Feign实现， 整合了 pring Cloud Ribbon 与 Spring Cloud Hystrix, 除了提供这两者的强大功能之外， 它还提供了一 种声明式的 Web 服务客户端定义方式。</p>
-<h2 id="继承特性"><a href="#继承特性" class="headerlink" title="继承特性"></a>继承特性</h2><p>当使用 Spring MVC 的 注解来绑定服务接口时， 我们几乎完全可以从服务提供方的 Controller 中依靠复制操作，构建出相应的服务客户端绑定接口。既然存在这么多复制操作， 我们自然需要考虑这部分内容是否可以得到进一 步的抽象呢?在 Spring Cloud Feign 中，针 对该问题提供了继承特性来帮助我们解决这些复制操作， 以进一步减少编码量。 下面， 我们详细看看如何通过Spring Cloud Feign 的继承特性来实现 REST 接口定义的复用。</p>
-<ul>
-<li>独立api二方包</li>
-<li>producer &amp; consumer 依赖api包构建服务</li>
-</ul>
-<p><strong>优点与缺点</strong><br>使用 Spring Cloud Feign 继承特性的优点很明显， 可以将接口的定义从 Controller 中剥离， 同时配合Maven私有仓库就可以轻易地实现接口定义的共享， 实现在构建期的接口绑 定， 从而有效减少服务客户端的绑定配置。 这么做虽然可以很方便地实现接口定义和依赖 的共享， 不用再复制粘贴接口进行绑定， 但是这样的做法使用不当的话会带来副作用。 由 于接口在构建期间就建立起了依赖，那么接口变动就会对项目构建造成影响， 可能服务提 供方修改了一个接口定义，那么会直接导致客户端工程的构建失败。 所以， 如果开发团队 通过此方法来实现接口共享的话， 建议在开发评审期间严格遵守面向对象的开闭原则， 尽 可能地做好前后版本的兼容，防止牵一发而动全身的后果，增加团队不必要的维护工作量。</p>
-<h2 id="Ribbon配置"><a href="#Ribbon配置" class="headerlink" title="Ribbon配置"></a>Ribbon配置</h2><p>由于SpringCloudFeign的客户端负载均衡是通过SpringCloudRibbon实现的，所以我 们可以直接通过配置沁bbon客户端的方式来自定义各个服务客户端调用的参数<br><strong>全局配置</strong><br>全局配置的方法非常简单， 我们可以直接使用ribbon.<code>&lt;key&gt;=&lt;value&gt;</code>的方式来设 置ribbon的各项默认参数<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ribbon.ConnectTimeout=<span class="number">500</span> </span><br><span class="line">ribbon.ReadTimeout=SOOO</span><br></pre></td></tr></table></figure></p>
-<p><strong>指定服务配置</strong><br>大多数情况下，我们对于服务调用的超时时间可能会根据实际服务的特性做一 些调整， 所以仅仅依靠默认的全局配置是不行的。 在使用SpringCloudFeign的时候，针对各个服务 客户端进行个性化配置的方式与使用SpringCloudRibbon时的配置方式是一样的， 都采用<code>&lt;client&gt;. Ribbon.key=value</code> 的格式进行设置<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">HELLO-SERVICE.ribbon.ConnectTimeout=SOO </span><br><span class="line">HELLO-SERVICE.ribbon.ReadTimeout=<span class="number">2000</span></span><br></pre></td></tr></table></figure></p>
-<h2 id="重试机制"><a href="#重试机制" class="headerlink" title="重试机制"></a>重试机制</h2><p>在 c端 应用中增加上文中提到的重试配置参数。其中，由于 HELLO­ SERVICE.ribbon.MaxAutoRetries 设置为 1, 所以重试策略先尝试访问首选实 例一次， 失败后才更换实例访问， 而更换实例访问的次数通过 HELLO-SERVICE. ribbon.MaxAutoRetriesNextServer 参数 设置为 2, 所以会尝试更换两次实 例进行重试。</p>
-<h2 id="Hystrix配置"><a href="#Hystrix配置" class="headerlink" title="Hystrix配置"></a>Hystrix配置</h2><p><strong>全局配置</strong><br>对于Hystrix的全局配置同Spring Cloud伈bbon的全局配置 一 样，直接使用它的 默认配 置前缀hys七豆x.command.defau巨 就可以进行设置， 比如设置全局的超时时间:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hystrix.command.<span class="keyword">default</span>.execution.isolation.thread.timeoutinMilliseconds=SOOO</span><br></pre></td></tr></table></figure></p>
-<p><strong>服务降级配置</strong></p>
-<ul>
-<li>服务降级逻辑的实现只需要为 Feign 客户端的定义接口编写一个具体的接口实现类。 比如为 HelloService 接口实现一个服务降级类 HelloServiceFallback, 其 中每个重写方法的实现逻辑都可以用来定义相应的服务降级逻辑</li>
-<li>在服务绑定接口 HelloService 中， 通过@FeignC巨ent 注解的 fallback 属性来 指定对应的服务降级实现类。<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@FeignClient</span>&#123;narne=<span class="string">"HELLO-SERVICE"</span>, fallback= HelloServiceFallback.class) </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">HelloService</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h2 id="其他配置"><a href="#其他配置" class="headerlink" title="其他配置"></a>其他配置</h2><p><strong>请求压缩</strong><br>Spring Cloud Feign支持对请求与响应进行 GZIP 压缩，以减少通信过程中的性能损耗。 我们只需通过下面两个参数设置， 就能开启请求与响应的压缩功能:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">feign.compression.request.enabled=<span class="keyword">true</span> </span><br><span class="line">feign.compression.response.enabled=<span class="keyword">true</span></span><br></pre></td></tr></table></figure></p>
-<p>同时， 我们还能对请求压缩做一些更细致的设置， 比如下面的配置内容指定了压缩的 请求数据类型， 并设置了请求压缩的大小下限， 只有超过这个大小的请求才会对其进行压缩。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">feign.compression.request.enabled=<span class="keyword">true</span> </span><br><span class="line">feign.compression.request.mime-types=text/xml,application/xml,application/json</span><br><span class="line">feign.compression.request.min-request-size=<span class="number">2048</span></span><br></pre></td></tr></table></figure></p>
-<p><strong>日志配置</strong><br>Spring Cloud Feign 在构建被@FeignClient 注解修饰的服务客户端时，会为每一个客 户端都创建一个 feign.Logger 实例，我们可以利用该日志对象的 DEBUG 模式来帮助分 析 Feign 的请求细节。可以在app巨ca巨on.proper巨es 文件中使用logging.level. <feignclient> 的参数配置格式 来开 启 指 定 Feign 客 户 端的 DEBUG 日 志 ， 其中 <feignclient>为 Feign 客户端定义接口的完整路径， 比如针对本章中我们实现的 HelloService 可以按如下配置开启:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logging.level.com.didispace.web.HelloService= DEBUG</span><br></pre></td></tr></table></figure></feignclient></feignclient></p>
-<p>但是， 只是添加了如上配置， 还无法实现对 DEBUG 日志的输出。 这时由于 Feign 客 户端默认的 Logger.Level 对象定义为 NONE 级别， 该级别不会记录任何 Feign 调用过程 中的信息， 所以我们需要调整它的级别， 针对全局的日志级别， 可以在应用主类中直接加 入 Logger.Level 的 Bean 创建</p>
-<p>对于 Feign 的 Logger级别主要有下面 4 类， 可根据实际需要进行调整使用。</p>
-<ul>
-<li>NONE: 不记录任何信息。</li>
-<li>BASIC: 仅记录请求方法、URL以及响应状态码和执行时间。</li>
-<li>HEADERS: 除了记录BASIC级别的信息之外， 还会记录请求和响应的头信息。 </li>
-<li>FULL: 记录所有请求与响应的明细， 包括头信息、 请求体、 元数据等。</li>
-</ul>
+<h2 id="RabbitMQ-的高可用性"><a href="#RabbitMQ-的高可用性" class="headerlink" title="RabbitMQ 的高可用性"></a>RabbitMQ 的高可用性</h2><p>RabbitMQ 是比较有代表性的，因为是基于主从（非分布式）做高可用性的，我们就以 RabbitMQ 为例子讲解第一种 MQ 的高可用性怎么实现。</p>
+<p>RabbitMQ 有三种模式：单机模式、普通集群模式、镜像集群模式。</p>
+<p><strong>单机模式</strong><br>单机模式，就是 Demo 级别的，一般就是你本地启动了玩玩儿的😄，没人生产用单机模式。</p>
+<p><strong>普通集群模式（无高可用性）</strong><br>普通集群模式，意思就是在多台机器上启动多个 RabbitMQ 实例，每个机器启动一个。你创建的 queue，只会放在一个 RabbitMQ 实例上，但是每个实例都同步 queue 的元数据（元数据可以认为是 queue 的一些配置信息，通过元数据，可以找到 queue 所在实例）。你消费的时候，实际上如果连接到了另外一个实例，那么那个实例会从 queue 所在实例上拉取数据过来。<br><img src="https://s2.ax1x.com/2019/02/13/k0TzJH.png" alt=""></p>
+<p>这种方式确实很麻烦，也不怎么好，没做到所谓的分布式，就是个普通集群。因为这导致你要么消费者每次随机连接一个实例然后拉取数据，要么固定连接那个 queue 所在实例消费数据，前者有数据拉取的开销，后者导致单实例性能瓶颈。</p>
+<p>而且如果那个放 queue 的实例宕机了，会导致接下来其他实例就无法从那个实例拉取，如果你开启了消息持久化，让 RabbitMQ 落地存储消息的话，消息不一定会丢，得等这个实例恢复了，然后才可以继续从这个 queue 拉取数据。</p>
+<p>所以这个事儿就比较尴尬了，这就没有什么所谓的高可用性，这方案主要是提高吞吐量的，就是说让集群中多个节点来服务某个 queue 的读写操作。</p>
+<p><strong>镜像集群模式（高可用性）</strong><br>这种模式，才是所谓的 RabbitMQ 的高可用模式。跟普通集群模式不一样的是，在镜像集群模式下，你创建的 queue，无论元数据还是 queue 里的消息都会存在于多个实例上，就是说，每个 RabbitMQ 节点都有这个 queue 的一个完整镜像，包含 queue 的全部数据的意思。然后每次你写消息到 queue 的时候，都会自动把消息同步到多个实例的 queue 上。<br><img src="https://s2.ax1x.com/2019/02/13/k07CQI.png" alt=""></p>
+<p>那么如何开启这个镜像集群模式呢？其实很简单，RabbitMQ 有很好的管理控制台，就是在后台新增一个策略，这个策略是镜像集群模式的策略，指定的时候是可以要求数据同步到所有节点的，也可以要求同步到指定数量的节点，再次创建 queue 的时候，应用这个策略，就会自动将数据同步到其他的节点上去了。</p>
+<p>这样的话，好处在于，你任何一个机器宕机了，没事儿，其它机器（节点）还包含了这个 queue 的完整数据，别的 consumer 都可以到其它节点上去消费数据。坏处在于，第一，这个性能开销也太大了吧，消息需要同步到所有机器上，导致网络带宽压力和消耗很重！第二，这么玩儿，不是分布式的，就没有扩展性可言了，如果某个 queue 负载很重，你加机器，新增的机器也包含了这个 queue 的所有数据，并没有办法线性扩展你的 queue。你想，如果这个 queue 的数据量很大，大到这个机器上的容量无法容纳了，此时该怎么办呢？</p>
+<h2 id="Kafka-的高可用性"><a href="#Kafka-的高可用性" class="headerlink" title="Kafka 的高可用性"></a>Kafka 的高可用性</h2><p>Kafka 一个最基本的架构认识：由多个 broker 组成，每个 broker 是一个节点；你创建一个 topic，这个 topic 可以划分为多个 partition，每个 partition 可以存在于不同的 broker 上，每个 partition 就放一部分数据。</p>
+<p>这就是天然的分布式消息队列，就是说一个 topic 的数据，是分散放在多个机器上的，每个机器就放一部分数据。</p>
+<p>实际上 RabbmitMQ 之类的，并不是分布式消息队列，它就是传统的消息队列，只不过提供了一些集群、HA(High Availability, 高可用性) 的机制而已，因为无论怎么玩儿，RabbitMQ 一个 queue 的数据都是放在一个节点里的，镜像集群下，也是每个节点都放这个 queue 的完整数据。</p>
+<p>Kafka 0.8 以前，是没有 HA 机制的，就是任何一个 broker 宕机了，那个 broker 上的 partition 就废了，没法写也没法读，没有什么高可用性可言。</p>
+<p>比如说，我们假设创建了一个 topic，指定其 partition 数量是 3 个，分别在三台机器上。但是，如果第二台机器宕机了，会导致这个 topic 的 1/3 的数据就丢了，因此这个是做不到高可用的。<br><img src="https://s2.ax1x.com/2019/02/13/k07ETS.png" alt=""></p>
+<p>Kafka 0.8 以后，提供了 HA 机制，就是 replica（复制品） 副本机制。每个 partition 的数据都会同步到其它机器上，形成自己的多个 replica 副本。所有 replica 会选举一个 leader 出来，那么生产和消费都跟这个 leader 打交道，然后其他 replica 就是 follower。写的时候，leader 会负责把数据同步到所有 follower 上去，读的时候就直接读 leader 上的数据即可。只能读写 leader？很简单，要是你可以随意读写每个 follower，那么就要 care 数据一致性的问题，系统复杂度太高，很容易出问题。Kafka 会均匀地将一个 partition 的所有 replica 分布在不同的机器上，这样才可以提高容错性。<br><img src="https://s2.ax1x.com/2019/02/13/k07eYQ.png" alt=""></p>
+<p>这么搞，就有所谓的高可用性了，因为如果某个 broker 宕机了，没事儿，那个 broker上面的 partition 在其他机器上都有副本的，如果这上面有某个 partition 的 leader，那么此时会从 follower 中重新选举一个新的 leader 出来，大家继续读写那个新的 leader 即可。这就有所谓的高可用性了。</p>
+<p>写数据的时候，生产者就写 leader，然后 leader 将数据落地写本地磁盘，接着其他 follower 自己主动从 leader 来 pull 数据。一旦所有 follower 同步好数据了，就会发送 ack 给 leader，leader 收到所有 follower 的 ack 之后，就会返回写成功的消息给生产者。（当然，这只是其中一种模式，还可以适当调整这个行为）</p>
+<p>消费的时候，只会从 leader 去读，但是只有当一个消息已经被所有 follower 都同步成功返回 ack 的时候，这个消息才会被消费者读到。</p>
+<p>看到这里，相信你大致明白了 Kafka 是如何保证高可用机制的了，对吧？不至于一无所知，现场还能给面试官画画图。要是遇上面试官确实是 Kafka 高手，深挖了问，那你只能说不好意思，太深入的你没研究过。</p>
+<p>参考：<br><a href="https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/how-to-ensure-high-availability-of-message-queues.md" target="_blank" rel="noopener">如何保证消息队列的高可用？</a></p>
 
     
   </div>
@@ -140,7 +133,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.5px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 17.5px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 17.5px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12.5px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12.5px;">distributed</a> <a href="/tags/原/" style="font-size: 15px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 18px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -151,23 +144,23 @@
   <ul class="entry">
     
       <li>
-        <a href="/2019/02/12/spring-cloud-config/">spring-cloud-config</a>
+        <a href="/2019/02/13/mq-reliable/">消息队列——可靠性</a>
       </li>
     
       <li>
-        <a href="/2019/02/12/spring-cloud-zuul/">spring-cloud-zuul</a>
+        <a href="/2019/02/13/mq-unique-consume/">消息队列——幂等性</a>
       </li>
     
       <li>
-        <a href="/2019/02/12/spring-cloud-feign/">spring-cloud-feign</a>
+        <a href="/2019/02/13/mq-high-available/">消息队列——高可用</a>
       </li>
     
       <li>
-        <a href="/2019/01/29/spring-cloud-hystrix/">Spring Cloud——容错保护 Hystrix</a>
+        <a href="/2019/02/13/mq-init/">消息队列——纵览</a>
       </li>
     
       <li>
-        <a href="/2019/01/28/spring-cloud-ribbon/">Spring Cloud——负载均衡 Ribbon</a>
+        <a href="/2019/02/12/spring-cloud-config/">Spring Cloud——配置中心 Config</a>
       </li>
     
   </ul>

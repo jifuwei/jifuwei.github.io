@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2018/09/30/travel-to-xn/">
-  <time datetime="2018-09-30T06:10:19.000Z">
-    2018-09-30
+      <a href="/2019/01/17/jvm-gc/">
+  <time datetime="2019-01-17T06:18:22.000Z">
+    2019-01-17
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2018/09/30/travel-to-xn/">十一游青海</a></h1>
+    <h1 class="title"><a href="/2019/01/17/jvm-gc/">JVM——垃圾收集器</a></h1>
   
 
   </header>
@@ -77,40 +77,128 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><ul>
-<li>防晒，高原紫外线很毒</li>
-<li>唇膏，好像会开裂 真恶心啊~</li>
-<li>衣服准备好，10月份西宁气温3~14℃，感觉得带个羽绒服或者棉衣，稳</li>
-<li>围巾 老年人必备系列</li>
-<li>现金，不知西宁那边在线支付啥情况，以防万一</li>
-<li>寺庙或者僧侣避免拍照片，被打了怎么办，小命要紧</li>
-<li>高原反应，我觉得应该没啥问题T_T</li>
+<h3 id="1-1对象已死么？"><a href="#1-1对象已死么？" class="headerlink" title="1.1对象已死么？"></a>1.1对象已死么？</h3><p>堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“</p>
+<h4 id="1-1-1引用计数法"><a href="#1-1-1引用计数法" class="headerlink" title="1.1.1引用计数法"></a>1.1.1引用计数法</h4><p>给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的<br>缺点：</p>
+<ul>
+<li>循环引用无法回收</li>
 </ul>
-<h2 id="交通"><a href="#交通" class="headerlink" title="交通"></a>交通</h2><h3 id="1-机场去市区"><a href="#1-机场去市区" class="headerlink" title="1.机场去市区"></a>1.机场去市区</h3><ul>
-<li>打车，30~40分钟，价格100+<br><img src="/images/taxi.jpeg" alt=""></li>
-<li>公交，首推机场大巴 差不多1个小时 价格21元<br><img src="/images/gj.jpeg" alt=""><br><img src="/images/gj-xx.jpeg" alt=""></li>
+<h4 id="1-1-2可达性分析法（主流实现）"><a href="#1-1-2可达性分析法（主流实现）" class="headerlink" title="1.1.2可达性分析法（主流实现）"></a>1.1.2可达性分析法（主流实现）</h4><p>通过一系列称为”GC ROOTs“的对象作为起始点，向下搜索，但一个对象到GC Roots没有任何引用链相连，则证明对象不可用</p>
+<p>包括：</p>
+<ul>
+<li>虚拟机栈（栈针中的本地变量表）中引用的对象</li>
+<li>方法区中类静态属性引用的对象</li>
+<li>方法区中常亮引用的对象</li>
+<li>本地方法栈中JNI（即Na</li>
 </ul>
-<h2 id="游玩路线"><a href="#游玩路线" class="headerlink" title="游玩路线"></a>游玩路线</h2><h3 id="10月1日晚-神旺酒店附近"><a href="#10月1日晚-神旺酒店附近" class="headerlink" title="10月1日晚 神旺酒店附近"></a>10月1日晚 神旺酒店附近</h3><p>打开大众点评随便找点排行高的当地小吃，回来再更新</p>
-<h3 id="10月2日-西宁市区"><a href="#10月2日-西宁市区" class="headerlink" title="10月2日 西宁市区"></a>10月2日 西宁市区</h3><h4 id="0-塔尔寺-（70元门票-人）"><a href="#0-塔尔寺-（70元门票-人）" class="headerlink" title="0.塔尔寺 （70元门票/人）"></a>0.塔尔寺 （70元门票/人）</h4><ul>
-<li>简介<br>塔尔寺位于西宁湟中县，已有400多年历史，是藏传佛教格鲁派（黄教）最重要的寺院之一，还是黄教创始人宗喀巴大师的诞生地。寺院建筑恢宏、珍宝丰富，又能感受到浓郁的宗教氛围，是西宁最受欢迎的旅游目的地之一。<br><img src="/images/xn_tes.jpg" alt=""></li>
-<li>注意事项<br>寺内，转塔、转经筒都是顺时针的<br>塔尔寺内，只要是在经院内、大殿内，都不许拍照</li>
-<li>路线 （神旺酒店出发 -&gt; 塔尔寺）<br>打车 （30~40分钟）<br><img src="/images/s2t_taxi.jpeg" alt=""><br>公交车 （1个小时多一点儿）<br><img src="/images/s2t_gj.jpeg" alt=""><br><img src="/images/s2t_gj_xx.jpeg" alt=""></li>
+<h4 id="1-1-3-对象引用"><a href="#1-1-3-对象引用" class="headerlink" title="1.1.3 对象引用"></a>1.1.3 对象引用</h4><p>定义：如果reference类型中存储的数值代表的是另外一块内存地址，就成这块内存代表一个引用。</p>
+<p>jdk1.2后，引用概念得到补充</p>
+<ul>
+<li>强引用，如Object o = new Object()。垃圾收集器永远不会回收。</li>
+<li>软引用，还有用，但是非必须的对象。在系统将要发生内存溢出异常之前，将会把这些对象列进回收范围之中进行二次回收。若这次回收还是没有足够的内存，才会抛出异常。</li>
+<li>弱引用，非必须对象，比软引用强度再弱一些，只能生存到下次来及收集发生之前。</li>
+<li>虚引用，为一个对象设置虚引用关联的唯一目的是能在这个对象呗收集器回收时收到一个系统通知</li>
 </ul>
-<h4 id="1-青海省博物馆（免费，需身份证换票）-这个作为备选，感觉很无聊"><a href="#1-青海省博物馆（免费，需身份证换票）-这个作为备选，感觉很无聊" class="headerlink" title="1.青海省博物馆（免费，需身份证换票）(这个作为备选，感觉很无聊~)"></a>1.青海省博物馆（免费，需身份证换票）(这个作为备选，感觉很无聊~)</h4><p>青海文化的代表作，分别是藏传佛教、青海现代科技发展和（新时代核心价值观下）民族团结、非遗文化、历代文物。唐卡记录了游牧民族的生活信仰。总之挺有青海省特色的，不要尝试和别的省博物馆做比较。</p>
-<h4 id="2-美食之旅"><a href="#2-美食之旅" class="headerlink" title="2.美食之旅"></a>2.美食之旅</h4><p>这一天剩下的行程就是去找吃的 哈哈哈！<br>吃什么详见最下面的美食区罗列</p>
-<h3 id="10月3日-未知结束日期-真景区游玩"><a href="#10月3日-未知结束日期-真景区游玩" class="headerlink" title="10月3日~未知结束日期 真景区游玩"></a>10月3日~未知结束日期 真景区游玩</h3><p>暂时还未想好是包车跟团还是自由行，看状态啦<br>先罗列出几个觉得可取的地点</p>
-<h4 id="0-青海湖"><a href="#0-青海湖" class="headerlink" title="0.青海湖"></a>0.青海湖</h4><p><img src="/images/xn_qhh.png" alt=""><br>青海湖去骑行就好了 交通不是很便利</p>
-<h4 id="1-茶卡盐湖"><a href="#1-茶卡盐湖" class="headerlink" title="1.茶卡盐湖"></a>1.茶卡盐湖</h4><p><img src="/images/xn_ckyh.jpeg" alt=""></p>
-<h4 id="2-祁连"><a href="#2-祁连" class="headerlink" title="2.祁连"></a>2.祁连</h4><p><img src="/images/xn_ql.jpeg" alt=""></p>
-<h4 id="3-张掖七彩丹霞"><a href="#3-张掖七彩丹霞" class="headerlink" title="3.张掖七彩丹霞"></a>3.张掖七彩丹霞</h4><p><img src="/images/xn_qcdx.jpeg" alt=""><br>这个地方感觉是经典</p>
-<h2 id="美食"><a href="#美食" class="headerlink" title="美食"></a>美食</h2><p>我一直觉得旅游不应该玩，应先吃，吃为主，玩为辅，稳得很~~</p>
-<h3 id="1-羊肉"><a href="#1-羊肉" class="headerlink" title="1.羊肉"></a>1.羊肉</h3><p>青海的羊肉名气不如新疆、内蒙，但味道是可以比肩他们甚至是超越的<br>地点：<br>1.白玉巷的“肉香不怕巷子深”（不是烤羊肉，而是手抓羊肉 味道五颗星！！！）<br>2.益鑫手抓羊肉<br><img src="/images/xn_yr.jpg" alt=""></p>
-<h3 id="2-酿皮"><a href="#2-酿皮" class="headerlink" title="2.酿皮"></a>2.酿皮</h3><p>和凉皮很像<br>地点：生莲酿皮（全市很多家店，百度吧）<br><img src="/images/xn_np.jpeg" alt=""></p>
-<h3 id="3-羊肠面（早餐）"><a href="#3-羊肠面（早餐）" class="headerlink" title="3.羊肠面（早餐）"></a>3.羊肠面（早餐）</h3><p>只有早上才营业<br>地点：尕晋娃（五星推荐），虎台店或者小桥店<br><img src="/images/xn_ycm.jpg" alt=""></p>
-<h3 id="4-羊、牛杂碎（早餐）"><a href="#4-羊、牛杂碎（早餐）" class="headerlink" title="4.羊、牛杂碎（早餐）"></a>4.羊、牛杂碎（早餐）</h3><p>只有早上营业，不同于南方的牛杂清汤，这里的做法放了胡椒面等，别具风格<br>地点：<br>1.脂肪街的马而沙牛杂<br>2.南川西路砖厂路口，六一继业羊杂碎</p>
-<h3 id="5-炕羊排"><a href="#5-炕羊排" class="headerlink" title="5.炕羊排"></a>5.炕羊排</h3><p>青海西宁，羊肉当然是最好的选择，现在市面的羊肉摊良莠不齐，味道差异之大如同天壤<br>地点：交通巷北口眼镜炕羊排（交通巷北口往里50米，街道东侧）<br><img src="/images/xn_kyp.jpg" alt=""></p>
-<h3 id="6-酸奶"><a href="#6-酸奶" class="headerlink" title="6.酸奶"></a>6.酸奶</h3><p>外地人都很喜欢喝<br>地点：德禄<br><img src="/images/xn_sn.jpg" alt=""></p>
-<h3 id="7-甜醅"><a href="#7-甜醅" class="headerlink" title="7.甜醅"></a>7.甜醅</h3><p>青海特色！！！很好喝，一定要喝的<br>地点：德禄</p>
+<h4 id="1-1-4生存还是死亡"><a href="#1-1-4生存还是死亡" class="headerlink" title="1.1.4生存还是死亡"></a>1.1.4生存还是死亡</h4><p>即使在可达性分析法总不可达对象，也并非”非死不可“。暂处”缓刑“阶段。<br>真正宣告一个对象死亡，只是要经历两次标记过程：</p>
+<ul>
+<li>第一次筛选没有与GC Roots相关联的引用链，将被标记并且进行一次筛选，筛选条件是此对象是否有必要执行finalize()方法。当对象没有覆盖finalize()方法，或者finalize()方法已经被虚拟机调用过，则”没有必要执行“。</li>
+<li>若需要执行finalize()方法，则将这个对象放置在F-Queue队列中，稍后由虚拟机自动建立、低优先级的Finalizer线程去执行它。（不去关心他的运行结果，防止卡死队列任务）</li>
+<li>finalize()方法是对象逃脱死亡的最后一次机会，稍后GC将对F-Queue中的对象进行第二次小规模的标记，如果对象要在finalize()中成功拯救自己——只需重新与引用链上的任何对象建立联系即可，第二次标记是将会被移出队列</li>
+<li>如果对象这时还未成功逃脱，则基本回收了。</li>
+</ul>
+<h3 id="1-2垃圾收集算法"><a href="#1-2垃圾收集算法" class="headerlink" title="1.2垃圾收集算法"></a>1.2垃圾收集算法</h3><h4 id="1-2-1标记-清除算法"><a href="#1-2-1标记-清除算法" class="headerlink" title="1.2.1标记-清除算法"></a>1.2.1标记-清除算法</h4><p>首先标记出需要回收的对象，在标记完成后统一回收被标记的对象。<br>不足：</p>
+<ul>
+<li>效率问题，标记和清除效率都不高</li>
+<li>空间问题，标记清除后会产生大量不连续的内存碎片，可能导致以后在程序中需要分配较大的对象时，无法找到足够连续的内存而不得不触发垃圾回收动作。</li>
+</ul>
+<h4 id="1-2-2复制算法"><a href="#1-2-2复制算法" class="headerlink" title="1.2.2复制算法"></a>1.2.2复制算法</h4><p>将内存按容量划分为大小相等的两块，每次只使用其中的一块。当这一块内存用完，将存活的对象复制到另一块上面，然后轻量掉所使用过的内存空间。</p>
+<p>现在商业虚拟机都采用这种算法来回收新生代，研究表明，新生代中的对象98%是”朝生夕死“的，不需要按照1:1的比例来划分内存空间。<br>将内存分为一块较大的Eden空间和两块较小的Survivor空间，每次使用Eden和其中一块Survivor。当回收时，将Eden和Survivor中还活着的对象复制到另外一块Survivor上，最后清理掉Eden和刚才用过的Survivor空间。<br>HotSpot虚拟机默认Eden和Survivor大小比例8:1，即只有10%的内存会被浪费。<br>若Survivor空间不够用时，则需要依赖其它内存进行担保分配。</p>
+<h4 id="1-2-3标记-整理算法"><a href="#1-2-3标记-整理算法" class="headerlink" title="1.2.3标记-整理算法"></a>1.2.3标记-整理算法</h4><p>根据老年代的特点（大多数都是存活的对象），标记存活的对象都向一端移动，然后清理掉便捷以外的内存。</p>
+<h4 id="1-2-4分代搜集算法"><a href="#1-2-4分代搜集算法" class="headerlink" title="1.2.4分代搜集算法"></a>1.2.4分代搜集算法</h4><p>商业虚拟机牢记手机都采用”分代收集“算法，这种算法没有什么新的思想，只是依据对象的存活周期的不同将内存划分为几块。<br>一般是把Java堆分为新生代和老年代，这样就可以根据各个年代的特点采用适当的算法。<br>新生代中每次会后都会有大批对象死去，只有少量对象存活，那就选用复制算法。<br>老年代对象存活率高，没有额外的空间对他进行分配担保，就必须使用”标记-清理“或者”标记-整理“算法回收。</p>
+<h3 id="1-3HotSpot算法实现"><a href="#1-3HotSpot算法实现" class="headerlink" title="1.3HotSpot算法实现"></a>1.3HotSpot算法实现</h3><h4 id="1-3-1枚举根节点"><a href="#1-3-1枚举根节点" class="headerlink" title="1.3.1枚举根节点"></a>1.3.1枚举根节点</h4><p>现在很多应用仅仅方法区就有数百兆，如果逐个检查这里面的引用，那么必然会消耗很多时间！<br>另外，可达性分析法对执行时间敏感还体现在GC停顿上：整个分析期间看起来就像被冻结在某个时间节点上，不可以出现分析过程中对象引用关系还在不断变化的情况！这点是导致GC进行时必须停顿所有之前Java执行的线程的重要原因。</p>
+<p>虚拟机并不需要一个不漏的检查完所有执行上下文和全局引用位置，虚拟机应当有办法得知哪些地方存放着对象的引用。在HotSpot中，是使用一组称为OopMap的数据结构来达到目的<br>类在加载完成后，HotSpot把对象内什么偏移量上是什么类型的数据计算出来，在JIT编译过程中，也会在特定的位置记录下栈和寄存器中哪些位置的引用。</p>
+<h4 id="1-3-2安全点"><a href="#1-3-2安全点" class="headerlink" title="1.3.2安全点"></a>1.3.2安全点</h4><p>HotSpot没有为每条指令生成OopMap；<br>在”特定的位置“记录信息到OopMap中，这些位置称为安全点，即程序运行时并非所有地方都停顿下来开始GC，只有到达安全点才进行。</p>
+<p>何时在GC发生时让所有的线程都”跑“到最近的安全点停顿下来</p>
+<ul>
+<li>抢先式中断：在发生GC时，停止全部的线程。如果发现线程中断的地方不在安全点上，就恢复线程，让它”跑“到安全点上。现在几乎没有虚拟机采用这种方法</li>
+<li>主动式中断：当GC需要中断线程时，不直接对线程操作，仅设置一个标志，各线程执行是主动去轮训这个标志，发现标志为真就中断挂起。此时位置就是安全点</li>
+</ul>
+<h4 id="1-3-3安全区域"><a href="#1-3-3安全区域" class="headerlink" title="1.3.3安全区域"></a>1.3.3安全区域</h4><p>安全点无法避免”不执行”线程，所谓不执行的线程指没有分配CPU时间，典型的例子就是线程处于Sleep或者Bloacked状态，这时无法响应JVM请求，“走”到安全的地方中断挂起。<br>安全区域指在一段代码片段中，引用关系不会发生变化。在这个区域中任意的地方开始GC都是安全的。<br>在线程离开安全区域时，他要检查系统是否已经完成了根节点枚举（或者是整个GC的过程），如果完成了，则线程继续执行，否则挂起。</p>
+<h3 id="1-4垃圾收集器"><a href="#1-4垃圾收集器" class="headerlink" title="1.4垃圾收集器"></a>1.4垃圾收集器</h3><p>垃圾收集器是内存回收的具体实现<br>到现在为止还没有最好的收集器出现，更没有万能的收集器，只能选择具体应用最适合的收集器</p>
+<ul>
+<li>Serial</li>
+<li>ParNew</li>
+<li>Parallel Scavenge</li>
+<li>G1</li>
+<li>CMS</li>
+<li>Serial Old (MSC)</li>
+<li>Parallel Old</li>
+</ul>
+<p><img src="https://cdn.nlark.com/yuque/0/2018/jpeg/155206/1539684794863-6710ba03-2fca-4a3f-bb7a-3dccc12678ab.jpeg" alt=""></p>
+<h4 id="1-4-1Serial-收集器"><a href="#1-4-1Serial-收集器" class="headerlink" title="1.4.1Serial 收集器"></a>1.4.1Serial 收集器</h4><p>是一个单线程的收集器，“单线程”指不仅只会使用一个CPU或一条线程去完成垃圾收集工作，更重要的是在垃圾收集时，必须暂停其它所有的工作线程，直到收集结束。<br>依然是虚拟机运行在Client模式下的默认新生代的收集器。<br>优于其他收集器的地方：简单而高效（与其它收集器的单线程比）</p>
+<p>在用户的桌面应用场景中，分配给虚拟机管理的的内存一般来说不会太大，收集几十兆甚至一两百兆的新生代，停顿时间完全可以控制在及时毫秒最多一百毫秒内，只要不频繁发生，还是可以接受的。<br>Serial收集器对于运行在Client模式下的虚拟机来说是个很好的选择。<br><img src="https://pic.yupoo.com/crowhawk/6b90388c/6c281cf0.png" alt=""></p>
+<h4 id="1-4-2ParNew-收集器"><a href="#1-4-2ParNew-收集器" class="headerlink" title="1.4.2ParNew 收集器"></a>1.4.2ParNew 收集器</h4><p>ParNew搜集器是Serial收集器的多线程版本<br>是许多运行在Server模式下的虚拟机首选的新生代收集器，其中一个与性能无关的很重要原因是，除了Serial收集器外，目前只有他能与CMS收集器配合工作！</p>
+<p>ParNew收集器在单CPU的环境中绝对不会有比Serial收集器更好的效果，甚至由于存在线程的交互开销，该收集器在通过超线程技术实现的两个CPU的环境中都不能百分百的保证可以超越Serial收集器。<br>随着可以使用的CPU的数量的增加，他对于GC时系统资源的有效利用有很多好处。它默认开启的线程数与CPU的数量相同，在CPU非常多的环境下，可以限制使用-XX:ParallelGCThreads参数限制垃圾回收线程数。<br><img src="https://pic.yupoo.com/crowhawk/605f57b5/75122b84.png" alt=""></p>
+<h4 id="1-4-3Parallel-Scavenge-收集器"><a href="#1-4-3Parallel-Scavenge-收集器" class="headerlink" title="1.4.3Parallel Scavenge 收集器"></a>1.4.3Parallel Scavenge 收集器</h4><p>新生代收集器，也是使用复制算法的收集器，有时并行的多线程收集器。<br>Parallel Scavenge收集的目标是达到一个可控的吞吐量。吞吐量 = 运行用户代码时间 / (运行用户代码时间 + 垃圾回收时间)，虚拟机总共运行了100分钟，垃圾回收花掉1分钟，则吞吐量是99%。</p>
+<p>停顿时间越短就越适合需要与用户交互的程序，良好的响应速度能提升用户的体验，而高吞吐量则可以有效的利用CPU时间，尽快按成程序的运算任务，主要适合在后台运算而不需要太多交互的任务。</p>
+<p>Parallel Scavenge收集器提供了两个参数用于精确控制吞吐量，分别是控制最大垃圾收集停顿时间 </p>
+<ul>
+<li><code>-XX:MaxGCPauseMillis</code> 值是大于0的毫秒数，GC停顿时间是以牺牲吞吐量和新生代空间来换取的：系统把新生代调小一些，收集300M新生代肯定比收集500M快吧，这也是直接导致垃圾收集发生的更频繁，原来10秒收集一次、每次停顿100毫秒，现在变成5秒收集一次、每次停顿70毫秒。停顿的时间在下降，但是吞吐量也降下来了。</li>
+<li><code>-XX:GCTimeRatio</code> 值是大于0切小于100的整数，也就是垃圾收集时间占总时间的比率，相当于是吞吐量的倒数。如果把参数设置为19，那么允许的最大GC时间就是占总时间的5%（即1 / (1 + 19)），默认值为99，即1%的垃圾回收时间。</li>
+<li><code>-XX:+UseAdaptiveSizePolicy</code> 开关参数，当参数打开之后，就不需要指定新生代大小（-Xmn）、Eden与Survivor区的比例、晋升老年代对象的年龄等细节参数了，即GC自适应调节策略。自适应调节策略也是Parallel Scavenge收集器与ParNew收集器的一个重要区别！</li>
+</ul>
+<h4 id="1-4-4Serial-Old-收集器"><a href="#1-4-4Serial-Old-收集器" class="headerlink" title="1.4.4Serial Old 收集器"></a>1.4.4Serial Old 收集器</h4><p>Serial Old是Serial收集器的老年代版本，他同样是单线程收集器，使用“标记-整理”算法。<br>主要是给Client模式下的虚拟机使用。<br>如果在Server模式下，主要两个用途：</p>
+<ul>
+<li>在JDK 1.5一级之前的版本中与Parallel Scavenge收集器搭配使用</li>
+<li>作为CMS收集器的后背方案，在并发收集发生Concurrent Mode Failure使用</li>
+</ul>
+<p><img src="https://pic.yupoo.com/crowhawk/6b90388c/6c281cf0.png" alt=""></p>
+<h4 id="1-4-5Parallel-Old-收集器"><a href="#1-4-5Parallel-Old-收集器" class="headerlink" title="1.4.5Parallel Old 收集器"></a>1.4.5Parallel Old 收集器</h4><p>Parallel Old是Parallel Scavenge收集器的老年代版本，使用多线程和“标记-整理”算法。<br>在注重吞吐量以及CPU资源敏感的场合，都可以优先考虑Parallel Scavenge加Parallel Old收集器。<br><img src="https://pic.yupoo.com/crowhawk/9a6b1249/b1800d45.png" alt=""></p>
+<h4 id="1-4-6CMS-收集器"><a href="#1-4-6CMS-收集器" class="headerlink" title="1.4.6CMS 收集器"></a>1.4.6CMS 收集器</h4><p>CMS（Concurrent Mark Sweep）收集器死一种以获得最短回收停顿时间为目标的收集器。目前很大的一部分Java应用集中在互联网站或者B/S系统的服务端上。这类应用尤其重视服务的响应速度，给用户带来更好的体验。</p>
+<p>从名字能看出，CMS收集器基于“标记-清除”算法实现，整个过程分为4步骤：</p>
+<ul>
+<li>初始标记</li>
+<li>并发标记</li>
+<li>重新标记</li>
+<li>并发清除</li>
+</ul>
+<p>其中，初始标记、重新标记仍然需要“Stop The World”。<br>初始标记只是标记一下GC Roots能直接关联到的对象，速度很快，<br>并发标记阶段就是进行GC Roots Tracing过程，<br>重新标记阶段则是为了修正并发标记区间因用户程序继续运作而导致标记产生变动的那一部分记录记录，这个阶段的停顿时间一般会比初始标记的稍长一些，但远比并发标记短。</p>
+<p>由于整个过程最长的并发标记和并发清除过程收集器都是可以与用户线程一期工作，所以，CMS收集器的内存回收过程是与用户线程一期并发执行的。</p>
+<p>缺点：</p>
+<ul>
+<li>对CPU资源非常敏感。在并发时。占用一部分线程资源（或者说CPU资源）而导致应用程序变慢，总吞吐量会降低。CMS默认启动的回收线程数是 （CPU数量 + 3）/ 4，也就是当COU时4以下时，并发回收时来及手机线程不少于25%的CPU资源，并随着CPU的数量上升而降低。但CPU不足4个时，对程序的影响很大，从而导致用户的程序的执行速度变慢。</li>
+<li>CMS收集器无法处理浮动的垃圾，可能出现“Concurrent Mode Failure”失败而导致另一次Full GC的产生。由于CMS并发清理阶段用户的线程还在运行着，伴随着程序运行阶段还会头新的垃圾不断的产生，这部分垃圾出现在标记之后。CMS无法在档次收集清理他们，只好留在下次清理。这部分垃圾就是“浮动垃圾”。也由于在垃圾收集阶段用户线程还需要运行，那就需要预留足够的内存空间给用户线程使用，因此CMS收集器不能像其它的收集器那样等到老年代几乎完全被填满了在收集，需要预留一部分。要是CMS运行期间预留的内存无法满足程序的需要，就会出现“Concurrent Mode Failure”失败，虚拟机启动后背预案：临时启动Serial Old收集器来重新进行老年代的垃圾收集，这样停顿时间就更长了</li>
+<li>CMS基于“标记-清除”，清除完会出现大量空间碎片。大对象分配会很麻烦，往往老年代还有很大的空间剩余，但是无法找到足够大的空间来分配当前对象，不得不提前触发一次Full GC，CMS提供<code>-XX:+UseCMSCompactAtFullCollection</code>开关参数，用于在CMS收集器顶不住要进行Full GC时开启内存的合并整理过程，内存整理过程无法并发的，空间碎片问题解决了，但是停顿时间不得不变长、</li>
+</ul>
+<p><img src="https://pic.yupoo.com/crowhawk/fffcf9a2/f60599b2.png" alt=""></p>
+<h4 id="1-4-7G1-收集器"><a href="#1-4-7G1-收集器" class="headerlink" title="1.4.7G1 收集器"></a>1.4.7G1 收集器</h4><p>G1收集器是当今收集器技术发展的最前沿成果之一。是一款服务端应用的垃圾收集器。<br>特点：</p>
+<ul>
+<li>并行与并发：G1能够充分利用多CPU、多核环境下的硬件优势，使用多个CPU来缩短Stop-The-World停顿时间，部分收集器原本需要停顿Java线程执行的GC动作，G1收集器仍然可以通过并发方式让Java程序继续执行</li>
+<li>分代收集：G1不需要其他的收集器配合就能独立的管理整个GC堆，但它能采用不同的方式去处理新建的对象和已经存活了一段时间、熬过多次GC的旧对象以获取更好的收集效果</li>
+<li>空间整理：与CMS的“标记-清理”算法不同，G1从整体看是基于“标记-整理”算法实现的收集器，从局部看是基于“复制”算法实现的，这两种短发都意味着G1运作期间不会产生内存空间碎片，手机后能提供规整的内存，分配大对象不会无法找到连续的内存空间而提前出发一次GC</li>
+<li>可预测的停：这是G1相对于CMS的另一大优势，G1除了追求停顿外，还建立了可预测的停顿时间模型，能让使用者明确指定在长度为M毫秒的时间片段内，消耗在垃圾收集上的时间不得超过N毫秒，这几乎是实时Java（RTSJ）的垃圾收集器特征了</li>
+</ul>
+<p>G1之前其它的收集器的范围都是整个新生代或者老年代，而G1不再是这样，他将整个Java堆划分为多个大小相等的独立区域（Region），虽然还保留有新生代和老年代的概念，但整个新生代和老年代不再是物理隔离了，他们都是一部分Region（不需要连续）的集合。</p>
+<p>G1之所以能预测停顿的时间模型，因为他可以计划的避免在整个Java堆中进行全区域的垃圾回收。<br>G1跟踪各个Region里面的垃圾堆积的价值大小（回收所获得的空间大小及回收所需要的时间的经验值），在后台维护一个优先列表，每次根据允许的手机时间，优先回收价值最大的Region（这也就是Garbage-First名称的由来），保证G1在有限的时间获取尽可能高的手机效率。</p>
+<p>G1收集器运作大致可划分为：</p>
+<ul>
+<li>初始标记</li>
+<li>并发标记</li>
+<li>最终标记</li>
+<li>筛选标记</li>
+</ul>
+<p>G1的前几个步骤和CMS有很多相似之处。出事阶段仅仅是标记一下GC Roots能直接关联到的对象，并且修改TAMS的值，让下一阶段用户程序并发运行时，能在正确可用的Region中创建对象，这阶段需要停顿线程，但耗时很短。</p>
+<p>并发标记阶段是从GC Root开始对对中对象进行可达性分析，找出存活的对象，这阶段耗时较长，但是可与用户程序并发执行。</p>
+<p>最终标记阶段是为了修正正在并发标记期间因用户程序继续运行而导致标记发生变动的那部分标记记录，虚拟机将这段时间对象变化记录在线程Remembered Set Logs里面，最终标记阶段需要吧Remembered Set Logs的数据合并到Remembered Set中，这阶段需要停顿线程，但是可以并行执行。</p>
+<p>筛选回收阶段首先对哥哥Region的回收价值和成本进行排序，根据用户所期望的GC停顿时间来指定回收计划，从Sun公司透露出来的信息看，这几段其实可以做到与用户程序一起并发执行，但是因为只回收一部分Region，时间是用户可控制的，而且停顿用户线程将大幅提供手机效率。</p>
+<h4 id="1-4-8GC-日志"><a href="#1-4-8GC-日志" class="headerlink" title="1.4.8GC 日志"></a>1.4.8GC 日志</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">0.756: [Full GC (System) 0.756: [CMS: 0K-&gt;1696K(204800K), 0.0347096 secs] 11488K-&gt;1696K(252608K), [CMS Perm : 10328K-&gt;10320K(131072K)], 0.0347949 secs] [Times: user=0.06 sys=0.00, real=0.05 secs]  </span><br><span class="line">1.728: [GC 1.728: [ParNew: 38272K-&gt;2323K(47808K), 0.0092276 secs] 39968K-&gt;4019K(252608K), 0.0093169 secs] [Times: user=0.01 sys=0.00, real=0.00 secs]  </span><br><span class="line">2.642: [GC 2.643: [ParNew: 40595K-&gt;3685K(47808K), 0.0075343 secs] 42291K-&gt;5381K(252608K), 0.0075972 secs] [Times: user=0.03 sys=0.00, real=0.02 secs]  </span><br><span class="line">4.349: [GC 4.349: [ParNew: 41957K-&gt;5024K(47808K), 0.0106558 secs] 43653K-&gt;6720K(252608K), 0.0107390 secs] [Times: user=0.03 sys=0.00, real=0.02 secs]  </span><br><span class="line">5.617: [GC 5.617: [ParNew: 43296K-&gt;7006K(47808K), 0.0136826 secs] 44992K-&gt;8702K(252608K), 0.0137904 secs] [Times: user=0.03 sys=0.00, real=0.02 secs]  </span><br><span class="line">7.429: [GC 7.429: [ParNew: 45278K-&gt;6723K(47808K), 0.0251993 secs] 46974K-&gt;10551K(252608K), 0.0252421 secs]</span><br></pre></td></tr></table></figure>
+<ul>
+<li>最前的数字<code>0.756</code>：”代表GC发生的时间，指从Java虚拟机启动以来经过的秒数</li>
+<li><code>[GC</code>和<code>[Full GC</code>说明这次垃圾回收的停顿类型。如果有<code>Full</code>则说明这次GC是发生了<code>Stop-The-World</code>的，如果调用<code>System.gc()</code>方法所触发的手机，那么将显示<code>[Full GC (System)</code></li>
+<li><code>[DefNew</code>、<code>[Tenured</code>、<code>Perm</code>表示GC所发生的区域，这里显示的区域名称使用的GC搜集器是密切相关的</li>
+<li>后面方括号内部的<code>43296K-&gt;7006K(47808K)</code>含义是“GC钱改区域内存已使用量-&gt;GC后改区域内存使用量（改内存区域总量）”。</li>
+<li>方括号外的<code>44992K-&gt;8702K(252608K)</code>表示GC前Java堆使用量-&gt; GC后Java堆使用量（Java对总量）</li>
+<li><code>0.0093169 secs</code>表示该内存区域GC所占用的时间，单位是秒。有的收集会给出具体数据，如<code>[Times: user=0.01 sys=0.00, real=0.00 secs]</code>分别代表用户态消耗CPU时间、内核态消耗CPU时间和操作从开始到结束所经过的墙钟时间</li>
+</ul>
 
     
   </div>
@@ -146,7 +234,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.5px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 17.5px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 17.5px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12.5px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12.5px;">distributed</a> <a href="/tags/原/" style="font-size: 15px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 18px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -157,23 +245,23 @@
   <ul class="entry">
     
       <li>
-        <a href="/2019/02/12/spring-cloud-config/">spring-cloud-config</a>
+        <a href="/2019/02/13/mq-reliable/">消息队列——可靠性</a>
       </li>
     
       <li>
-        <a href="/2019/02/12/spring-cloud-zuul/">spring-cloud-zuul</a>
+        <a href="/2019/02/13/mq-unique-consume/">消息队列——幂等性</a>
       </li>
     
       <li>
-        <a href="/2019/02/12/spring-cloud-feign/">spring-cloud-feign</a>
+        <a href="/2019/02/13/mq-high-available/">消息队列——高可用</a>
       </li>
     
       <li>
-        <a href="/2019/01/29/spring-cloud-hystrix/">Spring Cloud——容错保护 Hystrix</a>
+        <a href="/2019/02/13/mq-init/">消息队列——纵览</a>
       </li>
     
       <li>
-        <a href="/2019/01/28/spring-cloud-ribbon/">Spring Cloud——负载均衡 Ribbon</a>
+        <a href="/2019/02/12/spring-cloud-config/">Spring Cloud——配置中心 Config</a>
       </li>
     
   </ul>

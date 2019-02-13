@@ -1,0 +1,223 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>无知是天堂</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="jifuwei">
+  
+  
+  <meta name="description" content="JAVA Blog">
+<meta property="og:type" content="website">
+<meta property="og:title" content="无知是天堂">
+<meta property="og:url" content="http://yoursite.com/page/31/index.html">
+<meta property="og:site_name" content="无知是天堂">
+<meta property="og:description" content="JAVA Blog">
+<meta property="og:locale" content="zh-Hans">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="无知是天堂">
+<meta name="twitter:description" content="JAVA Blog">
+  
+  
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  <!--[if lt IE 9]><script src="//cdn.bootcss.com/html5shiv/3.7.0/html5shiv.min.js"></script><![endif]-->
+  
+  
+</head>
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">无知是天堂</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content">
+
+
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2018/08/20/HashMap/">
+  <time datetime="2018-08-20T08:33:32.000Z">
+    2018-08-20
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2018/08/20/HashMap/">HashMap剖析</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<h2 id="大纲"><a href="#大纲" class="headerlink" title="大纲"></a>大纲</h2><p>1.HashMap的实现原理<br>2.HashMap是如何解决hash冲突的问题</p>
+<h2 id="1-HashMap的实现原理"><a href="#1-HashMap的实现原理" class="headerlink" title="1.HashMap的实现原理"></a>1.HashMap的实现原理</h2><h3 id="1-1-哈希"><a href="#1-1-哈希" class="headerlink" title="1.1.哈希"></a>1.1.哈希</h3><p>Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输出，该输出就是散列值。 这种转换是一种压缩映射，也就是，散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，所以不可能从散列值来唯一的确定输入值。简单的说就是一种将任意长度的消息压缩到某一固定长度的消息摘要的函数。</p>
+<h3 id="1-2-HashMap的数据结构"><a href="#1-2-HashMap的数据结构" class="headerlink" title="1.2.HashMap的数据结构"></a>1.2.HashMap的数据结构</h3><p>在Java中，保存数据有两种比较简单的数据结构：数组和链表。</p>
+<ul>
+<li>数组的特点是：寻址容易，插入和删除困难；</li>
+<li>而链表的特点是：寻址困难，插入和删除容易。<br>上面我们提到过，常用的哈希函数的冲突解决办法中有一种方法叫做链地址法，其实就是将数组和链表组合在一起，发挥了两者的优势，我们可以将其理解为链表的数组。</li>
+</ul>
+<h2 id="2-HashMap是如何解决hash冲突的问题"><a href="#2-HashMap是如何解决hash冲突的问题" class="headerlink" title="2.HashMap是如何解决hash冲突的问题"></a>2.HashMap是如何解决hash冲突的问题</h2><h3 id="2-1-hash方法"><a href="#2-1-hash方法" class="headerlink" title="2.1.hash方法"></a>2.1.hash方法</h3><p>在同一个版本的Jdk中，HashMap、HashTable以及ConcurrentHashMap里面的hash方法的实现是不同的<br>调用Object对象的hashCode()方法，该方法会返回一个整数，然后用这个数对HashMap或者HashTable的容量进行取模就行了。没错，其实基本原理就是这个，只不过，在具体实现上，由两个方法int hash(Object k)和int indexFor(int h, int length)来实现。但是考虑到效率等问题，HashMap的实现会稍微复杂一点<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">int</span> <span class="title">hash</span><span class="params">(Object k)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> h = hashSeed;</span><br><span class="line">    <span class="keyword">if</span> (<span class="number">0</span> != h &amp;&amp; k <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">        <span class="keyword">return</span> sun.misc.Hashing.stringHash32((String) k);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    h ^= k.hashCode();</span><br><span class="line">    h ^= (h &gt;&gt;&gt; <span class="number">20</span>) ^ (h &gt;&gt;&gt; <span class="number">12</span>);</span><br><span class="line">    <span class="keyword">return</span> h ^ (h &gt;&gt;&gt; <span class="number">7</span>) ^ (h &gt;&gt;&gt; <span class="number">4</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">indexFor</span><span class="params">(<span class="keyword">int</span> h, <span class="keyword">int</span> length)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> h &amp; (length-<span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>indexFor方法其实主要是将hash生成的整型转换成链表数组中的下标。那么return h &amp; (length-1);是什么意思呢？其实，他就是取模。Java之所有使用位运算(&amp;)来代替取模运算(%)，最主要的考虑就是效率。位运算(&amp;)效率要比代替取模运算(%)高很多，主要原因是位运算直接对内存数据进行操作，不需要转成十进制，因此处理速度非常快。</p>
+<p>那么，为什么可以使用位运算(&amp;)来实现取模运算(%)呢？这实现的原理如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">X % <span class="number">2</span>^n = X &amp; (<span class="number">2</span>^n - <span class="number">1</span>)</span><br><span class="line"><span class="number">2</span>^n表示<span class="number">2</span>的n次方，也就是说，一个数对<span class="number">2</span>^n取模 == 一个数和(<span class="number">2</span>^n - <span class="number">1</span>)做按位与运算 。</span><br><span class="line">假设n为<span class="number">3</span>，则<span class="number">2</span>^<span class="number">3</span> = <span class="number">8</span>，表示成<span class="number">2</span>进制就是<span class="number">1000</span>。<span class="number">2</span>^<span class="number">3</span> = <span class="number">7</span> ，即<span class="number">0111</span>。</span><br><span class="line">此时X &amp; (<span class="number">2</span>^<span class="number">3</span> - <span class="number">1</span>) 就相当于取X的<span class="number">2</span>进制的最后三位数。</span><br><span class="line">从<span class="number">2</span>进制角度来看，X / <span class="number">8</span>相当于 X &gt;&gt; <span class="number">3</span>，即把X右移<span class="number">3</span>位，此时得到了X / <span class="number">8</span>的商，而被移掉的部分(后三位)，则是X % <span class="number">8</span>，也就是余数。</span><br></pre></td></tr></table></figure></p>
+<p>举例说明：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">6</span> % <span class="number">8</span> = <span class="number">6</span> ，<span class="number">6</span> &amp; (<span class="number">8</span> - <span class="number">1</span>) = <span class="number">6</span></span><br><span class="line"></span><br><span class="line"><span class="number">10</span> % <span class="number">8</span> = <span class="number">2</span> ，<span class="number">10</span> &amp; (<span class="number">8</span> - <span class="number">1</span>) = <span class="number">2</span></span><br></pre></td></tr></table></figure></p>
+<p>所以，return h &amp; (length-1);只要保证length的长度是2^n的话，就可以实现取模运算了。而HashMap中的length也确实是2的倍数，初始值是16，之后每次扩充为原来的2倍。</p>
+<p>但是，由于HashMap使用位运算代替了取模运算，这就带来了另外一个问题，那就是有可能发生冲突。<br>两个不同的键值，在对数组长度进行按位与运算后得到的结果相同，这不就发生了冲突吗。那么如何解决这种冲突呢，来看下Java是如何做的。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">h ^= k.hashCode();</span><br><span class="line">h ^= (h &gt;&gt;&gt; <span class="number">20</span>) ^ (h &gt;&gt;&gt; <span class="number">12</span>);</span><br><span class="line"><span class="keyword">return</span> h ^ (h &gt;&gt;&gt; <span class="number">7</span>) ^ (h &gt;&gt;&gt; <span class="number">4</span>);</span><br></pre></td></tr></table></figure></p>
+<p>这段代码是为了对key的hashCode进行扰动计算，防止不同hashCode的高位不同但低位相同导致的hash冲突。简单点说，就是为了把高位的特征和低位的特征组合起来，降低哈希冲突的概率，也就是说，尽量做到任何一位的变化都能对最终得到的结果产生影响。</p>
+<p>举个例子来说，我们现在想向一个HashMap中put一个K-V对，Key的值为“hollischuang”，经过简单的获取hashcode后，得到的值为“1011000110101110011111010011011”，如果当前HashTable的大小为16，即在不进行扰动计算的情况下，他最终得到的index结果值为11。由于16的二进制扩展到32位为“00000000000000000000000000001111”，所以，一个数字在和他进行按位与操作的时候，前28位无论是什么，计算结果都一样（因为0和任何数做与，结果都为0）。</p>
+<h3 id="2-2-HashMap-In-Java-8"><a href="#2-2-HashMap-In-Java-8" class="headerlink" title="2.2.HashMap In Java 8"></a>2.2.HashMap In Java 8</h3><p>在Java 8 之前，HashMap和其他基于map的类都是通过链地址法解决冲突，它们使用单向链表来存储相同索引值的元素。在最坏的情况下，这种方式会将HashMap的get方法的性能从O(1)降低到O(n)。为了解决在频繁冲突时hashmap性能降低的问题，Java 8中使用平衡树来替代链表存储冲突的元素。这意味着我们可以将最坏情况下的性能从O(n)提高到O(logn)。</p>
+<p>如果恶意程序知道我们用的是Hash算法，则在纯链表情况下，它能够发送大量请求导致哈希碰撞，然后不停访问这些key导致HashMap忙于进行线性查找，最终陷入瘫痪，即形成了拒绝服务攻击（DoS）。</p>
+
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+
+  <nav id="pagination">
+  
+    <a href="/page/30/" class="prev">Prev</a>
+  
+  
+    <a href="/page/32/" class="next">Next</a>
+  
+  <div class="clearfix"></div>
+</nav>
+
+</div>
+  </div>
+  
+  <div id="sidebar" class="widgets-right">
+  
+
+  
+<div class="widget tagcloud">
+  <h3 class="title">tagcloud</h3>
+  <div class="entry">
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 18px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+  </div>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">recent_posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2019/02/13/mq-reliable/">消息队列——可靠性</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/13/mq-unique-consume/">消息队列——幂等性</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/13/mq-high-available/">消息队列——高可用</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/13/mq-init/">消息队列——纵览</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/12/spring-cloud-config/">Spring Cloud——配置中心 Config</a>
+      </li>
+    
+  </ul>
+</div>
+
+</div>
+  
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2019 <a href="/">jifuwei</a>
+  
+</div>
+<!-- 
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://blog.dafengning.com/" target="_blank">Chong Zi</a>
+</div>
+-->
+<div class="clearfix"></div>
+</footer>
+  <script src="//lib.sinaapp.com/js/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+<div id="rightfix" style="display:none;">
+
+
+<a href="javascript:void(0)" id="gotop" class="fix_btn" onclick="gotop();" title="回到顶部"><i></i></a>
+<script>
+  function gotop(){
+    $('html,body').animate({
+        scrollTop : '0px'
+      }, 800);
+  }
+  $(function(){
+    _rightfix = $('#rightfix');
+    $(window).scroll(function(){
+      $sollTop = document.documentElement.scrollTop + document.body.scrollTop;
+      if($sollTop > 350){
+        _rightfix.show();
+      }else{
+        _rightfix.hide();
+      }
+    });
+  });
+</script>
+
+</div>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>
