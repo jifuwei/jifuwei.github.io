@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2018/08/27/auth/">
-  <time datetime="2018-08-27T08:54:11.000Z">
-    2018-08-27
+      <a href="/2018/09/30/travel-to-xn/">
+  <time datetime="2018-09-30T06:10:19.000Z">
+    2018-09-30
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2018/08/27/auth/">Http鉴权罗列</a></h1>
+    <h1 class="title"><a href="/2018/09/30/travel-to-xn/">十一游青海</a></h1>
   
 
   </header>
@@ -77,76 +77,40 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份.</p>
-<p>显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对服务器页增添了额外的压力.为了解决无状态带来的鉴权问题,大牛们设计多种方案</p>
-<h2 id="1-cookie"><a href="#1-cookie" class="headerlink" title="1.cookie"></a>1.cookie</h2><p>Cookie是储存在客户端的一串字符,一般说来大小不超过4kb.<br>比如我们常见的记住密码功能,或者一些基于之前输入的提醒和默认配置,就是通过cookie来实现的,cookie简单说来就是一种本地存储方法.<br>但是这里存储的信息常用来进行鉴权操作.cookie只能保存文本信息,浏览器可以禁止cookie.cookie的期限可以被自由设定,可以是仅仅一次浏览起效,也可以长达一年.<br>如果是短期的,那么这些信息会被存储在内存中,如果是长期则会存储在硬盘上.cookie的起效范围是路径下的所有子路径.不允许其他来源的访问.</p>
-<p>单纯的采用cookie来认证身份会带来一个比较麻烦的问题,就是伪造比较容易.<br>因为这样处理,cookie中必然要带有身份信息,但是服务器也要解析这个身份信息,所以必然要在原理上支持双向的编码和解码,那么这个信息很容易被破解和进一步伪造.<br>想一想,如果想要解决这个问题,我们常用的方案应该是加一个secret,而这个secret应该是放在服务器上的,服务器返回这样一个带有secret编码的字符串,而在服务器端再带上这个secret反向解密,如此一来,问题不就解决了吗?确实如此,但是这不代表cookie就安全,因为这已经不叫cookie了,而是我们要讲的第二个对象:session.</p>
-<h2 id="2-session"><a href="#2-session" class="headerlink" title="2.session"></a>2.session</h2><p>通过上面说的东西,我们已经能够获得身份信息,额外的,我们还可以把更复杂形式的信息都存储进来,因为这里没有cookie的纯文本限制.<br>但是刚才说的带有secret编码的字符串也就是sessionid,依然要存储在客户端.<br>是不是意味着session必定要依赖cookie呢?不是!想一想,我们实际上需要的是在每一次请求(至少是需要判定身份状态的请求中),都带上这个字符串,我们有以下这几种解决方案:</p>
-<ul>
-<li>cookie</li>
-<li>表单隐藏字段:在form中放置一个隐藏的域</li>
-<li>url重写:在url后边加上session的query段</li>
+<h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><ul>
+<li>防晒，高原紫外线很毒</li>
+<li>唇膏，好像会开裂 真恶心啊~</li>
+<li>衣服准备好，10月份西宁气温3~14℃，感觉得带个羽绒服或者棉衣，稳</li>
+<li>围巾 老年人必备系列</li>
+<li>现金，不知西宁那边在线支付啥情况，以防万一</li>
+<li>寺庙或者僧侣避免拍照片，被打了怎么办，小命要紧</li>
+<li>高原反应，我觉得应该没啥问题T_T</li>
 </ul>
-<p>Session也可以设定有效时间.其实际的存储可以在内存、缓存、文件中.通过类似//可能具体实现不同.//hash表的数据结构存储.cookie是一个存在的实体,session是一种机制.</p>
-<h2 id="3-token"><a href="#3-token" class="headerlink" title="3.token"></a>3.token</h2><p>使用基于 Token 的身份验证方法，在服务端不需要存储用户的登录记录。大概的流程是这样的：</p>
-<ul>
-<li>客户端使用用户名跟密码请求登录</li>
-<li>服务端收到请求，去验证用户名与密码</li>
-<li>验证成功后，服务端会签发一个 Token，再把这个 Token 发送给客户端</li>
-<li>客户端收到 Token 以后可以把它存储起来，比如放在 Cookie 里或者 Local Storage 里</li>
-<li>客户端每次向服务端请求资源的时候需要带着服务端签发的 Token</li>
-<li>服务端收到请求，然后去验证客户端请求里面带着的 Token，如果验证成功，就向客户端返回请求的数据</li>
+<h2 id="交通"><a href="#交通" class="headerlink" title="交通"></a>交通</h2><h3 id="1-机场去市区"><a href="#1-机场去市区" class="headerlink" title="1.机场去市区"></a>1.机场去市区</h3><ul>
+<li>打车，30~40分钟，价格100+<br><img src="/images/taxi.jpeg" alt=""></li>
+<li>公交，首推机场大巴 差不多1个小时 价格21元<br><img src="/images/gj.jpeg" alt=""><br><img src="/images/gj-xx.jpeg" alt=""></li>
 </ul>
-<p>可以看出来,这里的token与sessionid有些类似,其区别:</p>
-<ul>
-<li>sessionid是带着之前的状态的,在服务器端可以getSession(sessionid)</li>
-<li>token是在登录验证之后发放的一个包含着用户基本信息的较长的字符串,用处是验证身份以及简化后续获取信息的难度.</li>
-<li>token机制更灵活,可以实现跨域</li>
+<h2 id="游玩路线"><a href="#游玩路线" class="headerlink" title="游玩路线"></a>游玩路线</h2><h3 id="10月1日晚-神旺酒店附近"><a href="#10月1日晚-神旺酒店附近" class="headerlink" title="10月1日晚 神旺酒店附近"></a>10月1日晚 神旺酒店附近</h3><p>打开大众点评随便找点排行高的当地小吃，回来再更新</p>
+<h3 id="10月2日-西宁市区"><a href="#10月2日-西宁市区" class="headerlink" title="10月2日 西宁市区"></a>10月2日 西宁市区</h3><h4 id="0-塔尔寺-（70元门票-人）"><a href="#0-塔尔寺-（70元门票-人）" class="headerlink" title="0.塔尔寺 （70元门票/人）"></a>0.塔尔寺 （70元门票/人）</h4><ul>
+<li>简介<br>塔尔寺位于西宁湟中县，已有400多年历史，是藏传佛教格鲁派（黄教）最重要的寺院之一，还是黄教创始人宗喀巴大师的诞生地。寺院建筑恢宏、珍宝丰富，又能感受到浓郁的宗教氛围，是西宁最受欢迎的旅游目的地之一。<br><img src="/images/xn_tes.jpg" alt=""></li>
+<li>注意事项<br>寺内，转塔、转经筒都是顺时针的<br>塔尔寺内，只要是在经院内、大殿内，都不许拍照</li>
+<li>路线 （神旺酒店出发 -&gt; 塔尔寺）<br>打车 （30~40分钟）<br><img src="/images/s2t_taxi.jpeg" alt=""><br>公交车 （1个小时多一点儿）<br><img src="/images/s2t_gj.jpeg" alt=""><br><img src="/images/s2t_gj_xx.jpeg" alt=""></li>
 </ul>
-<p>此种方案多用于APP等客户端登录使用，一般过期时间是1个月</p>
-<h2 id="4-JWT"><a href="#4-JWT" class="headerlink" title="4.JWT"></a>4.JWT</h2><p>Jwt简单说来是一种token的具体实现规范!<br>Jwt标准的token有三个部分,中间用点分隔开，并且都会使用 Base64 编码:<br>JWT 的三个部分依次如下：</p>
-<ul>
-<li>Header（头部）</li>
-<li>Payload（负载）</li>
-<li>Signature（签名）</li>
-</ul>
-<h3 id="4-1-Header"><a href="#4-1-Header" class="headerlink" title="4.1.Header"></a>4.1.Header</h3><p>Header 部分是一个 JSON 对象，描述 JWT 的元数据，通常是下面的样子。<br><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"alg"</span>: <span class="string">"HS256"</span>,</span><br><span class="line">  <span class="attr">"typ"</span>: <span class="string">"JWT"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>上面代码中，alg属性表示签名的算法（algorithm），默认是 HMAC SHA256（写成 HS256）；typ属性表示这个令牌（token）的类型（type），JWT 令牌统一写为JWT。</p>
-<p>最后，将上面的 JSON 对象使用 Base64URL 算法（详见后文）转成字符串。</p>
-<h3 id="4-2-Payload"><a href="#4-2-Payload" class="headerlink" title="4.2.Payload"></a>4.2.Payload</h3><p>Payload 部分也是一个 JSON 对象，用来存放实际需要传递的数据。JWT 规定了7个官方字段，供选用。</p>
-<ul>
-<li>iss (issuer)：签发人</li>
-<li>exp (expiration time)：过期时间</li>
-<li>sub (subject)：主题</li>
-<li>aud (audience)：受众</li>
-<li>nbf (Not Before)：生效时间</li>
-<li>iat (Issued At)：签发时间</li>
-<li>jti (JWT ID)：编号</li>
-</ul>
-<p>注意，JWT 默认是不加密的，任何人都可以读到，所以不要把秘密信息放在这个部分。</p>
-<p>这个 JSON 对象也要使用 Base64URL 算法转成字符串。</p>
-<h3 id="4-3-Signature"><a href="#4-3-Signature" class="headerlink" title="4.3.Signature"></a>4.3.Signature</h3><p>Signature 部分是对前两部分的签名，防止数据篡改。<br>首先，需要指定一个密钥（secret）。这个密钥只有服务器才知道，不能泄露给用户。然后，使用 Header 里面指定的签名算法（默认是 HMAC SHA256），按照下面的公式产生签名。</p>
-<p>算出签名以后，把 Header、Payload、Signature 三个部分拼成一个字符串，每个部分之间用”点”（<code>.</code>）分隔，就可以返回给用户。</p>
-<h3 id="4-4-JWT-的使用方式"><a href="#4-4-JWT-的使用方式" class="headerlink" title="4.4.JWT 的使用方式"></a>4.4.JWT 的使用方式</h3><p>客户端收到服务器返回的 JWT，可以储存在 Cookie 里面，也可以储存在 localStorage。</p>
-<p>此后，客户端每次与服务器通信，都要带上这个 JWT。你可以把它放在 Cookie 里面自动发送，但是这样不能跨域，所以更好的做法是放在 HTTP 请求的头信息Authorization字段里面。</p>
-<p>几个特点:</p>
-<ul>
-<li>JWT 默认是不加密，但也是可以加密的。生成原始 Token 以后，可以用密钥再加密一次。</li>
-<li>JWT 不加密的情况下，不能将秘密数据写入 JWT。</li>
-<li>JWT 不仅可以用于认证，也可以用于交换信息。有效使用 JWT，可以降低服务器查询数据库的次数。</li>
-<li>WT 的最大缺点是，由于服务器不保存 session 状态，因此无法在使用过程中废止某个 token，或者更改 token 的权限。也就是说，一旦 JWT 签发了，在到期之前就会始终有效，除非服务器部署额外的逻辑。</li>
-<li>JWT 本身包含了认证信息，一旦泄露，任何人都可以获得该令牌的所有权限。为了减少盗用，JWT 的有效期应该设置得比较短。对于一些比较重要的权限，使用时应该再次对用户进行认证。</li>
-<li>为了减少盗用，JWT 不应该使用 HTTP 协议明码传输，要使用 HTTPS 协议传输。</li>
-</ul>
-<h2 id="5-oauth2"><a href="#5-oauth2" class="headerlink" title="5.oauth2"></a>5.oauth2</h2><p>简单来说,oauth是用来向第三方平台提供可以细致的权限管理的一种方案.</p>
-<p>如何直接向第三方提供账号和密码,可能存在的问题有:</p>
-<ul>
-<li>不安全</li>
-<li>无法更细致的限制授权范围和有效期</li>
-<li>只有修改密码才能收回权限</li>
-<li>一个第三方程序被破解将会导致用户密码泄漏</li>
-</ul>
-<p>OAuth的基本思路如下:<br>OAuth在”客户端”与”服务提供商”之间，设置了一个授权层（authorization layer）。”客户端”不能直接登录”服务提供商”，只能登录授权层，以此将用户与客户端区分开来。”客户端”登录授权层所用的令牌（token），与用户的密码不同。用户可以在登录的时候，指定授权层令牌的权限范围和有效期。”客户端”登录授权层以后，”服务提供商”根据令牌的权限范围和有效期，向”客户端”开放用户储存的资料。</p>
+<h4 id="1-青海省博物馆（免费，需身份证换票）-这个作为备选，感觉很无聊"><a href="#1-青海省博物馆（免费，需身份证换票）-这个作为备选，感觉很无聊" class="headerlink" title="1.青海省博物馆（免费，需身份证换票）(这个作为备选，感觉很无聊~)"></a>1.青海省博物馆（免费，需身份证换票）(这个作为备选，感觉很无聊~)</h4><p>青海文化的代表作，分别是藏传佛教、青海现代科技发展和（新时代核心价值观下）民族团结、非遗文化、历代文物。唐卡记录了游牧民族的生活信仰。总之挺有青海省特色的，不要尝试和别的省博物馆做比较。</p>
+<h4 id="2-美食之旅"><a href="#2-美食之旅" class="headerlink" title="2.美食之旅"></a>2.美食之旅</h4><p>这一天剩下的行程就是去找吃的 哈哈哈！<br>吃什么详见最下面的美食区罗列</p>
+<h3 id="10月3日-未知结束日期-真景区游玩"><a href="#10月3日-未知结束日期-真景区游玩" class="headerlink" title="10月3日~未知结束日期 真景区游玩"></a>10月3日~未知结束日期 真景区游玩</h3><p>暂时还未想好是包车跟团还是自由行，看状态啦<br>先罗列出几个觉得可取的地点</p>
+<h4 id="0-青海湖"><a href="#0-青海湖" class="headerlink" title="0.青海湖"></a>0.青海湖</h4><p><img src="/images/xn_qhh.png" alt=""><br>青海湖去骑行就好了 交通不是很便利</p>
+<h4 id="1-茶卡盐湖"><a href="#1-茶卡盐湖" class="headerlink" title="1.茶卡盐湖"></a>1.茶卡盐湖</h4><p><img src="/images/xn_ckyh.jpeg" alt=""></p>
+<h4 id="2-祁连"><a href="#2-祁连" class="headerlink" title="2.祁连"></a>2.祁连</h4><p><img src="/images/xn_ql.jpeg" alt=""></p>
+<h4 id="3-张掖七彩丹霞"><a href="#3-张掖七彩丹霞" class="headerlink" title="3.张掖七彩丹霞"></a>3.张掖七彩丹霞</h4><p><img src="/images/xn_qcdx.jpeg" alt=""><br>这个地方感觉是经典</p>
+<h2 id="美食"><a href="#美食" class="headerlink" title="美食"></a>美食</h2><p>我一直觉得旅游不应该玩，应先吃，吃为主，玩为辅，稳得很~~</p>
+<h3 id="1-羊肉"><a href="#1-羊肉" class="headerlink" title="1.羊肉"></a>1.羊肉</h3><p>青海的羊肉名气不如新疆、内蒙，但味道是可以比肩他们甚至是超越的<br>地点：<br>1.白玉巷的“肉香不怕巷子深”（不是烤羊肉，而是手抓羊肉 味道五颗星！！！）<br>2.益鑫手抓羊肉<br><img src="/images/xn_yr.jpg" alt=""></p>
+<h3 id="2-酿皮"><a href="#2-酿皮" class="headerlink" title="2.酿皮"></a>2.酿皮</h3><p>和凉皮很像<br>地点：生莲酿皮（全市很多家店，百度吧）<br><img src="/images/xn_np.jpeg" alt=""></p>
+<h3 id="3-羊肠面（早餐）"><a href="#3-羊肠面（早餐）" class="headerlink" title="3.羊肠面（早餐）"></a>3.羊肠面（早餐）</h3><p>只有早上才营业<br>地点：尕晋娃（五星推荐），虎台店或者小桥店<br><img src="/images/xn_ycm.jpg" alt=""></p>
+<h3 id="4-羊、牛杂碎（早餐）"><a href="#4-羊、牛杂碎（早餐）" class="headerlink" title="4.羊、牛杂碎（早餐）"></a>4.羊、牛杂碎（早餐）</h3><p>只有早上营业，不同于南方的牛杂清汤，这里的做法放了胡椒面等，别具风格<br>地点：<br>1.脂肪街的马而沙牛杂<br>2.南川西路砖厂路口，六一继业羊杂碎</p>
+<h3 id="5-炕羊排"><a href="#5-炕羊排" class="headerlink" title="5.炕羊排"></a>5.炕羊排</h3><p>青海西宁，羊肉当然是最好的选择，现在市面的羊肉摊良莠不齐，味道差异之大如同天壤<br>地点：交通巷北口眼镜炕羊排（交通巷北口往里50米，街道东侧）<br><img src="/images/xn_kyp.jpg" alt=""></p>
+<h3 id="6-酸奶"><a href="#6-酸奶" class="headerlink" title="6.酸奶"></a>6.酸奶</h3><p>外地人都很喜欢喝<br>地点：德禄<br><img src="/images/xn_sn.jpg" alt=""></p>
+<h3 id="7-甜醅"><a href="#7-甜醅" class="headerlink" title="7.甜醅"></a>7.甜醅</h3><p>青海特色！！！很好喝，一定要喝的<br>地点：德禄</p>
 
     
   </div>
@@ -193,23 +157,23 @@
   <ul class="entry">
     
       <li>
+        <a href="/2019/02/13/mq-design/">消息队列——自己设计</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/13/mq-delay-and-invalid/">消息队列——延时以及过期失效</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/13/mq-sort/">消息队列——顺序性</a>
+      </li>
+    
+      <li>
         <a href="/2019/02/13/mq-reliable/">消息队列——可靠性</a>
       </li>
     
       <li>
         <a href="/2019/02/13/mq-unique-consume/">消息队列——幂等性</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/13/mq-high-available/">消息队列——高可用</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/13/mq-init/">消息队列——纵览</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/12/spring-cloud-config/">Spring Cloud——配置中心 Config</a>
       </li>
     
   </ul>

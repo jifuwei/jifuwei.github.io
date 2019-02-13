@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/02/12/spring-cloud-zuul/">
-  <time datetime="2019-02-12T08:21:15.000Z">
-    2019-02-12
+      <a href="/2019/02/13/mq-high-available/">
+  <time datetime="2019-02-13T12:45:03.000Z">
+    2019-02-13
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/02/12/spring-cloud-zuul/">Spring Cloud——网管 zuul</a></h1>
+    <h1 class="title"><a href="/2019/02/13/mq-high-available/">消息队列——高可用</a></h1>
   
 
   </header>
@@ -77,91 +77,27 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p><img src="https://s2.ax1x.com/2019/02/12/kdvFVx.png" alt=""><br>首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。</p>
-<p>首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来支持这样的 架构。当客户端应用单击某个功能的时候往往会发出 一些对微服务获取资源的请求到后端， 这些请求通过FS、 Nginx等设施的路由和负载均衡分配后，被转发到各个不同的服务实例 上。 而为了让这些设施能够正确路由与分发请求， 运维人员需要手工维护这些路由规则与 服务实例列表， 当有实例增减或是IP地址变动等情况发生的时候， 也需要手工地去同步修 改这些信息以保持实例信息与中间件配置内容的一致性。 在系统规模不大的时候， 维护这 些信息的工作还不会太过复杂， 但是如果当系统规模不断增大， 那么这些看似简单的维护 任务会变得越来越难， 并且出现配置错误的概率也会逐渐增加。 很显然， 这样的做法并不 可取， 所以我们需要一套机制来有效降低维护路由规则与服务实例列表的难度。</p>
-<p>其次，我们再从开发入员的角度来看看，在这样的架构下，会产生一些怎样的问题呢? 大多数清况下， 为了保证对外服务的安全性， 我们在服务端实现的微服务接口， 往往都会 有一定的权限校验机制， 比如对用户登录状态的校验等; 同时为了防止客户端在发起请求 时被篡改等安全方面的考虑， 还会有一些签名校验的机制存在。 这时候， 由千使用了微服 务架构的理念， 我们将原本处千一个应用中的多个模块拆成了多个应用， 但是这些应用提供的接口都需要这些校验逻辑， 我们不得不在这些应用中都实现这样一套校验逻辑。 随着 微服务规模的扩大， 这些校验逻辑的冗余变得越来越多， 突然有一天我们发现这套校验逻 辑有个BUG需要修复，或者需要对其做一些扩展和优化，此时我们就不得不去每个应用里 修改这些逻辑，而这样的修改不仅会引起开发入员的抱怨，更会加重测试人员的负担。 所 以， 我们也需要一 套机制能够很好地解决微服务架构中， 对于微服务接口访问时各前置校 验的冗余问题。</p>
-<p>为了解决上面这些常见的架构问题，API网关的概念应运而生。API网关是一个更为 智能的应用服务器， 它的定义类似于面向对象设计模式中的Facade模式， 它的存在就像是 整个微服务架构系统的门面一样，所有的外部客户端访问都需要经过它来进行调度和过滤。 它除了要实现请求路由、 负载均衡、 校验过滤等功能之外， 还需要更多能力， 比如与服务 治理框架的结合、 请求转发时的熔断机制、 服务的聚合等一系列高级功能。</p>
-<p>既然APT网关对于微服务架构这么重要， 那么在Spring Cloud中是否有相应的解决方案呢?答案是很肯定的， 在SpringCloud中了提供了基于NetflixZuul实现的API网关组件SpringCloudZuul。 那么， 它是如何解决上面这两个普遍问题的呢?</p>
-<p>首先， 对千路由规则与服务实例的维护间题。 SpringCloudZuul通过与SpringCloud Eureka进行整合， 将自身注册为Eureka服务治理下的应用， 同时从Eureka中获得了所有 其他微服务的实例信息。 这样的设计非常巧妙地将服务治理体系中维护的实例信息利用起 来， 使得将维护服务实例的工作交给了服务治理框架自动完成， 不再需要人工介入。 而对 千路由规则的维护， Zuul默认会将通过以服务名作为ContextPath的方式来创建路由映射， 大部分情况下， 这样的默认设置已经可以实现我们大部分的路由需求， 除了一些特殊情况 (比如兼容一些老的URL)还需要做一些特别的配置。 但是相比于之前架构下的运维工作<br>量， 通过引入SpringCloudZuul实现API网关后， 已经能够大大减少了。</p>
-<p>其次， 对千类似签名校验、 登录校验在微服务架构中的冗余问题。 理论上来说， 这些 校验逻辑在本质上与微服务应用自身的业务并没有多大的关系， 所以 它们完全可以独立成 一 个单独的服务存在， 只是它们被剥离和独立出来之后， 并不是给各个微服务调用， 而是 在API网关服务上进行统一调用来对微服务接口做前置过滤， 以实现对微服务接口的拦截 和校验 。 SpringCloudZuul提供了一套过滤器机制， 它可以 很好地支持这样的任务。 开发 者可以通过使用Zuul来创建各种校验过滤器，然后指定哪些规则的请求需要执行校验逻辑，只有通过校验的才会被路由到具体的微服务接口，不然就返回错误提示。 通过这样的改造， 各个业务层的微服务应用就不再需要非业务性质的校验逻辑了， 这使得我们的微服务应用 可以更专注千业务逻辑的开发， 同时微服务的自动化测试也变得更容易实现。</p>
-<h2 id="服务路由配置"><a href="#服务路由配置" class="headerlink" title="服务路由配置"></a>服务路由配置</h2><p>比如下面的示例， 它实现了 对符合 / user-service/**规则的请求路径转发到名为 user-service的服务实例上去的路由规则。 其中<code>&lt;route&gt;</code>可以指定为任意的路由名称。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">zuul.routes.user-service.path=/user-service<span class="comment">/** </span></span><br><span class="line"><span class="comment">zuul.routes.user-service.serviceid=user-service</span></span><br></pre></td></tr></table></figure></p>
-<p>对千面向服务的路由配置， 除 了使用path与serviceId映射的配置方式 之外， 还 有 一 种更简洁的配置方式: zuul.routes.<code>&lt;serviceid&gt;=&lt;path&gt;</code>, 其中<code>&lt;serviceid&gt;</code> 用来指定路由的具体服务名，<code>&lt;path&gt;</code>用来配置匹配的请求表达式。比如下面的例子， 它的路由规则等价于上面通过path与serviceId组合使用的配置方式。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zuul.routes.user-service=/user-service<span class="comment">/**</span></span><br></pre></td></tr></table></figure></p>
-<p>在本章 一 开始， 我们就提到 了Zuul巧妙地整合了 Eureka 来实现面向服务的路由。 实 际上，我们可以直接将API网关也看作Eureka服务治理下的 一个普通微服务应用。 它除了 会将自己注册到Eureka服务注册中心上之外，也会从注册中心获取所有服务以及它们的实例清单。所以，在Eureka的帮助下，API网关服务本身就已经维护了系统中所有 serviceId 与实例地址的映射关系。当有外部请求到达 API 网关的时候，根据请求的 URL 路径找到最 佳匹配的path规则， API 网关就可以知道要将该请求路由到哪个具体的service Id上 去。 由于在 API 网关中已经知道serviceid对应服务实例的地址清单， 那么只需要通过 Ribbon的负载均衡策略， 直接在这些清单中选择一个具体的实例进行转发就能完成路由工 作了。</p>
-<h2 id="服务路由的默认规则"><a href="#服务路由的默认规则" class="headerlink" title="服务路由的默认规则"></a>服务路由的默认规则</h2><p>虽然通过Eureka与Zuul的整合已经为我们省去了维护服务实例清单的大量配置工作， 剩下只需要再维护请求路径的匹配表达式与服务名的映射关系即可。 但是在实际的运用过 程中会发现， 大部分的路由配置规则几乎都会采用服务名作为外部请求的前缀， 比如下面 的例子， 其中 pa七h 路径的前缀使用了 user-service, 而对应的服务名称也是user-service 。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">zuul.routes.user-service.path=/user-service<span class="comment">/** </span></span><br><span class="line"><span class="comment">zuul.routes.user-service.serviceid=user-service</span></span><br></pre></td></tr></table></figure></p>
-<p>对于这样具有规则性的配置内容， 我们总是希望可以自动化地完成。 非常庆幸，Zuul 默认实现了这样的贴心功能， 当我们为Spring CloudZuul构建的 API 网关服务引入Spring CloudEureka之后， 它为Eureka中的每个服务都自动创建一个默认路由规则， 这些默认规 则的path会使用serviceId配置的服务名作为请求前缀， 就如上面的例子那样。<br>由千默认情况下所有 Eureka上的服务都会被 Zuul自动地创建映射关系来进行路由， 这会使得一些我们不希望对外开放的服务也可能被外部访问到。 这个时候，我们可以使用 <code>zuul.ignored-services</code>参数来设置一 个服务名匹配表达式来定义不自动创建路由的 规则。 Zuul在自动创建服务路由的时候会根据该表达式来进行判断， 如果服务名匹配表达 式， 那么 Zuul 将跳过该服务， 不为其创建路由规则。 比如， 设置为 zuul.ignored-services=*的时候，Zuul将对所有的服务都不自动创建路由规则。 在 这种情况下，我们就要在配置文件中逐个为需要路由的服务添加映射规则(可以使用path 与service工d组合的配置方式，也可使用更简洁的 <code>zuul.routes.&lt;serviceid&gt;= &lt;path&gt;</code>配置方式)， 只有在配置文件中出现的映射规则会被创建路由， 而从Eureka中获取 的其他服务，Zuul将不会再为它们创建路由规则。</p>
-<h2 id="自定义路由映射规则"><a href="#自定义路由映射规则" class="headerlink" title="自定义路由映射规则"></a>自定义路由映射规则</h2><p>我们在构建微服务系统进行业务逻辑开发的时候， 为了兼容外部不同版本的客户端程 序(尽量不强迫用户升级客户端)，一般都会采用开闭原则来进行设计与开发。 这使得系统 在迭代过程中， 有时候会需要我们为一组互相配合的微服务定义一个版本标识来方便管理它们的版本关系，根据这个 标识我们可以 很容易地知道这些服务需要一 起启动并配合使用。 比如可 以 采 用 类 似这 样 的 命 名: userservice-vl 、 userservice-v2、 orderservice-vl、 orderservice-v2。 默认情况下，Zuul自动为服务创建的路由表达式会采用服务名作为前缀， 比如针对上面的userservice-vl 和userservice-v2, 它会产生/userservice-v1 和/userservice-v2两个路径表达式来映射，但是这样生 成出来的表达式规则较为单一，不利于通过路径规则来进行管理。 通常的做法是为这些不同版本的微服务应用生成以版本代号作为路由前缀定义的路由规则， 比如 /vl/userservice/。 这时候，通过这样具有版本号前缀的URL路径，我们就可以很容易地通过路径表达式来归类和管理这些具有版本信息的微服务了。</p>
-<p>针对上面所述的需求，如果我们的各个微服务应用都遵循了类似userservice-vl 这样的命名规则， 通过-分隔的规范来定义服务名和服务版本标识 的话，那么，我们可以使 用Zuul中自定义服务与路由映射 关系的功能，来实现为符合上述规则的微服务自动化地创建类似/vl/userservice/** 的路由匹配规则。 实现步骤非常简单， 只需在 API 网关程 序中， 增加如下Bean的创建 即可:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> PatternServiceRouteMapper <span class="title">serviceRouteMapper</span><span class="params">()</span> </span></span><br><span class="line"><span class="function"></span>&#123; </span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> PatternServiceRouteMapper(<span class="string">"(?&lt;name&gt;A .+)-(?&lt;version&gt;v.+$)"</span>, <span class="string">"$&#123;version&#125;/$&#123;name&#125;"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>PatternServiceRouteMapper对象可以让开发者通过正则表达式来自定义服务与 路由映射的生成 关系。 其中构造函数的第一个参数是用来匹配服务名称是否符合该自定义 规则的正则表达式， 而第二个参数则是定义根据服务名中定义的内容转换出的路径表达式 规则。当开发者在 API 网关中定义了PatternServiceRouteMapper 实现之后，只要符 合第一个参数定义规则的服务名， 都会优先使用该实现构建出的路径表达式，如果没有匹 配上的服务则还是会使用默认的路由映射规则，即采用完整服务名作为前缀的路径表达式。</p>
-<h2 id="路径匹配"><a href="#路径匹配" class="headerlink" title="路径匹配"></a>路径匹配</h2><p>不论是使用传统路由的配置方式还是服务路由的配置方式， 我们都需要为每个路由规 则定义匹配表达式，也就是上面所说的pa七h参数。 在Zuul中，路由匹配的路径表达式采 用了Ant风格定义。</p>
-<table>
-<thead>
-<tr>
-<th>通配符</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>?</td>
-<td>匹配任意个单 字符</td>
-</tr>
-<tr>
-<td>*</td>
-<td>匹配任意数朵的字符</td>
-</tr>
-<tr>
-<td>**</td>
-<td>匹配任意数址的字符， 支待多级目录</td>
-</tr>
-</tbody>
-</table>
-<p>我们可以通过下表中的示例来进一 步理解这三个通配符的含义并进行参考使用。</p>
-<table>
-<thead>
-<tr>
-<th>URL路径</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>/user-service/?</code></td>
-<td>它可以匹 配<code>/user-service/</code>之后拼接一个任务字 符的路径， 比如 <code>/user-service/a、 /user-service/b、 /user-service/c</code></td>
-</tr>
-<tr>
-<td><code>/ user-service/*</code></td>
-<td>它可以匹 配<code>/user-service/</code>之后拼接任 意字 符的路径， 比如<code>/user-service/a 、 /user-service/aaa 、 /user-service/bbb</code>。 但无法匹配/user-service/alb</td>
-</tr>
-<tr>
-<td><code>/ user-service/**</code></td>
-<td>它可以匹 配<code>/user-service/*</code>包含的内容之外， 还可以匹 配形如<code>/user-service/alb</code>的多级目录路径</td>
-</tr>
-</tbody>
-</table>
-<p>另外， 当我们使用通配符的时候，经常会碰到这样的问题: 一个 URL 路径可能会被多 个不同路由的表达式匹配上。 比如， 有这样一 个场景， 我们在系统建设的一 开始实现了 user-service 服务， 并且配置了如下路由规则:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">zuul.routes.user-service. path=/user-service<span class="comment">/** </span></span><br><span class="line"><span class="comment">zuul.routes.user-service.serviceid=user-service</span></span><br></pre></td></tr></table></figure></p>
-<p>但是随着版本的迭代， 我们对 user-service 服务做了 一 些功能拆分， 将原属于 user-service 服务的某些功能拆分到了另外一个全新的服务 user-service-ext 中 去，而这些拆分的外部调用 URL 路径希望能够符合规则/user-service/ext/**, 这个 时候我们需要就在配置文件中增加一个路由规则，完整配置如下:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">zuul.routes. user-service.path=/user-service<span class="comment">/** </span></span><br><span class="line"><span class="comment">zuul.routes.user-service.serviceid=user-service</span></span><br><span class="line"><span class="comment">zuul.routes.user-service-ex七.path=/user-service/ext/** </span></span><br><span class="line"><span class="comment">zuul.routes. user-service-ext.serviceid= user-service-ext</span></span><br></pre></td></tr></table></figure></p>
-<p>此时， 调用 user-service-ex七服务的 URL 路径实际上会同时被/user­ service/<strong>和/user-service/ext/</strong>两个表达式所匹配。 在逻辑上， API 网关服务 需要优先选择/user-service/ext/<strong>路由，然后再匹配/user-service/</strong>路由才能实现上述需求。但是如果使用上面的配置方式，实际上是无法保证这样的路由优先顺序的。</p>
-<h2 id="过滤器详解"><a href="#过滤器详解" class="headerlink" title="过滤器详解"></a>过滤器详解</h2><p><strong>过滤器</strong><br>我们对于Zuul的第 一 印象通常是这样的:它包含了对请求的路 由和过滤两个功能，其中路由功能负责将外部请求转发到具体的微服务实例上， 是实现外 部访问统 一入口的基础;而过滤器功能则负责对请求的处理过程进行干预， 是实现请求校验、 服务聚合等功能的基础。 然而实际上， 路由功能在真正运行时， 它的路由映射和请求 转发都 是由几个不同的过滤器完成的。 其中，路由映射主要通过pre类型的过滤器完成， 它将请求路径与配置的路由规则进行匹配，以找到需要转发的目标地址;而请求转发的部 分则是由route类型的过滤器来完成，对pre类型过滤器获得的路由地址进行转发。 所以，过滤器可以说是Zuul实现API网关功能最为核心的部件，每一个进入Zuul的HTTP 请求都会经过一 系列的过滤器处理链得到请求响应并返回给客户端。</p>
-<p>在Spring Cloud Zuul中实现的过滤器必须包含4个基本特征: 过滤类型、 执行顺序、执行条件、 具体操作。 这些元素看起来非常熟悉，实际上它就是ZuulFi丘er接口中定义的4个抽象方法:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">String <span class="title">filterType</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">filterOrder</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">boolean</span> <span class="title">shouldFilter</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function">Object <span class="title">run</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure></p>
-<p>它们各自的含义与功能总结如下。</p>
-<ul>
-<li>filterType: 该函数需要返回 一 个字符串来代表过滤器的类型， 而这个类型就是 在HTTP请求过程中定义的各个阶段。在 Zuul 中默认定义了 4 种不同生命周期的过 滤器类型， 具体如下所示。<ul>
-<li>pre: 可以在请求被路由之前调用。</li>
-<li>routing: 在路由请求时被调用。</li>
-<li>post: 在 routing 和 error 过滤器之后被调用。 </li>
-<li>error: 处理请求时发生错误时被调用。</li>
-</ul>
-</li>
-<li>filterOrder: 通过 int 值来定义过滤器的执行顺序， 数值越小优先级越高。</li>
-<li>shouldFilter: 返回一个 boolean 值来判断该过滤器是否要执行。 我们可以通过此方法来指定过滤器的有效范围。</li>
-<li>run: 过滤器的具体逻辑。 在该函数中， 我们可以实现自定义的过滤逻辑， 来确定 是否要拦截当前的请求， 不对其进行后续的路由， 或是在请求路由返回结果之后， 对处理结果做一 些加工等。</li>
-</ul>
-<p><strong>请求生命周期</strong><br>对千 Zuul 中的过滤器类型 filterType, 我们已经做过一些简单的介绍。 Zuul 默认 定义了4种不同的过滤器类型， 它们覆盖了一个外部HTTP请求到达API网关， 直到返回 请求结果的全部生命周期。 下图源自 Zuul 的官方Wi灼中关于请求生命周期的图解， 它描 述了一个HTTP请求到达API网关之后， 如何在各种不同类型的过滤器之间流转的详细过 程。<br><img src="https://s2.ax1x.com/2019/02/12/kwFql6.png" alt=""></p>
-<p>从上图中我们可以看到， 当外部 HTTP 请求到达 API 网关服务的时候， 首先它会进入 第一个阶段pre, 在这里它会被pre类型的过滤器进行处理，该类型过滤器的主要目的是 在进行请求路由之前做一些前置加工， 比如请求的校验等。 在完成了pre类型的过滤器处理之后，请求进入第二个阶段rou巨ng, 也就是之前说的路由请求转发阶段，请求将会被routing类型过滤器处理。这里的具体处理 内容就是将外部请求转发到具体服务实例上去 的过程， 当服务实例将请求结果都返回之后，routing 阶段完成， 请求进入第三个阶段 post。 此时请求将会被post类型的过滤器处理，这些过滤器在处理的时候不仅可以获取到请求信息， 还能获取到服务实例的返回信息， 所以在 post类型的过滤器 中，我们可以 对处理结果进行 一 些加工或转换等内容。 另外， 还有 一 个特殊的阶段error, 该阶段只有 在上述三个阶段中发生异常的时候才会触发，但是它的最后流向还是 po江类型的过滤器， 因为它需要通过post过滤器将最终结果返回给请求客户端(对于error过滤器的处理， 在Spring Cloud Zuul的过滤链中实际上有一 些不同， 后续我们在介绍核心过滤器时会做详细分析)。</p>
-<p><strong>核心过滤器</strong><br><img src="https://s2.ax1x.com/2019/02/12/kwkvvV.png" alt=""></p>
-<p><strong>异常处理</strong></p>
-<h2 id="动态加载"><a href="#动态加载" class="headerlink" title="动态加载"></a>动态加载</h2><p><strong>动态路由</strong><br>与分布式配置中心联动，动态设置properties文件即可</p>
-<p><strong>动态过滤器</strong><br>既然通过 Zuul 构建的API网关服务能够轻松地实现动态路由的加载，那么对于API 网关服务的另外 一 大重要功能一—请求过滤器的动态加载自然也不能放过， 只是对于请求 过滤器的动态加载与请求路由的动态加载在实现机制上会有所不同。 这个不难理解，通过之前介绍的请求路由和请求过滤的示例， 我们可以看到请求路由通过配置文件就能实现， 而请求过滤则都是通过编码实现。 所以，对于实现请求过滤器的动态加载， 我们需要借助 基于NM实现的动态语言的帮助， 比如Groovy。</p>
+<h2 id="RabbitMQ-的高可用性"><a href="#RabbitMQ-的高可用性" class="headerlink" title="RabbitMQ 的高可用性"></a>RabbitMQ 的高可用性</h2><p>RabbitMQ 是比较有代表性的，因为是基于主从（非分布式）做高可用性的，我们就以 RabbitMQ 为例子讲解第一种 MQ 的高可用性怎么实现。</p>
+<p>RabbitMQ 有三种模式：单机模式、普通集群模式、镜像集群模式。</p>
+<p><strong>单机模式</strong><br>单机模式，就是 Demo 级别的，一般就是你本地启动了玩玩儿的😄，没人生产用单机模式。</p>
+<p><strong>普通集群模式（无高可用性）</strong><br>普通集群模式，意思就是在多台机器上启动多个 RabbitMQ 实例，每个机器启动一个。你创建的 queue，只会放在一个 RabbitMQ 实例上，但是每个实例都同步 queue 的元数据（元数据可以认为是 queue 的一些配置信息，通过元数据，可以找到 queue 所在实例）。你消费的时候，实际上如果连接到了另外一个实例，那么那个实例会从 queue 所在实例上拉取数据过来。<br><img src="https://s2.ax1x.com/2019/02/13/k0TzJH.png" alt=""></p>
+<p>这种方式确实很麻烦，也不怎么好，没做到所谓的分布式，就是个普通集群。因为这导致你要么消费者每次随机连接一个实例然后拉取数据，要么固定连接那个 queue 所在实例消费数据，前者有数据拉取的开销，后者导致单实例性能瓶颈。</p>
+<p>而且如果那个放 queue 的实例宕机了，会导致接下来其他实例就无法从那个实例拉取，如果你开启了消息持久化，让 RabbitMQ 落地存储消息的话，消息不一定会丢，得等这个实例恢复了，然后才可以继续从这个 queue 拉取数据。</p>
+<p>所以这个事儿就比较尴尬了，这就没有什么所谓的高可用性，这方案主要是提高吞吐量的，就是说让集群中多个节点来服务某个 queue 的读写操作。</p>
+<p><strong>镜像集群模式（高可用性）</strong><br>这种模式，才是所谓的 RabbitMQ 的高可用模式。跟普通集群模式不一样的是，在镜像集群模式下，你创建的 queue，无论元数据还是 queue 里的消息都会存在于多个实例上，就是说，每个 RabbitMQ 节点都有这个 queue 的一个完整镜像，包含 queue 的全部数据的意思。然后每次你写消息到 queue 的时候，都会自动把消息同步到多个实例的 queue 上。<br><img src="https://s2.ax1x.com/2019/02/13/k07CQI.png" alt=""></p>
+<p>那么如何开启这个镜像集群模式呢？其实很简单，RabbitMQ 有很好的管理控制台，就是在后台新增一个策略，这个策略是镜像集群模式的策略，指定的时候是可以要求数据同步到所有节点的，也可以要求同步到指定数量的节点，再次创建 queue 的时候，应用这个策略，就会自动将数据同步到其他的节点上去了。</p>
+<p>这样的话，好处在于，你任何一个机器宕机了，没事儿，其它机器（节点）还包含了这个 queue 的完整数据，别的 consumer 都可以到其它节点上去消费数据。坏处在于，第一，这个性能开销也太大了吧，消息需要同步到所有机器上，导致网络带宽压力和消耗很重！第二，这么玩儿，不是分布式的，就没有扩展性可言了，如果某个 queue 负载很重，你加机器，新增的机器也包含了这个 queue 的所有数据，并没有办法线性扩展你的 queue。你想，如果这个 queue 的数据量很大，大到这个机器上的容量无法容纳了，此时该怎么办呢？</p>
+<h2 id="Kafka-的高可用性"><a href="#Kafka-的高可用性" class="headerlink" title="Kafka 的高可用性"></a>Kafka 的高可用性</h2><p>Kafka 一个最基本的架构认识：由多个 broker 组成，每个 broker 是一个节点；你创建一个 topic，这个 topic 可以划分为多个 partition，每个 partition 可以存在于不同的 broker 上，每个 partition 就放一部分数据。</p>
+<p>这就是天然的分布式消息队列，就是说一个 topic 的数据，是分散放在多个机器上的，每个机器就放一部分数据。</p>
+<p>实际上 RabbmitMQ 之类的，并不是分布式消息队列，它就是传统的消息队列，只不过提供了一些集群、HA(High Availability, 高可用性) 的机制而已，因为无论怎么玩儿，RabbitMQ 一个 queue 的数据都是放在一个节点里的，镜像集群下，也是每个节点都放这个 queue 的完整数据。</p>
+<p>Kafka 0.8 以前，是没有 HA 机制的，就是任何一个 broker 宕机了，那个 broker 上的 partition 就废了，没法写也没法读，没有什么高可用性可言。</p>
+<p>比如说，我们假设创建了一个 topic，指定其 partition 数量是 3 个，分别在三台机器上。但是，如果第二台机器宕机了，会导致这个 topic 的 1/3 的数据就丢了，因此这个是做不到高可用的。<br><img src="https://s2.ax1x.com/2019/02/13/k07ETS.png" alt=""></p>
+<p>Kafka 0.8 以后，提供了 HA 机制，就是 replica（复制品） 副本机制。每个 partition 的数据都会同步到其它机器上，形成自己的多个 replica 副本。所有 replica 会选举一个 leader 出来，那么生产和消费都跟这个 leader 打交道，然后其他 replica 就是 follower。写的时候，leader 会负责把数据同步到所有 follower 上去，读的时候就直接读 leader 上的数据即可。只能读写 leader？很简单，要是你可以随意读写每个 follower，那么就要 care 数据一致性的问题，系统复杂度太高，很容易出问题。Kafka 会均匀地将一个 partition 的所有 replica 分布在不同的机器上，这样才可以提高容错性。<br><img src="https://s2.ax1x.com/2019/02/13/k07eYQ.png" alt=""></p>
+<p>这么搞，就有所谓的高可用性了，因为如果某个 broker 宕机了，没事儿，那个 broker上面的 partition 在其他机器上都有副本的，如果这上面有某个 partition 的 leader，那么此时会从 follower 中重新选举一个新的 leader 出来，大家继续读写那个新的 leader 即可。这就有所谓的高可用性了。</p>
+<p>写数据的时候，生产者就写 leader，然后 leader 将数据落地写本地磁盘，接着其他 follower 自己主动从 leader 来 pull 数据。一旦所有 follower 同步好数据了，就会发送 ack 给 leader，leader 收到所有 follower 的 ack 之后，就会返回写成功的消息给生产者。（当然，这只是其中一种模式，还可以适当调整这个行为）</p>
+<p>消费的时候，只会从 leader 去读，但是只有当一个消息已经被所有 follower 都同步成功返回 ack 的时候，这个消息才会被消费者读到。</p>
+<p>看到这里，相信你大致明白了 Kafka 是如何保证高可用机制的了，对吧？不至于一无所知，现场还能给面试官画画图。要是遇上面试官确实是 Kafka 高手，深挖了问，那你只能说不好意思，太深入的你没研究过。</p>
+<p>参考：<br><a href="https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/how-to-ensure-high-availability-of-message-queues.md" target="_blank" rel="noopener">如何保证消息队列的高可用？</a></p>
 
     
   </div>
@@ -208,23 +144,23 @@
   <ul class="entry">
     
       <li>
+        <a href="/2019/02/13/mq-design/">消息队列——自己设计</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/13/mq-delay-and-invalid/">消息队列——延时以及过期失效</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/13/mq-sort/">消息队列——顺序性</a>
+      </li>
+    
+      <li>
         <a href="/2019/02/13/mq-reliable/">消息队列——可靠性</a>
       </li>
     
       <li>
         <a href="/2019/02/13/mq-unique-consume/">消息队列——幂等性</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/13/mq-high-available/">消息队列——高可用</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/13/mq-init/">消息队列——纵览</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/12/spring-cloud-config/">Spring Cloud——配置中心 Config</a>
       </li>
     
   </ul>

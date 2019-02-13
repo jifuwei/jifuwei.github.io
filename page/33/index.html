@@ -1,0 +1,229 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>无知是天堂</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="jifuwei">
+  
+  
+  <meta name="description" content="JAVA Blog">
+<meta property="og:type" content="website">
+<meta property="og:title" content="无知是天堂">
+<meta property="og:url" content="http://yoursite.com/page/33/index.html">
+<meta property="og:site_name" content="无知是天堂">
+<meta property="og:description" content="JAVA Blog">
+<meta property="og:locale" content="zh-Hans">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="无知是天堂">
+<meta name="twitter:description" content="JAVA Blog">
+  
+  
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  <!--[if lt IE 9]><script src="//cdn.bootcss.com/html5shiv/3.7.0/html5shiv.min.js"></script><![endif]-->
+  
+  
+</head>
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">无知是天堂</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content">
+
+
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2018/08/21/redis/">
+  <time datetime="2018-08-21T06:26:01.000Z">
+    2018-08-21
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2018/08/21/redis/">Redis算法了解</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <blockquote>
+<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+</blockquote>
+<h2 id="1-简介"><a href="#1-简介" class="headerlink" title="1.简介"></a>1.简介</h2><p>Redis 是互联网产品开发中不可缺少的常备武器，它性能高、数据结构丰富、简单易用，但同时也是因为太容易用了，我们的开发同学不管什么数据、不管这数据有多大、不管数据有多少通通塞进去，最后导致的问题就是 Redis 内存使用持续上升，但是又不知道里面的数据是不是有用，是否可以拆分和清理。</p>
+<h2 id="2-Redis-内存管理"><a href="#2-Redis-内存管理" class="headerlink" title="2.Redis-内存管理"></a>2.Redis-内存管理</h2><p>redis通常使用缓存，是使用一种固定最大内存的使用。当数据达到可使用的最大固定内存时，我们需要通过移除老数据来获取空间。redis作为缓存是否有效的重要标志是如何寻找一种好的策略：删除即将需要使用的数据是一种糟糕的策略，而删除那些很少再次请求的数据则是一种好的策略。</p>
+<p>因此，通常一个缓存系统应该尽可能保留那些未来最有可能被访问的keys。针对keys淘汰的策略是：那些未来极少可能被访问的数据应该被移除。<br>但有一个问题：redis和其他缓存系统不能够预测未来。</p>
+<h2 id="3-LRU原理"><a href="#3-LRU原理" class="headerlink" title="3.LRU原理"></a>3.LRU原理</h2><p>在操作系统教材里，会用下面的方式来演示 LRU 原理，假设内存只能容纳3个页大小，按照 7 0 1 2 0 3 0 4 的次序访问页。假设内存按照栈的方式来描述访问时间，在上面的，是最近访问的，在下面的是，最远时间访问的，LRU就是这样工作的。<br><img src="/images/lru.jpg" alt=""></p>
+<h3 id="3-1-基于-HashMap-和-双向链表实现-LRU"><a href="#3-1-基于-HashMap-和-双向链表实现-LRU" class="headerlink" title="3.1.基于 HashMap 和 双向链表实现 LRU"></a>3.1.基于 HashMap 和 双向链表实现 LRU</h3><p>整体的设计思路是，可以使用 HashMap 存储 key，这样可以做到 save 和 get key的时间都是 O(1)，而 HashMap 的 Value 指向双向链表实现的 LRU 的 Node 节点，如图所示。<br><img src="/images/hash-link-lru.jpg" alt=""></p>
+<p>LRU 存储是基于双向链表实现的。其中 head 代表双向链表的表头，tail 代表尾部。首先预先设置 LRU 的容量，如果存储满了，可以通过 O(1) 的时间淘汰掉双向链表的尾部，每次新增和访问数据，都可以通过 O(1)的效率把新的节点增加到对头，或者把已经存在的节点移动到队头<br><img src="/images/hash-link-lru-active.jpg" alt=""></p>
+<p>总结一下核心操作的步骤:</p>
+<ul>
+<li>save(key, value)，首先在 HashMap 找到 Key 对应的节点，如果节点存在，更新节点的值，并把这个节点移动队头。如果不存在，需要构造新的节点，并且尝试把节点塞到队头，如果LRU空间不足，则通过 tail 淘汰掉队尾的节点，同时在 HashMap 中移除 Key。</li>
+<li>get(key)，通过 HashMap 找到 LRU 链表节点，因为根据LRU 原理，这个节点是最新访问的，所以要把节点插入到队头，然后返回缓存的值。</li>
+</ul>
+<p>Java代码参考：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DLinkedNode</span> </span>&#123;</span><br><span class="line">	String key;</span><br><span class="line">	<span class="keyword">int</span> value;</span><br><span class="line">	DLinkedNode pre;</span><br><span class="line">	DLinkedNode post;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LRUCache</span> </span>&#123;</span><br><span class="line">   </span><br><span class="line">    <span class="keyword">private</span> Hashtable&lt;Integer, DLinkedNode&gt;</span><br><span class="line">            cache = <span class="keyword">new</span> Hashtable&lt;Integer, DLinkedNode&gt;();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> count;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> capacity;</span><br><span class="line">    <span class="keyword">private</span> DLinkedNode head, tail;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">LRUCache</span><span class="params">(<span class="keyword">int</span> capacity)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.count = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">this</span>.capacity = capacity;</span><br><span class="line"></span><br><span class="line">        head = <span class="keyword">new</span> DLinkedNode();</span><br><span class="line">        head.pre = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">        tail = <span class="keyword">new</span> DLinkedNode();</span><br><span class="line">        tail.post = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">        head.post = tail;</span><br><span class="line">        tail.pre = head;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        DLinkedNode node = cache.get(key);</span><br><span class="line">        <span class="keyword">if</span>(node == <span class="keyword">null</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>; <span class="comment">// should raise exception here.</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// move the accessed node to the head;</span></span><br><span class="line">        <span class="keyword">this</span>.moveToHead(node);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> node.value;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">set</span><span class="params">(String key, <span class="keyword">int</span> value)</span> </span>&#123;</span><br><span class="line">        DLinkedNode node = cache.get(key);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(node == <span class="keyword">null</span>)&#123;</span><br><span class="line"></span><br><span class="line">            DLinkedNode newNode = <span class="keyword">new</span> DLinkedNode();</span><br><span class="line">            newNode.key = key;</span><br><span class="line">            newNode.value = value;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">this</span>.cache.put(key, newNode);</span><br><span class="line">            <span class="keyword">this</span>.addNode(newNode);</span><br><span class="line"></span><br><span class="line">            ++count;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span>(count &gt; capacity)&#123;</span><br><span class="line">                <span class="comment">// pop the tail</span></span><br><span class="line">                DLinkedNode tail = <span class="keyword">this</span>.popTail();</span><br><span class="line">                <span class="keyword">this</span>.cache.remove(tail.key);</span><br><span class="line">                --count;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="comment">// update the value.</span></span><br><span class="line">            node.value = value;</span><br><span class="line">            <span class="keyword">this</span>.moveToHead(node);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Always add the new node right after head;</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">addNode</span><span class="params">(DLinkedNode node)</span></span>&#123;</span><br><span class="line">        node.pre = head;</span><br><span class="line">        node.post = head.post;</span><br><span class="line"></span><br><span class="line">        head.post.pre = node;</span><br><span class="line">        head.post = node;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Remove an existing node from the linked list.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">removeNode</span><span class="params">(DLinkedNode node)</span></span>&#123;</span><br><span class="line">        DLinkedNode pre = node.pre;</span><br><span class="line">        DLinkedNode post = node.post;</span><br><span class="line"></span><br><span class="line">        pre.post = post;</span><br><span class="line">        post.pre = pre;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Move certain node in between to the head.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">moveToHead</span><span class="params">(DLinkedNode node)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.removeNode(node);</span><br><span class="line">        <span class="keyword">this</span>.addNode(node);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// pop the current tail.</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> DLinkedNode <span class="title">popTail</span><span class="params">()</span></span>&#123;</span><br><span class="line">        DLinkedNode res = tail.pre;</span><br><span class="line">        <span class="keyword">this</span>.removeNode(res);</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="3-2-Redis的LRU实现"><a href="#3-2-Redis的LRU实现" class="headerlink" title="3.2.Redis的LRU实现"></a>3.2.Redis的LRU实现</h3><p>如果按照HashMap和双向链表实现，需要额外的存储存放 next 和 prev 指针，牺牲比较大的存储空间，显然是不划算的。所以Redis采用了一个近似的做法，就是随机取出若干个key，然后按照访问时间排序后，淘汰掉最不经常使用的，具体分析如下：</p>
+<p>为了支持LRU，Redis 2.8.19中使用了一个全局的LRU时钟，server.lruclock，定义如下：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REDIS_LRU_BITS 24</span></span><br><span class="line"><span class="keyword">unsigned</span> lruclock:REDIS_LRU_BITS; <span class="comment">/* Clock for LRU eviction */</span></span><br></pre></td></tr></table></figure></p>
+<p>默认的LRU时钟的分辨率是1秒，可以通过改变REDIS_LRU_CLOCK_RESOLUTION宏的值来改变，Redis会在serverCron()中调用updateLRUClock定期的更新LRU时钟，更新的频率和hz参数有关，默认为100ms一次，如下:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REDIS_LRU_CLOCK_MAX ((1<span class="meta-string">&lt;&lt;REDIS_LRU_BITS)-1) /* Max value of obj-&gt;lru */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REDIS_LRU_CLOCK_RESOLUTION 1 <span class="comment">/* LRU clock resolution in seconds */</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">updateLRUClock</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    server.lruclock = (server.unixtime / REDIS_LRU_CLOCK_RESOLUTION) &amp;</span><br><span class="line">                                                REDIS_LRU_CLOCK_MAX;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>server.unixtime</code>是系统当前的unix时间戳，当 <code>lruclock</code> 的值超出<code>REDIS_LRU_CLOCK_MAX</code>时，会从头开始计算，所以在计算一个key的最长没有访问时间时，可能key本身保存的lru访问时间会比当前的lrulock还要大，这个时候需要计算额外时间，如下，<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Given an object returns the min number of seconds the object was never</span></span><br><span class="line"><span class="comment"> * requested, using an approximated LRU algorithm. */</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">estimateObjectIdleTime</span><span class="params">(robj *o)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (server.lruclock &gt;= o-&gt;lru) &#123;</span><br><span class="line">        <span class="keyword">return</span> (server.lruclock - o-&gt;lru) * REDIS_LRU_CLOCK_RESOLUTION;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> ((REDIS_LRU_CLOCK_MAX - o-&gt;lru) + server.lruclock) *</span><br><span class="line">                    REDIS_LRU_CLOCK_RESOLUTION;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>Redis支持和LRU相关淘汰策略包括，</p>
+<ul>
+<li>volatile-lru 设置了过期时间的key参与近似的lru淘汰策略</li>
+<li>allkeys-lru 所有的key均参与近似的lru淘汰策略</li>
+</ul>
+<p>当进行LRU淘汰时，Redis按如下方式进行的:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">            <span class="comment">/* volatile-lru and allkeys-lru policy */</span></span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (server.maxmemory_policy == REDIS_MAXMEMORY_ALLKEYS_LRU ||</span><br><span class="line">                server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_LRU)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">for</span> (k = <span class="number">0</span>; k &lt; server.maxmemory_samples; k++) &#123;</span><br><span class="line">                    sds thiskey;</span><br><span class="line">                    <span class="keyword">long</span> thisval;</span><br><span class="line">                    robj *o;</span><br><span class="line"></span><br><span class="line">                    de = dictGetRandomKey(dict);</span><br><span class="line">                    thiskey = dictGetKey(de);</span><br><span class="line">                    <span class="comment">/* When policy is volatile-lru we need an additional lookup</span></span><br><span class="line"><span class="comment">                     * to locate the real key, as dict is set to db-&gt;expires. */</span></span><br><span class="line">                    <span class="keyword">if</span> (server.maxmemory_policy == REDIS_MAXMEMORY_VOLATILE_LRU)</span><br><span class="line">                        de = dictFind(db-&gt;dict, thiskey);</span><br><span class="line">                    o = dictGetVal(de);</span><br><span class="line">                    thisval = estimateObjectIdleTime(o);</span><br><span class="line"></span><br><span class="line">                    <span class="comment">/* Higher idle time is better candidate for deletion */</span></span><br><span class="line">                    <span class="keyword">if</span> (bestkey == <span class="literal">NULL</span> || thisval &gt; bestval) &#123;</span><br><span class="line">                        bestkey = thiskey;</span><br><span class="line">                        bestval = thisval;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<p>Redis会基于server.maxmemory_samples配置选取固定数目的key，然后比较它们的lru访问时间，然后淘汰最近最久没有访问的key，maxmemory_samples的值越大，Redis的近似LRU算法就越接近于严格LRU算法，但是相应消耗也变高，对性能有一定影响，样本值默认为5。</p>
+
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+
+  <nav id="pagination">
+  
+    <a href="/page/32/" class="prev">Prev</a>
+  
+  
+    <a href="/page/34/" class="next">Next</a>
+  
+  <div class="clearfix"></div>
+</nav>
+
+</div>
+  </div>
+  
+  <div id="sidebar" class="widgets-right">
+  
+
+  
+<div class="widget tagcloud">
+  <h3 class="title">tagcloud</h3>
+  <div class="entry">
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 18px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+  </div>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">recent_posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2019/02/13/mq-design/">消息队列——自己设计</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/13/mq-delay-and-invalid/">消息队列——延时以及过期失效</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/13/mq-sort/">消息队列——顺序性</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/13/mq-reliable/">消息队列——可靠性</a>
+      </li>
+    
+      <li>
+        <a href="/2019/02/13/mq-unique-consume/">消息队列——幂等性</a>
+      </li>
+    
+  </ul>
+</div>
+
+</div>
+  
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2019 <a href="/">jifuwei</a>
+  
+</div>
+<!-- 
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://blog.dafengning.com/" target="_blank">Chong Zi</a>
+</div>
+-->
+<div class="clearfix"></div>
+</footer>
+  <script src="//lib.sinaapp.com/js/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+<div id="rightfix" style="display:none;">
+
+
+<a href="javascript:void(0)" id="gotop" class="fix_btn" onclick="gotop();" title="回到顶部"><i></i></a>
+<script>
+  function gotop(){
+    $('html,body').animate({
+        scrollTop : '0px'
+      }, 800);
+  }
+  $(function(){
+    _rightfix = $('#rightfix');
+    $(window).scroll(function(){
+      $sollTop = document.documentElement.scrollTop + document.body.scrollTop;
+      if($sollTop > 350){
+        _rightfix.show();
+      }else{
+        _rightfix.hide();
+      }
+    });
+  });
+</script>
+
+</div>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>
