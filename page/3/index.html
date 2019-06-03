@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/02/13/mq-delay-and-invalid/">
-  <time datetime="2019-02-13T13:09:26.000Z">
-    2019-02-13
+      <a href="/2019/02/20/mq-scene-in-enterprise/">
+  <time datetime="2019-02-20T12:07:26.000Z">
+    2019-02-20
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/02/13/mq-delay-and-invalid/">消息队列——延时以及过期失效</a></h1>
+    <h1 class="title"><a href="/2019/02/20/mq-scene-in-enterprise/">消息队列——企业使用场景</a></h1>
   
 
   </header>
@@ -77,22 +77,27 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p>关于这个事儿，我们一个一个来梳理吧，先假设一个场景，我们现在消费端出故障了，然后大量消息在 mq 里积压，现在出事故了，慌了。</p>
-<h3 id="大量消息在-mq-里积压了几个小时了还没解决"><a href="#大量消息在-mq-里积压了几个小时了还没解决" class="headerlink" title="大量消息在 mq 里积压了几个小时了还没解决"></a>大量消息在 mq 里积压了几个小时了还没解决</h3><p>几千万条数据在 MQ 里积压了七八个小时，从下午 4 点多，积压到了晚上 11 点多。这个是我们真实遇到过的一个场景，确实是线上故障了，这个时候要不然就是修复 consumer 的问题，让它恢复消费速度，然后傻傻的等待几个小时消费完毕。这个肯定不能在面试的时候说吧。</p>
-<p>一个消费者一秒是 1000 条，一秒 3 个消费者是 3000 条，一分钟就是 18 万条。所以如果你积压了几百万到上千万的数据，即使消费者恢复了，也需要大概 1 小时的时间才能恢复过来。</p>
-<p>一般这个时候，只能临时紧急扩容了，具体操作步骤和思路如下：</p>
-<ul>
-<li>先修复 consumer 的问题，确保其恢复消费速度，然后将现有 consumer 都停掉。</li>
-<li>新建一个 topic，partition 是原来的 10 倍，临时建立好原先 10 倍的 queue 数量。</li>
-<li>然后写一个临时的分发数据的 consumer 程序，这个程序部署上去消费积压的数据，<strong>消费之后不做耗时的处理</strong>，直接均匀轮询写入临时建立好的 10 倍数量的 queue。</li>
-<li>接着临时征用 10 倍的机器来部署 consumer，每一批 consumer 消费一个临时 queue 的数据。这种做法相当于是临时将 queue 资源和 consumer 资源扩大 10 倍，以正常的 10 倍速度来消费数据。</li>
-<li>等快速消费完积压数据之后，<strong>得恢复原先部署的架构</strong>，<strong>重新</strong>用原先的 consumer 机器来消费消息。</li>
+<h2 id="应用解耦、异步"><a href="#应用解耦、异步" class="headerlink" title="应用解耦、异步"></a>应用解耦、异步</h2><h3 id="创建业务订单"><a href="#创建业务订单" class="headerlink" title="创建业务订单"></a>创建业务订单</h3><p>业务入口处（如借款订单），每天订单量较大，高峰时期平均每分钟有6千笔有效订单;<br>创建订单涉及到订单号分配，消息推送、第三方通知（导流）、邀友、等等复杂情形，此处也需要MQ进行解耦</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">producer.send(topic, loan.getId().toString(), tag, loan.getRefId().getBytes(), <span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+<p><code>messageKey</code>使用业务唯一ID，方便C端加锁防重消费(MQ的messageId不能保证唯一，有一定的重复风险)</p>
+<p>由于C端使用的是从库查询创建的订单，在低峰时刻，MQ消费能力很快，恰巧遇到主备同步延迟或者故障，导致C端并未查询到相应的订单，此时不能提交<code>ack</code>，Rocket MQ提供了场景：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// something happen, notice server push to c later again</span></span><br><span class="line"><span class="keyword">return</span> Action.ReconsumeLater;</span><br><span class="line"></span><br><span class="line"><span class="comment">// handle success, notice server finish the msg</span></span><br><span class="line"><span class="keyword">return</span> Action.CommitMessage;</span><br></pre></td></tr></table></figure></p>
+<h3 id="风控审核"><a href="#风控审核" class="headerlink" title="风控审核"></a>风控审核</h3><ul>
+<li>业务日志标记，后台外围系统打标记，丢入客服池，供业务人员竞标</li>
+<li>消息通知，告知客户订单状态流转</li>
+<li>风控审核，这一步需要大量的时间等待风控计算该笔订单流转状态，耗时最长，5~10分钟</li>
+<li>更新订单状态</li>
 </ul>
-<h3 id="mq-中的消息过期失效了"><a href="#mq-中的消息过期失效了" class="headerlink" title="mq 中的消息过期失效了"></a>mq 中的消息过期失效了</h3><p>假设你用的是 RabbitMQ，RabbtiMQ 是可以设置过期时间的，也就是 TTL。如果消息在 queue 中积压超过一定的时间就会被 RabbitMQ 给清理掉，这个数据就没了。那这就是第二个坑了。这就不是说数据会大量积压在 mq 里，而是<strong>大量的数据会直接搞丢</strong>。</p>
-<p>这个情况下，就不是说要增加 consumer 消费积压的消息，因为实际上没啥积压，而是丢了大量的消息。我们可以采取一个方案，就是<strong>批量重导</strong>，这个我们之前线上也有类似的场景干过。就是大量积压的时候，我们当时就直接丢弃数据了，然后等过了高峰期以后，比如大家一起喝咖啡熬夜到晚上12点以后，用户都睡觉了。这个时候我们就开始写程序，将丢失的那批数据，写个临时程序，一点一点的查出来，然后重新灌入 mq 里面去，把白天丢的数据给他补回来。也只能是这样了。</p>
-<p>假设 1 万个订单积压在 mq 里面，没有处理，其中 1000 个订单都丢了，你只能手动写程序把那 1000 个订单给查出来，手动发到 mq 里去再补一次。</p>
-<h3 id="mq-都快写满了"><a href="#mq-都快写满了" class="headerlink" title="mq 都快写满了"></a>mq 都快写满了</h3><p>如果消息积压在 mq 里，你很长时间都没有处理掉，此时导致 mq 都快写满了，咋办？这个还有别的办法吗？没有，谁让你第一个方案执行的太慢了，你临时写程序，接入数据来消费，<strong>消费一个丢弃一个，都不要了</strong>，快速消费掉所有的消息。然后走第二个方案，到了晚上再补数据吧。</p>
-<p>参考：<br><a href="https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/mq-time-delay-and-expired-failure.md" target="_blank" rel="noopener">如何解决消息队列的延时以及过期失效问题？消息队列满了以后该怎么处理？有几百万消息持续积压几小时，说说怎么解决？</a></p>
+<p><img src="https://s2.ax1x.com/2019/02/20/k2jI4e.png" alt=""></p>
+<h2 id="流量削锋"><a href="#流量削锋" class="headerlink" title="流量削锋"></a>流量削锋</h2><h3 id="公众号消息推送与回复"><a href="#公众号消息推送与回复" class="headerlink" title="公众号消息推送与回复"></a>公众号消息推送与回复</h3><p>公众号的入口是我们业务的一大流量入口，客服在公众号对接每天的客户，信息量非常的大（没具体的统计过），<br>常用场景是客户在公众号提出问题，机器人或者人工介入解决问题，此处必须用到MQ</p>
+<ul>
+<li>机器人消息：C端检测关键字，尝试回复简单问题列表供客户选择，解决问题</li>
+<li>人工处理：C端判定客户需要人工处理，则立即将客户的唯一识别码（OpenId或者手机号）绑定到客服应答系统，发送的消息将分配给相应的客服，直到问题解决解绑唯一识别码</li>
+</ul>
+<h2 id="广播"><a href="#广播" class="headerlink" title="广播"></a>广播</h2><p>消息队列的基本功能之一是进行广播。如果没有消息队列，每当一个新的业务方接入，我们都要联调一次新接口。有了消息队列，我们只需要关心消息是否送达了队列，至于谁希望订阅，是下游的事情，无疑极大地减少了开发和联调的工作量。 比如本文开始提到的产品中心发布产品变更的消息，以及景点库很多去重更新的消息，可能“关心”方有很多个，但产品中心和景点库只需要发布变更消息即可，谁关心谁接入。</p>
+<h2 id="延迟消费"><a href="#延迟消费" class="headerlink" title="延迟消费"></a>延迟消费</h2><ul>
+<li>订单一直处于未支付状态时，如何及时的关闭订单，并退还库存？</li>
+<li>定期检查处于退款状态的订单是否已经退款成功？</li>
+</ul>
 
     
   </div>
@@ -128,7 +133,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.5px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 17.5px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 17.5px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 17.5px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12.5px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12.5px;">distributed</a> <a href="/tags/原/" style="font-size: 15px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -137,6 +142,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/06/03/classLoader-hotswap/">JVM类热加载——基于ClassLoader方案</a>
+      </li>
+    
+      <li>
+        <a href="/2019/05/31/classLoader/">JVM类加载过程探究</a>
+      </li>
     
       <li>
         <a href="/2019/02/20/mq-scene-in-enterprise/">消息队列——企业使用场景</a>
@@ -148,14 +161,6 @@
     
       <li>
         <a href="/2019/02/13/mq-delay-and-invalid/">消息队列——延时以及过期失效</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/13/mq-sort/">消息队列——顺序性</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/13/mq-reliable/">消息队列——可靠性</a>
       </li>
     
   </ul>

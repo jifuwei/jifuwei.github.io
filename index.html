@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/02/20/mq-scene-in-enterprise/">
-  <time datetime="2019-02-20T12:07:26.000Z">
-    2019-02-20
+      <a href="/2019/06/03/classLoader-hotswap/">
+  <time datetime="2019-06-03T07:40:34.000Z">
+    2019-06-03
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/02/20/mq-scene-in-enterprise/">消息队列——企业使用场景</a></h1>
+    <h1 class="title"><a href="/2019/06/03/classLoader-hotswap/">JVM类热加载——基于ClassLoader方案</a></h1>
   
 
   </header>
@@ -77,27 +77,24 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<h2 id="应用解耦、异步"><a href="#应用解耦、异步" class="headerlink" title="应用解耦、异步"></a>应用解耦、异步</h2><h3 id="创建业务订单"><a href="#创建业务订单" class="headerlink" title="创建业务订单"></a>创建业务订单</h3><p>业务入口处（如借款订单），每天订单量较大，高峰时期平均每分钟有6千笔有效订单;<br>创建订单涉及到订单号分配，消息推送、第三方通知（导流）、邀友、等等复杂情形，此处也需要MQ进行解耦</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">producer.send(topic, loan.getId().toString(), tag, loan.getRefId().getBytes(), <span class="number">1</span>);</span><br></pre></td></tr></table></figure>
-<p><code>messageKey</code>使用业务唯一ID，方便C端加锁防重消费(MQ的messageId不能保证唯一，有一定的重复风险)</p>
-<p>由于C端使用的是从库查询创建的订单，在低峰时刻，MQ消费能力很快，恰巧遇到主备同步延迟或者故障，导致C端并未查询到相应的订单，此时不能提交<code>ack</code>，Rocket MQ提供了场景：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// something happen, notice server push to c later again</span></span><br><span class="line"><span class="keyword">return</span> Action.ReconsumeLater;</span><br><span class="line"></span><br><span class="line"><span class="comment">// handle success, notice server finish the msg</span></span><br><span class="line"><span class="keyword">return</span> Action.CommitMessage;</span><br></pre></td></tr></table></figure></p>
-<h3 id="风控审核"><a href="#风控审核" class="headerlink" title="风控审核"></a>风控审核</h3><ul>
-<li>业务日志标记，后台外围系统打标记，丢入客服池，供业务人员竞标</li>
-<li>消息通知，告知客户订单状态流转</li>
-<li>风控审核，这一步需要大量的时间等待风控计算该笔订单流转状态，耗时最长，5~10分钟</li>
-<li>更新订单状态</li>
-</ul>
-<p><img src="https://s2.ax1x.com/2019/02/20/k2jI4e.png" alt=""></p>
-<h2 id="流量削锋"><a href="#流量削锋" class="headerlink" title="流量削锋"></a>流量削锋</h2><h3 id="公众号消息推送与回复"><a href="#公众号消息推送与回复" class="headerlink" title="公众号消息推送与回复"></a>公众号消息推送与回复</h3><p>公众号的入口是我们业务的一大流量入口，客服在公众号对接每天的客户，信息量非常的大（没具体的统计过），<br>常用场景是客户在公众号提出问题，机器人或者人工介入解决问题，此处必须用到MQ</p>
-<ul>
-<li>机器人消息：C端检测关键字，尝试回复简单问题列表供客户选择，解决问题</li>
-<li>人工处理：C端判定客户需要人工处理，则立即将客户的唯一识别码（OpenId或者手机号）绑定到客服应答系统，发送的消息将分配给相应的客服，直到问题解决解绑唯一识别码</li>
-</ul>
-<h2 id="广播"><a href="#广播" class="headerlink" title="广播"></a>广播</h2><p>消息队列的基本功能之一是进行广播。如果没有消息队列，每当一个新的业务方接入，我们都要联调一次新接口。有了消息队列，我们只需要关心消息是否送达了队列，至于谁希望订阅，是下游的事情，无疑极大地减少了开发和联调的工作量。 比如本文开始提到的产品中心发布产品变更的消息，以及景点库很多去重更新的消息，可能“关心”方有很多个，但产品中心和景点库只需要发布变更消息即可，谁关心谁接入。</p>
-<h2 id="延迟消费"><a href="#延迟消费" class="headerlink" title="延迟消费"></a>延迟消费</h2><ul>
-<li>订单一直处于未支付状态时，如何及时的关闭订单，并退还库存？</li>
-<li>定期检查处于退款状态的订单是否已经退款成功？</li>
-</ul>
+<p>上篇介绍了JVM加载类的过程，触发了下文。</p>
+<p>过程其实是反过来的，看到tomcat热部署很羡慕 -&gt; 这牛逼功能怎么做的 -&gt; 类加载原理 -&gt; 不造轮子的程序员不是好程序员 -&gt; now</p>
+<h2 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h2><p>实现热替换，目前能用的就是自定义ClassLoader实现</p>
+<p>分析：</p>
+<p>1.在 Java 中，即使是同一个类文件，如果是由不同的类加载器实例加载的，那么它们的类型是不相同的。如果认为是同一个类，就出现ClassCastException异常，也就类转换异常。这就意味着，我们在实现热替换的时候，自定义的ClassLoader所生产的类对象，不能被赋值到原项目里的所对应的类对象。</p>
+<p>且ClassLoader对象是不允许相同classs文件重新加载的。</p>
+<p>2.如何让自定义ClassLoader所生产的类对象赋值给原来对应的对象变量上呢？<br>我们可以定义一个如 ICommon，实现类CommonService 实现 ICommon接口，程序面向接口编程即可。</p>
+<p>当我们对CommonService修改并热替换，由于引用的CommonService地方是通过ICommon，可以直接赋值（ICommon由父类记载其加载，实现类由子类加载器加载实现，即自定义类加载器加载）</p>
+<p>注意：为什么此方法可行，必须要求只能是实现类是自定义加载器加载，实现类内部其它类需要交由父加载器加载，即 implements ICommon ,这一步很重要！否则还是会抛ClassCastException! 这要求我们自定义的类加载器只能约束加载需要热部署的类。</p>
+<p>3.如上第二点分析设计的话 需要我们对所有类加接口，很明显不现实！<br>此时参考Tomcat ClassLoader设计原理，基本不变的类交由一个classLoader处理，项目类即经常变动的类交由另一个类加载处理，检测到项目变化，则新建一个类加载器加载项目类文件。</p>
+<p>参考spring devtools 设计，热启动设计两个类，一个classLoader加载哪些不会改变的类（第三方jar），另一个ClassLoader加载会更改的类，称为RestartClassLoader，如代码变动，则创建一个新的RestartClassLoader，原来的RestartClassLoader会被gc回收。</p>
+<p>简单粗暴的设计，也就能看出导致的问题：热部署，每次变动都重新加载一次指定类，性能问题和很多潜在的问题无法预料。</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>接口设计<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">ICommon</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>实现类：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CommonService</span> <span class="keyword">implements</span> <span class="title">ICommon</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// sout helle world!</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>自定义类加载器：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">HowswapCL</span> <span class="keyword">extends</span> <span class="title">ClassLoader</span> </span>&#123; </span><br><span class="line"> </span><br><span class="line">    <span class="keyword">private</span> String basedir; <span class="comment">// 需要该类加载器直接加载的类文件的基目录</span></span><br><span class="line">    <span class="keyword">private</span> HashSet dynaclazns; <span class="comment">// 需要由该类加载器直接加载的类名</span></span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">HowswapCL</span><span class="params">(String basedir, String[] clazns)</span> </span>&#123; </span><br><span class="line">        <span class="keyword">super</span>(<span class="keyword">null</span>); <span class="comment">// 指定父类加载器为 null </span></span><br><span class="line">        <span class="keyword">this</span>.basedir = basedir; </span><br><span class="line">        dynaclazns = <span class="keyword">new</span> HashSet(); </span><br><span class="line">        loadClassByMe(clazns); </span><br><span class="line">    &#125; </span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">loadClassByMe</span><span class="params">(String[] clazns)</span> </span>&#123; </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; clazns.length; i++) &#123; </span><br><span class="line">            loadDirectly(clazns[i]); </span><br><span class="line">            dynaclazns.add(clazns[i]); </span><br><span class="line">        &#125; </span><br><span class="line">    &#125; </span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">private</span> Class <span class="title">loadDirectly</span><span class="params">(String name)</span> </span>&#123; </span><br><span class="line">        Class cls = <span class="keyword">null</span>; </span><br><span class="line">        StringBuffer sb = <span class="keyword">new</span> StringBuffer(basedir); </span><br><span class="line">        String classname = name.replace(<span class="string">'.'</span>, File.separatorChar) + <span class="string">".class"</span>;</span><br><span class="line">        sb.append(File.separator + classname); </span><br><span class="line">        File classF = <span class="keyword">new</span> File(sb.toString()); </span><br><span class="line">        cls = instantiateClass(name,<span class="keyword">new</span> FileInputStream(classF),</span><br><span class="line">            classF.length()); </span><br><span class="line">        <span class="keyword">return</span> cls; </span><br><span class="line">    &#125;           </span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">private</span> Class <span class="title">instantiateClass</span><span class="params">(String name,InputStream fin,<span class="keyword">long</span> len)</span></span>&#123; </span><br><span class="line">        <span class="keyword">byte</span>[] raw = <span class="keyword">new</span> <span class="keyword">byte</span>[(<span class="keyword">int</span>) len]; </span><br><span class="line">        fin.read(raw); </span><br><span class="line">        fin.close(); </span><br><span class="line">        <span class="keyword">return</span> defineClass(name,raw,<span class="number">0</span>,raw.length); </span><br><span class="line">    &#125; </span><br><span class="line">     </span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Class <span class="title">loadClass</span><span class="params">(String name, <span class="keyword">boolean</span> resolve)</span> </span></span><br><span class="line"><span class="function">            <span class="keyword">throws</span> ClassNotFoundException </span>&#123; </span><br><span class="line">        Class cls = <span class="keyword">null</span>; </span><br><span class="line">        cls = findLoadedClass(name); </span><br><span class="line">        <span class="keyword">if</span>(!<span class="keyword">this</span>.dynaclazns.contains(name) &amp;&amp; cls == <span class="keyword">null</span>) </span><br><span class="line">            cls = getSystemClassLoader().loadClass(name); </span><br><span class="line">        <span class="keyword">if</span> (cls == <span class="keyword">null</span>) </span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> ClassNotFoundException(name); </span><br><span class="line">        <span class="keyword">if</span> (resolve) </span><br><span class="line">            resolveClass(cls); </span><br><span class="line">        <span class="keyword">return</span> cls; </span><br><span class="line">    &#125; </span><br><span class="line"> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>所有指定必须由它直接加载的类都在该加载器实例化时进行了加载，当通过 loadClass 进行类的加载时，如果该类没有加载过，并且不属于必须由该类加载器加载之列都委托给系统加载器进行加载。</p>
+<p>线程监控（为了模拟，每次都是新建classLoader，好点可以监控文件修改与否）：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123; </span><br><span class="line">    <span class="keyword">try</span> &#123; </span><br><span class="line">        <span class="comment">// 每次都创建出一个新的类加载器</span></span><br><span class="line">        HowswapCL cl = <span class="keyword">new</span> HowswapCL(<span class="string">"../swap"</span>, <span class="keyword">new</span> String[]&#123;<span class="string">"Foo"</span>&#125;); </span><br><span class="line">        Class cls = cl.loadClass(<span class="string">"Foo"</span>); </span><br><span class="line">        IFoo foo = (IFoo)cls.newInstance(); </span><br><span class="line">        foo.sayHello(); </span><br><span class="line">    &#125;  <span class="keyword">catch</span>(Exception ex) &#123; </span><br><span class="line">        ex.printStackTrace(); </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>大功告成！</p>
 
     
   </div>
@@ -131,7 +128,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.5px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 17.5px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 17.5px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 17.5px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12.5px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12.5px;">distributed</a> <a href="/tags/原/" style="font-size: 15px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -140,6 +137,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/06/03/classLoader-hotswap/">JVM类热加载——基于ClassLoader方案</a>
+      </li>
+    
+      <li>
+        <a href="/2019/05/31/classLoader/">JVM类加载过程探究</a>
+      </li>
     
       <li>
         <a href="/2019/02/20/mq-scene-in-enterprise/">消息队列——企业使用场景</a>
@@ -151,14 +156,6 @@
     
       <li>
         <a href="/2019/02/13/mq-delay-and-invalid/">消息队列——延时以及过期失效</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/13/mq-sort/">消息队列——顺序性</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/13/mq-reliable/">消息队列——可靠性</a>
       </li>
     
   </ul>

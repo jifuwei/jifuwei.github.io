@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/02/13/mq-sort/">
-  <time datetime="2019-02-13T13:03:42.000Z">
+      <a href="/2019/02/13/mq-design/">
+  <time datetime="2019-02-13T13:11:45.000Z">
     2019-02-13
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/02/13/mq-sort/">消息队列——顺序性</a></h1>
+    <h1 class="title"><a href="/2019/02/13/mq-design/">消息队列——自己设计</a></h1>
   
 
   </header>
@@ -77,19 +77,19 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p>我举个例子，我们以前做过一个 mysql binlog 同步的系统，压力还是非常大的，日同步数据要达到上亿，就是说数据从一个 mysql 库原封不动地同步到另一个 mysql 库里面去（mysql -&gt; mysql）。常见的一点在于说比如大数据 team，就需要同步一个 mysql 库过来，对公司的业务系统的数据做各种复杂的操作。</p>
-<p>你在 mysql 里增删改一条数据，对应出来了增删改 3 条 binlog 日志，接着这三条 binlog 发送到 MQ 里面，再消费出来依次执行，起码得保证人家是按照顺序来的吧？不然本来是：增加、修改、删除；你楞是换了顺序给执行成删除、修改、增加，不全错了么。</p>
-<p>本来这个数据同步过来，应该最后这个数据被删除了；结果你搞错了这个顺序，最后这个数据保留下来了，数据同步就出错了。<br>先看看顺序会错乱的俩场景：</p>
+<p>比如说这个消息队列系统，我们从以下几个角度来考虑一下：</p>
 <ul>
-<li>RabbitMQ：一个 queue，多个 consumer。比如，生产者向 RabbitMQ 里发送了三条数据，顺序依次是 data1/data2/data3，压入的是 RabbitMQ 的一个内存队列。有三个消费者分别从 MQ 中消费这三条数据中的一条，结果消费者2先执行完操作，把 data2 存入数据库，然后是 data1/data3。这不明显乱了。<br><img src="https://s2.ax1x.com/2019/02/13/k0HQ9H.png" alt=""></li>
-<li>Kafka：比如说我们建了一个 topic，有三个 partition。生产者在写的时候，其实可以指定一个 key，比如说我们指定了某个订单 id 作为 key，那么这个订单相关的数据，一定会被分发到同一个 partition 中去，而且这个 partition 中的数据一定是有顺序的。<br>消费者从 partition 中取出来数据的时候，也一定是有顺序的。到这里，顺序还是 ok 的，没有错乱。接着，我们在消费者里可能会搞多个线程来并发处理消息。因为如果消费者是单线程消费处理，而处理比较耗时的话，比如处理一条消息耗时几十 ms，那么 1 秒钟只能处理几十条消息，这吞吐量太低了。而多个线程并发跑的话，顺序可能就乱掉了。<br><img src="https://s2.ax1x.com/2019/02/13/k0HNE8.png" alt=""></li>
+<li><p>首先这个 mq 得支持可伸缩性吧，就是需要的时候快速扩容，就可以增加吞吐量和容量，那怎么搞？设计个分布式的系统呗，参照一下 kafka 的设计理念，broker -&gt; topic -&gt; partition，每个 partition 放一个机器，就存一部分数据。如果现在资源不够了，简单啊，给 topic 增加 partition，然后做数据迁移，增加机器，不就可以存放更多数据，提供更高的吞吐量了？</p>
+</li>
+<li><p>其次你得考虑一下这个 mq 的数据要不要落地磁盘吧？那肯定要了，落磁盘才能保证别进程挂了数据就丢了。那落磁盘的时候怎么落啊？顺序写，这样就没有磁盘随机读写的寻址开销，磁盘顺序读写的性能是很高的，这就是 kafka 的思路。</p>
+</li>
+<li><p>其次你考虑一下你的 mq 的可用性啊？这个事儿，具体参考之前可用性那个环节讲解的 kafka 的高可用保障机制。多副本 -&gt; leader &amp; follower -&gt; broker 挂了重新选举 leader 即可对外服务。</p>
+</li>
+<li><p>能不能支持数据 0 丢失啊？可以的，参考我们之前说的那个 kafka 数据零丢失方案。</p>
+</li>
 </ul>
-<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><h3 id="RabbitMQ"><a href="#RabbitMQ" class="headerlink" title="RabbitMQ"></a>RabbitMQ</h3><p>拆分多个 queue，每个 queue 一个 consumer，就是多一些 queue 而已，确实是麻烦点；或者就一个 queue 但是对应一个 consumer，然后这个 consumer 内部用内存队列做排队，然后分发给底层不同的 worker 来处理。<br><img src="https://s2.ax1x.com/2019/02/13/k0HfC4.png" alt=""></p>
-<h3 id="Kafka"><a href="#Kafka" class="headerlink" title="Kafka"></a>Kafka</h3><ul>
-<li>一个 topic，一个 partition，一个 consumer，内部单线程消费，单线程吞吐量太低，一般不会用这个。</li>
-<li>写 N 个内存 queue，具有相同 key 的数据都到同一个内存 queue；然后对于 N 个线程，每个线程分别消费一个内存 queue 即可，这样就能保证顺序性。<br><img src="https://s2.ax1x.com/2019/02/13/k0HoK1.png" alt=""></li>
-</ul>
-<p>参考：<br><a href="https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/how-to-ensure-the-order-of-messages.md" target="_blank" rel="noopener">如何保证消息的顺序性？</a></p>
+<p>mq 肯定是很复杂的，面试官问你这个问题，其实是个开放题，他就是看看你有没有从架构角度整体构思和设计的思维以及能力。确实这个问题可以刷掉一大批人，因为大部分人平时不思考这些东西。</p>
+<p>参考：<br><a href="https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/mq-design.md" target="_blank" rel="noopener">如果让你写一个消息队列，该如何进行架构设计？说一下你的思路。</a></p>
 
     
   </div>
@@ -125,7 +125,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.5px;">Cache</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 17.5px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 17.5px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 17.5px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12.5px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12.5px;">distributed</a> <a href="/tags/原/" style="font-size: 15px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -134,6 +134,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/06/03/classLoader-hotswap/">JVM类热加载——基于ClassLoader方案</a>
+      </li>
+    
+      <li>
+        <a href="/2019/05/31/classLoader/">JVM类加载过程探究</a>
+      </li>
     
       <li>
         <a href="/2019/02/20/mq-scene-in-enterprise/">消息队列——企业使用场景</a>
@@ -145,14 +153,6 @@
     
       <li>
         <a href="/2019/02/13/mq-delay-and-invalid/">消息队列——延时以及过期失效</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/13/mq-sort/">消息队列——顺序性</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/13/mq-reliable/">消息队列——可靠性</a>
       </li>
     
   </ul>
