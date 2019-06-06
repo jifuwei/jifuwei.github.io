@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>Java Intrumentation和相关应用 | 无知是天堂</title>
+  <title>Java Intrumentation 和相关应用 | 无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
@@ -19,7 +19,7 @@ Java Instrument是什么？能干嘛？
   <meta name="description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  阿里开源的arthas很强大 -&amp;gt; 如何实现无侵入式修改实现 -&amp;gt; 本文 Java Instrument是什么？能干嘛？ 使开发者可以构建一个独立于应用程序的代理程序Agent，用来监控和协助运行在JVM上的程序，更重">
 <meta name="keywords" content="Java,JVM,ClassLoader">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Java Intrumentation和相关应用">
+<meta property="og:title" content="Java Intrumentation 和相关应用">
 <meta property="og:url" content="http://yoursite.com/2019/06/04/instrument/index.html">
 <meta property="og:site_name" content="无知是天堂">
 <meta property="og:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  阿里开源的arthas很强大 -&amp;gt; 如何实现无侵入式修改实现 -&amp;gt; 本文 Java Instrument是什么？能干嘛？ 使开发者可以构建一个独立于应用程序的代理程序Agent，用来监控和协助运行在JVM上的程序，更重">
@@ -27,9 +27,9 @@ Java Instrument是什么？能干嘛？
 <meta property="og:image" content="https://s2.ax1x.com/2019/06/05/VNquHe.jpg">
 <meta property="og:image" content="https://s2.ax1x.com/2019/06/05/VNL1ZF.png">
 <meta property="og:image" content="https://s2.ax1x.com/2019/06/05/VNO46x.jpg">
-<meta property="og:updated_time" content="2019-06-05T06:50:37.978Z">
+<meta property="og:updated_time" content="2019-06-06T02:16:56.020Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Java Intrumentation和相关应用">
+<meta name="twitter:title" content="Java Intrumentation 和相关应用">
 <meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  阿里开源的arthas很强大 -&amp;gt; 如何实现无侵入式修改实现 -&amp;gt; 本文 Java Instrument是什么？能干嘛？ 使开发者可以构建一个独立于应用程序的代理程序Agent，用来监控和协助运行在JVM上的程序，更重">
 <meta name="twitter:image" content="https://s2.ax1x.com/2019/06/05/VNquHe.jpg">
   
@@ -73,7 +73,7 @@ Java Instrument是什么？能干嘛？
     
     
   
-    <h1 class="title">Java Intrumentation和相关应用</h1>
+    <h1 class="title">Java Intrumentation 和相关应用</h1>
   
 
   </header>
@@ -90,7 +90,7 @@ Java Instrument是什么？能干嘛？
 </ul>
 <p>JDK 1.5：支持静态Instrument，就是在JVM启动前静态设置Instrument；<br>JDK 1.6：支持动态Instrument，就是在JVM启动后动态设置Instrument；支持本地代码Instrument；支持动态改变classpath；</p>
 <p>premain执行时机：在JVM启动时，初始化函数eventHandlerVMinit会调用sun.instrument.instrumentationImpl类的loadClassAndCallPremain方法去执行Premain-Class指定类的premain方法；</p>
-<p>agentmain执行时机：在JVM启动后，通过VirtualMachine附着一个Instrument，如：vm.loadAgent(jar)，会调用sun.instrument.instrumentationImpl类的loadClassAndCallAgentmain方法去执行Agentmain-Class指定类的agentmain方法；</p>
+<p>agentmain执行时机：在JVM启动后，通过VirtualMachine附着一个Instrument，如：vm.loadAgent(jar)，会调用<code>sun.instrument.instrumentationImpl</code>类的<code>loadClassAndCallAgentmain</code>方法去执行<code>Agentmain-Class</code>指定类的<code>agentmain</code>方法；</p>
 <p>Instrument premain、agentmain方法中两个参数agentArgs、inst代表什么？</p>
 <ul>
 <li>agentArgs：代理程序命令行中输入参数，随同“-javaagent”一起传入，与main函数不同的是，这个参数是一个字符串而不是一个字符串数组；</li>
@@ -173,7 +173,7 @@ Java Instrument是什么？能干嘛？
   <ul class="entry">
     
       <li>
-        <a href="/2019/06/04/instrument/">Java Intrumentation和相关应用</a>
+        <a href="/2019/06/04/instrument/">Java Intrumentation 和相关应用</a>
       </li>
     
       <li>

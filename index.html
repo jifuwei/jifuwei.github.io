@@ -67,7 +67,7 @@
     
     
   
-    <h1 class="title"><a href="/2019/06/04/instrument/">Java Intrumentation和相关应用</a></h1>
+    <h1 class="title"><a href="/2019/06/04/instrument/">Java Intrumentation 和相关应用</a></h1>
   
 
   </header>
@@ -84,7 +84,7 @@
 </ul>
 <p>JDK 1.5：支持静态Instrument，就是在JVM启动前静态设置Instrument；<br>JDK 1.6：支持动态Instrument，就是在JVM启动后动态设置Instrument；支持本地代码Instrument；支持动态改变classpath；</p>
 <p>premain执行时机：在JVM启动时，初始化函数eventHandlerVMinit会调用sun.instrument.instrumentationImpl类的loadClassAndCallPremain方法去执行Premain-Class指定类的premain方法；</p>
-<p>agentmain执行时机：在JVM启动后，通过VirtualMachine附着一个Instrument，如：vm.loadAgent(jar)，会调用sun.instrument.instrumentationImpl类的loadClassAndCallAgentmain方法去执行Agentmain-Class指定类的agentmain方法；</p>
+<p>agentmain执行时机：在JVM启动后，通过VirtualMachine附着一个Instrument，如：vm.loadAgent(jar)，会调用<code>sun.instrument.instrumentationImpl</code>类的<code>loadClassAndCallAgentmain</code>方法去执行<code>Agentmain-Class</code>指定类的<code>agentmain</code>方法；</p>
 <p>Instrument premain、agentmain方法中两个参数agentArgs、inst代表什么？</p>
 <ul>
 <li>agentArgs：代理程序命令行中输入参数，随同“-javaagent”一起传入，与main函数不同的是，这个参数是一个字符串而不是一个字符串数组；</li>
@@ -173,7 +173,7 @@
   <ul class="entry">
     
       <li>
-        <a href="/2019/06/04/instrument/">Java Intrumentation和相关应用</a>
+        <a href="/2019/06/04/instrument/">Java Intrumentation 和相关应用</a>
       </li>
     
       <li>
