@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/01/19/jvm-distribute-recycle/">
-  <time datetime="2019-01-19T07:11:09.000Z">
+      <a href="/2019/01/19/jvm-tools/">
+  <time datetime="2019-01-19T10:43:49.000Z">
     2019-01-19
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/01/19/jvm-distribute-recycle/">JVM——内存分配与回收策略</a></h1>
+    <h1 class="title"><a href="/2019/01/19/jvm-tools/">JVM——虚拟机性能监控与故障处理工具</a></h1>
   
 
   </header>
@@ -77,41 +77,234 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p>Java技术体系中所提倡的自动内存管理最终可以归结为自动化地解决了两个问题：给对象分配内存以及回收分配给对象的内存。</p>
-<p>对象的内存分配，往大方向讲，就是在堆上分配，对象主要分配在新生代的Eden区上，如果启动了本地线程分配缓冲，将按线程优先在TLAB上分配。少数情况下也可能会直接分配在老年代中，分配的规则并不是百分之百固定的，其细节取决于当前使用的是哪一种垃圾收集器组合，还有虚拟机中与内存相关的参数的设置。</p>
-<h2 id="Minor-GC和Full-GC区别"><a href="#Minor-GC和Full-GC区别" class="headerlink" title="Minor GC和Full GC区别"></a>Minor GC和Full GC区别</h2><ul>
-<li>新生代GC（Minor GC）：指发生在新生代的垃圾回收动作，因为Java对象大多都具备朝生夕死的特性，所以Minor GC非常频繁，一般回收速度也比较快。</li>
-<li>老年代GC（Major GC/Full GC）：指发生在老年代的GC，出现了Full GC，经常会伴随至少一次的Minor GC（非绝对，在Parallel Scavenge收集器的收集策略里就有直接进行Full GC的策略选择过程）。Full GC的速度一般会比Minor GC慢10倍以上</li>
-</ul>
-<h2 id="对象优先在Eden分配"><a href="#对象优先在Eden分配" class="headerlink" title="对象优先在Eden分配"></a>对象优先在Eden分配</h2><p>大多数情况下，对象在新生代Eden区中分配。当Eden区没有足够空间进行分配时，虚拟机将发起一次<code>Minor GC</code>。虚拟机的参数<code>-XX:PrintGCDetails</code>可以打印内存回收日志。</p>
-<p>代码示例：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> _1MB = <span class="number">1024</span> * <span class="number">1024</span>;  </span><br><span class="line"><span class="comment">/**  </span></span><br><span class="line"><span class="comment">* VM参数：-verbose:gc -Xms20M -Xmx20M -Xmn10M -XX:+PrintGCDetails -XX:SurvivorRatio=8 </span></span><br><span class="line"><span class="comment">*/</span>  </span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">testAllocation</span><span class="params">()</span> </span>&#123;  </span><br><span class="line">    <span class="keyword">byte</span>[] allocation1, allocation2, allocation3, allocation4;  </span><br><span class="line">    allocation1 = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">2</span> * _1MB];  </span><br><span class="line">    allocation2 = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">2</span> * _1MB]; </span><br><span class="line">    allocation3 = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">2</span> * _1MB]; </span><br><span class="line">    allocation4 = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">4</span> * _1MB];  <span class="comment">// 出现一次Minor GC  </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>运行结果：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[GC [DefNew: <span class="number">6651</span>K-&gt;<span class="number">148</span>K(<span class="number">9216</span>K), <span class="number">0.0070106</span> secs] <span class="number">6651</span>K-&gt;<span class="number">6292</span>K(<span class="number">19456</span>K), <span class="number">0.0070426</span> secs] [Times: user=<span class="number">0.00</span> sys=<span class="number">0.00</span>, real=<span class="number">0.00</span> secs]   </span><br><span class="line">Heap  </span><br><span class="line">def <span class="keyword">new</span> generation   total <span class="number">9216</span>K, used <span class="number">4326</span>K [<span class="number">0x029d0000</span>, <span class="number">0x033d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">eden space <span class="number">8192</span>K,  <span class="number">51</span>% used [<span class="number">0x029d0000</span>, <span class="number">0x02de4828</span>, <span class="number">0x031d0000</span>)  </span><br><span class="line">from space <span class="number">1024</span>K,  <span class="number">14</span>% used [<span class="number">0x032d0000</span>, <span class="number">0x032f5370</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">to   space <span class="number">1024</span>K,   <span class="number">0</span>% used [<span class="number">0x031d0000</span>, <span class="number">0x031d0000</span>, <span class="number">0x032d0000</span>)  </span><br><span class="line">tenured generation   total <span class="number">10240</span>K, used <span class="number">6144</span>K [<span class="number">0x033d0000</span>, <span class="number">0x03dd0000</span>, <span class="number">0x03dd0000</span>)  </span><br><span class="line"> the space <span class="number">10240</span>K,  <span class="number">60</span>% used [<span class="number">0x033d0000</span>, <span class="number">0x039d0030</span>, <span class="number">0x039d0200</span>, <span class="number">0x03dd0000</span>)  </span><br><span class="line">compacting perm gen  total <span class="number">12288</span>K, used <span class="number">2114</span>K [<span class="number">0x03dd0000</span>, <span class="number">0x049d0000</span>, <span class="number">0x07dd0000</span>)  </span><br><span class="line"> the space <span class="number">12288</span>K,  <span class="number">17</span>% used [<span class="number">0x03dd0000</span>, <span class="number">0x03fe0998</span>, <span class="number">0x03fe0a00</span>, <span class="number">0x049d0000</span>)  </span><br><span class="line">No shared spaces configured.</span><br></pre></td></tr></table></figure></p>
-<p>代码尝试分配3个2MB大小和1个4MB大小的对象，在运行时通过-Xms20M、 -Xmx20M、 -Xmn10M这3个参数限制了Java堆大小为20MB，不可扩展，其中10MB分配给新生代，剩下的10MB分配给老年代。-XX:SurvivorRatio=8决定了新生代中Eden区与一个Survivor区的空间比例是8∶1，从输出的结果也可以清晰地看到eden space 8192K、from space 1024K、to space 1024K的信息，新生代总可用空间为9216KB（Eden区+1个Survivor区的总容量）。</p>
-<p>执行testAllocation()中分配allocation4对象的语句时会发生一次Minor GC，这次GC的结果是新生代6651KB变为148KB，而总内存占用量则几乎没有减少（因为allocation1、allocation2、allocation3三个对象都是存活的，虚拟机几乎没有找到可回收的对象）。这次GC发生的原因是给allocation4分配内存的时候，发现Eden已经被占用了6MB，剩余空间已不足以分配allocation4所需的4MB内存，因此发生Minor GC。GC期间虚拟机又发现已有的3个2MB大小的对象全部无法放入Survivor空间（Survivor空间只有1MB大小），所以只好通过分配担保机制提前转移到老年代去。</p>
-<p>这次GC结束后，4MB的allocation4对象顺利分配在Eden中，因此程序执行完的结果是Eden占用4MB（被allocation4占用），Survivor空闲，老年代被占用6MB（被allocation1、allocation2、allocation3占用）。通过GC日志可以证实这一点。</p>
-<h2 id="大对象直接进入老年代"><a href="#大对象直接进入老年代" class="headerlink" title="大对象直接进入老年代"></a>大对象直接进入老年代</h2><p>所谓的大对象是指，需要大量连续内存空间的Java对象，最典型的大对象就是那种很长的字符串以及数组。</p>
-<p>大对象对虚拟机的内存分配来说就是一个坏消息（比遇到一个大对象更加坏的消息就是遇到一群“朝生夕灭”的“短命大对象”，写程序的时候应当避免），经常出现大对象容易导致内存还有不少空间时就提前触发垃圾收集以获取足够的连续空间来“安置”它们。</p>
-<p>虚拟机提供了一个-XX:PretenureSizeThreshold参数，令大于这个设置值的对象直接在老年代分配。这样做的目的是避免在Eden区及两个Survivor区之间发生大量的内存复制</p>
-<p>代码示例：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> _1MB = <span class="number">1024</span> * <span class="number">1024</span>;   </span><br><span class="line"><span class="comment">/**  </span></span><br><span class="line"><span class="comment">* VM参数：-verbose:gc -Xms20M -Xmx20M -Xmn10M -XX:+PrintGCDetails -XX:SurvivorRatio=8 </span></span><br><span class="line"><span class="comment">* -XX:PretenureSizeThreshold=3145728 </span></span><br><span class="line"><span class="comment">*/</span>  </span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">testPretenureSizeThreshold</span><span class="params">()</span> </span>&#123;  </span><br><span class="line">    <span class="keyword">byte</span>[] allocation;  </span><br><span class="line">    allocation = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">4</span> * _1MB];  <span class="comment">//直接分配在老年代中  </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>运行结果：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Heap  </span><br><span class="line">    def <span class="keyword">new</span> generation   total <span class="number">9216</span>K, used <span class="number">671</span>K [<span class="number">0x029d0000</span>, <span class="number">0x033d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">    eden space <span class="number">8192</span>K,   <span class="number">8</span>% used [<span class="number">0x029d0000</span>, <span class="number">0x02a77e98</span>, <span class="number">0x031d0000</span>)  </span><br><span class="line">    from space <span class="number">1024</span>K,   <span class="number">0</span>% used [<span class="number">0x031d0000</span>, <span class="number">0x031d0000</span>, <span class="number">0x032d0000</span>)  </span><br><span class="line">    to   space <span class="number">1024</span>K,   <span class="number">0</span>% used [<span class="number">0x032d0000</span>, <span class="number">0x032d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">    tenured generation   total <span class="number">10240</span>K, used <span class="number">4096</span>K [<span class="number">0x033d0000</span>, <span class="number">0x03dd0000</span>, <span class="number">0x03dd0000</span>)  </span><br><span class="line">    the space <span class="number">10240</span>K,  <span class="number">40</span>% used [<span class="number">0x033d0000</span>, <span class="number">0x037d0010</span>, <span class="number">0x037d0200</span>, <span class="number">0x03dd0000</span>)  </span><br><span class="line">    compacting perm gen  total <span class="number">12288</span>K, used <span class="number">2107</span>K [<span class="number">0x03dd0000</span>, <span class="number">0x049d0000</span>, <span class="number">0x07dd0000</span>)  </span><br><span class="line">    the space <span class="number">12288</span>K,  <span class="number">17</span>% used [<span class="number">0x03dd0000</span>, <span class="number">0x03fdefd0</span>, <span class="number">0x03fdf000</span>, <span class="number">0x049d0000</span>)  </span><br><span class="line">    No shared spaces configured.</span><br></pre></td></tr></table></figure></p>
-<p>执行代码中的testPretenureSizeThreshold()方法后，我们看到Eden空间几乎没有被使用，而老年代的10MB空间被使用了40%，也就是4MB的allocation对象直接就分配在老年代中，这是因为PretenureSizeThreshold被设置为3MB（就是3145728，这个参数不能像-Xmx之类的参数一样直接写3MB），因此超过3MB的对象都会直接在老年代进行分配。</p>
-<p>注意:PretenureSizeThreshold参数只对Serial和ParNew两款收集器有效，Parallel Scavenge收集器不认识这个参数，Parallel Scavenge收集器一般并不需要设置。如果遇到必须使用此参数的场合，可以考虑ParNew加CMS的收集器组合。</p>
-<h2 id="长期存活的对象将进入老年代"><a href="#长期存活的对象将进入老年代" class="headerlink" title="长期存活的对象将进入老年代"></a>长期存活的对象将进入老年代</h2><p>为了在内存回收时能识别哪些对象应放在新生代，哪些对象应放在老年代中。虚拟机给每个对象定义了一个对象年龄（Age）计数器。</p>
-<p>对象年龄的判定：</p>
-<p>如果对象在Eden出生并经过第一次Minor GC后仍然存活，并且能被Survivor容纳的话，将被移动到Survivor空间中，并且对象年龄设为1。对象在Survivor区中每“熬过”一次Minor GC，年龄就增加1岁，当它的年龄增加到一定程度（默认为15岁），就将会被晋升到老年代中。对象晋升老年代的年龄阈值，可以通过参数-XX:MaxTenuringThreshold设置。</p>
-<p>代码示例：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> _1MB = <span class="number">1024</span> * <span class="number">1024</span>;  </span><br><span class="line">    <span class="comment">/**  </span></span><br><span class="line"><span class="comment">    * VM参数：-verbose:gc -Xms20M -Xmx20M -Xmn10M -XX:+PrintGCDetails -XX:SurvivorRatio=8 -XX:MaxTenuringThreshold=1 </span></span><br><span class="line"><span class="comment">    * -XX:+PrintTenuringDistribution  </span></span><br><span class="line"><span class="comment">    */</span>  </span><br><span class="line">    <span class="meta">@SuppressWarnings</span>(<span class="string">"unused"</span>)  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">testTenuringThreshold</span><span class="params">()</span> </span>&#123;  </span><br><span class="line">        <span class="keyword">byte</span>[] allocation1, allocation2, allocation3;  </span><br><span class="line">        allocation1 = <span class="keyword">new</span> <span class="keyword">byte</span>[_1MB / <span class="number">4</span>];    </span><br><span class="line">         <span class="comment">// 什么时候进入老年代取决于XX:MaxTenuringThreshold设置  </span></span><br><span class="line">        allocation2 = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">4</span> * _1MB];  </span><br><span class="line">        allocation3 = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">4</span> * _1MB];  </span><br><span class="line">        allocation3 = <span class="keyword">null</span>;  </span><br><span class="line">        allocation3 = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">4</span> * _1MB];  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>以MaxTenuringThreshold=1参数来运行的结果：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[GC [DefNew  </span><br><span class="line">Desired Survivor size <span class="number">524288</span> bytes, <span class="keyword">new</span> threshold <span class="number">1</span> (max <span class="number">1</span>)  </span><br><span class="line">- age   <span class="number">1</span>:     <span class="number">414664</span> bytes,     <span class="number">414664</span> total  </span><br><span class="line">: <span class="number">4859</span>K-&gt;<span class="number">404</span>K(<span class="number">9216</span>K), <span class="number">0.0065012</span> secs] <span class="number">4859</span>K-&gt;<span class="number">4500</span>K(<span class="number">19456</span>K), <span class="number">0.0065283</span> secs] [Times: user=<span class="number">0.02</span> sys=<span class="number">0.00</span>, real=<span class="number">0.02</span> secs]   </span><br><span class="line">[GC [DefNew  </span><br><span class="line">Desired Survivor size <span class="number">524288</span> bytes, <span class="keyword">new</span> threshold <span class="number">1</span> (max <span class="number">1</span>)  </span><br><span class="line">: <span class="number">4500</span>K-&gt;<span class="number">0</span>K(<span class="number">9216</span>K), <span class="number">0.0009253</span> secs] <span class="number">8596</span>K-&gt;<span class="number">4500</span>K(<span class="number">19456</span>K), <span class="number">0.0009458</span> secs] [Times: user=<span class="number">0.00</span> sys=<span class="number">0.00</span>, real=<span class="number">0.00</span> secs]   </span><br><span class="line">Heap  </span><br><span class="line">    def <span class="keyword">new</span> generation   total <span class="number">9216</span>K, used <span class="number">4178</span>K [<span class="number">0x029d0000</span>, <span class="number">0x033d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">    eden space <span class="number">8192</span>K,  <span class="number">51</span>% used [<span class="number">0x029d0000</span>, <span class="number">0x02de4828</span>, <span class="number">0x031d0000</span>)  </span><br><span class="line">    from space <span class="number">1024</span>K,   <span class="number">0</span>% used [<span class="number">0x031d0000</span>, <span class="number">0x031d0000</span>, <span class="number">0x032d0000</span>)  </span><br><span class="line">    to   space <span class="number">1024</span>K,   <span class="number">0</span>% used [<span class="number">0x032d0000</span>, <span class="number">0x032d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">    to   space <span class="number">1024</span>K,   <span class="number">0</span>% used [<span class="number">0x032d0000</span>, <span class="number">0x032d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">    to   space <span class="number">1024</span>K,   <span class="number">0</span>% used [<span class="number">0x032d0000</span>, <span class="number">0x032d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">    to   space <span class="number">1024</span>K,   <span class="number">0</span>% used [<span class="number">0x032d0000</span>, <span class="number">0x032d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">    tenured generation   total <span class="number">10240</span>K, used <span class="number">4500</span>K [<span class="number">0x033d0000</span>, <span class="number">0x03dd0000</span>, <span class="number">0x03dd0000</span>)  </span><br><span class="line">    the space <span class="number">10240</span>K,  <span class="number">43</span>% used [<span class="number">0x033d0000</span>, <span class="number">0x03835348</span>, <span class="number">0x03835400</span>, <span class="number">0x03dd0000</span>)  </span><br><span class="line">    compacting perm gen  total <span class="number">12288</span>K, used <span class="number">2114</span>K [<span class="number">0x03dd0000</span>, <span class="number">0x049d0000</span>, <span class="number">0x07dd0000</span>)  </span><br><span class="line">    the space <span class="number">12288</span>K,  <span class="number">17</span>% used [<span class="number">0x03dd0000</span>, <span class="number">0x03fe0998</span>, <span class="number">0x03fe0a00</span>, <span class="number">0x049d0000</span>)  </span><br><span class="line">    No shared spaces configured.</span><br></pre></td></tr></table></figure></p>
-<p>以MaxTenuringThreshold=15参数来运行的结果：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[GC [DefNew  </span><br><span class="line">Desired Survivor size <span class="number">524288</span> bytes, <span class="keyword">new</span> threshold <span class="number">15</span> (max <span class="number">15</span>)  </span><br><span class="line">- age   <span class="number">1</span>:     <span class="number">414664</span> bytes,     <span class="number">414664</span> total  </span><br><span class="line">: <span class="number">4859</span>K-&gt;<span class="number">404</span>K(<span class="number">9216</span>K), <span class="number">0.0049637</span> secs] <span class="number">4859</span>K-&gt;<span class="number">4500</span>K(<span class="number">19456</span>K), <span class="number">0.0049932</span> secs] [Times: user=<span class="number">0.00</span> sys=<span class="number">0.00</span>, real=<span class="number">0.00</span> secs]   </span><br><span class="line">[GC [DefNew  </span><br><span class="line">Desired Survivor size <span class="number">524288</span> bytes, <span class="keyword">new</span> threshold <span class="number">15</span> (max <span class="number">15</span>)  </span><br><span class="line">- age   <span class="number">2</span>:     <span class="number">414520</span> bytes,     <span class="number">414520</span> total  </span><br><span class="line">: <span class="number">4500</span>K-&gt;<span class="number">404</span>K(<span class="number">9216</span>K), <span class="number">0.0008091</span> secs] <span class="number">8596</span>K-&gt;<span class="number">4500</span>K(<span class="number">19456</span>K), <span class="number">0.0008305</span> secs] [Times: user=<span class="number">0.00</span> sys=<span class="number">0.00</span>, real=<span class="number">0.00</span> secs]   </span><br><span class="line">Heap  </span><br><span class="line">    def <span class="keyword">new</span> generation   total <span class="number">9216</span>K, used <span class="number">4582</span>K [<span class="number">0x029d0000</span>, <span class="number">0x033d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">    eden space <span class="number">8192</span>K,  <span class="number">51</span>% used [<span class="number">0x029d0000</span>, <span class="number">0x02de4828</span>, <span class="number">0x031d0000</span>)  </span><br><span class="line">    from space <span class="number">1024</span>K,  <span class="number">39</span>% used [<span class="number">0x031d0000</span>, <span class="number">0x03235338</span>, <span class="number">0x032d0000</span>)  </span><br><span class="line">    to   space <span class="number">1024</span>K,   <span class="number">0</span>% used [<span class="number">0x032d0000</span>, <span class="number">0x032d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">    tenured generation   total <span class="number">10240</span>K, used <span class="number">4096</span>K [<span class="number">0x033d0000</span>, <span class="number">0x03dd0000</span>, <span class="number">0x03dd0000</span>)  </span><br><span class="line">    the space <span class="number">10240</span>K,  <span class="number">40</span>% used [<span class="number">0x033d0000</span>, <span class="number">0x037d0010</span>, <span class="number">0x037d0200</span>, <span class="number">0x03dd0000</span>)  </span><br><span class="line">    compacting perm gen  total <span class="number">12288</span>K, used <span class="number">2114</span>K [<span class="number">0x03dd0000</span>, <span class="number">0x049d0000</span>, <span class="number">0x07dd0000</span>)  </span><br><span class="line">    the space <span class="number">12288</span>K,  <span class="number">17</span>% used [<span class="number">0x03dd0000</span>, <span class="number">0x03fe0998</span>, <span class="number">0x03fe0a00</span>, <span class="number">0x049d0000</span>)  </span><br><span class="line">    No shared spaces configured.</span><br></pre></td></tr></table></figure></p>
-<p>此方法中的allocation1对象需要256KB内存，Survivor空间可以容纳。当MaxTenuringThreshold=1时，allocation1对象在第二次GC发生时进入老年代，新生代已使用的内存GC后非常干净地变成0KB。而MaxTenuringThreshold=15时，第二次GC发生后，allocation1对象则还留在新生代Survivor空间，这时新生代仍然有404KB被占用。</p>
-<h2 id="动态对象年龄判定"><a href="#动态对象年龄判定" class="headerlink" title="动态对象年龄判定"></a>动态对象年龄判定</h2><p>为了能更好地适应不同程序的内存状况，虚拟机并不是永远地要求对象的年龄必须达到了MaxTenuringThreshold才能晋升老年代.</p>
-<p>动态对象年龄判定：</p>
-<p>如果在Survivor空间中相同年龄所有对象大小的总和大于Survivor空间的一半，年龄大于或等于该年龄的对象就可以直接进入老年代，无须等到MaxTenuringThreshold中要求的年龄。</p>
-<p>代码示例：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> _1MB = <span class="number">1024</span> * <span class="number">1024</span>;  </span><br><span class="line"><span class="comment">/**  </span></span><br><span class="line"><span class="comment">* VM参数：-verbose:gc -Xms20M -Xmx20M -Xmn10M -XX:+PrintGCDetails -XX:SurvivorRatio=8 -XX:MaxTenuringThreshold=15 </span></span><br><span class="line"><span class="comment">* -XX:+PrintTenuringDistribution  </span></span><br><span class="line"><span class="comment">*/</span>  </span><br><span class="line"><span class="meta">@SuppressWarnings</span>(<span class="string">"unused"</span>)  </span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">testTenuringThreshold2</span><span class="params">()</span> </span>&#123; </span><br><span class="line">    <span class="keyword">byte</span>[] allocation1, allocation2, allocation3, allocation4;  </span><br><span class="line">    allocation1 = <span class="keyword">new</span> <span class="keyword">byte</span>[_1MB / <span class="number">4</span>];   </span><br><span class="line">      <span class="comment">// allocation1+allocation2大于survivo空间一半  </span></span><br><span class="line">    allocation2 = <span class="keyword">new</span> <span class="keyword">byte</span>[_1MB / <span class="number">4</span>];    </span><br><span class="line">    allocation3 = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">4</span> * _1MB];  </span><br><span class="line">    allocation4 = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">4</span> * _1MB];  </span><br><span class="line">    allocation4 = <span class="keyword">null</span>;  </span><br><span class="line">    allocation4 = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">4</span> * _1MB];  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>运行结果：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[GC [DefNew  </span><br><span class="line">Desired Survivor size <span class="number">524288</span> bytes, <span class="keyword">new</span> threshold <span class="number">1</span> (max <span class="number">15</span>)  </span><br><span class="line">- age   <span class="number">1</span>:     <span class="number">676824</span> bytes,     <span class="number">676824</span> total  </span><br><span class="line">: <span class="number">5115</span>K-&gt;<span class="number">660</span>K(<span class="number">9216</span>K), <span class="number">0.0050136</span> secs] <span class="number">5115</span>K-&gt;<span class="number">4756</span>K(<span class="number">19456</span>K), <span class="number">0.0050443</span> secs] [Times: user=<span class="number">0.00</span> sys=<span class="number">0.01</span>, real=<span class="number">0.01</span> secs]   </span><br><span class="line">[GC [DefNew  </span><br><span class="line">Desired Survivor size <span class="number">524288</span> bytes, <span class="keyword">new</span> threshold <span class="number">15</span> (max <span class="number">15</span>)  </span><br><span class="line">: <span class="number">4756</span>K-&gt;<span class="number">0</span>K(<span class="number">9216</span>K), <span class="number">0.0010571</span> secs] <span class="number">8852</span>K-&gt;<span class="number">4756</span>K(<span class="number">19456</span>K), <span class="number">0.0011009</span> secs] [Times: user=<span class="number">0.00</span> sys=<span class="number">0.00</span>, real=<span class="number">0.00</span> secs]   </span><br><span class="line">Heap  </span><br><span class="line">    def <span class="keyword">new</span> generation   total <span class="number">9216</span>K, used <span class="number">4178</span>K [<span class="number">0x029d0000</span>, <span class="number">0x033d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">    eden space <span class="number">8192</span>K,  <span class="number">51</span>% used [<span class="number">0x029d0000</span>, <span class="number">0x02de4828</span>, <span class="number">0x031d0000</span>)  </span><br><span class="line">    from space <span class="number">1024</span>K,   <span class="number">0</span>% used [<span class="number">0x031d0000</span>, <span class="number">0x031d0000</span>, <span class="number">0x032d0000</span>)  </span><br><span class="line">    to   space <span class="number">1024</span>K,   <span class="number">0</span>% used [<span class="number">0x032d0000</span>, <span class="number">0x032d0000</span>, <span class="number">0x033d0000</span>)  </span><br><span class="line">    tenured generation   total <span class="number">10240</span>K, used <span class="number">4756</span>K [<span class="number">0x033d0000</span>, <span class="number">0x03dd0000</span>, <span class="number">0x03dd0000</span>)  </span><br><span class="line">    the space <span class="number">10240</span>K,  <span class="number">46</span>% used [<span class="number">0x033d0000</span>, <span class="number">0x038753e8</span>, <span class="number">0x03875400</span>, <span class="number">0x03dd0000</span>)  </span><br><span class="line">    compacting perm gen  total <span class="number">12288</span>K, used <span class="number">2114</span>K [<span class="number">0x03dd0000</span>, <span class="number">0x049d0000</span>, <span class="number">0x07dd0000</span>)  </span><br><span class="line">    the space <span class="number">12288</span>K,  <span class="number">17</span>% used [<span class="number">0x03dd0000</span>, <span class="number">0x03fe09a0</span>, <span class="number">0x03fe0a00</span>, <span class="number">0x049d0000</span>)  </span><br><span class="line">    No shared spaces configured.</span><br></pre></td></tr></table></figure></p>
-<p>执行代码中的testTenuringThreshold2()方法，并设置-XX:MaxTenuringThreshold=15，会发现运行结果中Survivor的空间占用仍然为0%，而老年代比预期增加了6%，也就是说，allocation1、allocation2对象都直接进入了老年代，而没有等到15岁的临界年龄。因为这两个对象加起来已经到达了512KB，并且它们是同年的，满足同年对象达到Survivor空间的一半规则。我们只要注释掉其中一个对象new操作，就会发现另外一个就不会晋升到老年代中去了。</p>
-<h2 id="空间分配担保"><a href="#空间分配担保" class="headerlink" title="空间分配担保"></a>空间分配担保</h2><p>在发生<code>Minor GC</code>之前，虚拟机会先检查老年代最大可用的连续空间是否大于新生代所有对象总空间，如果这个条件成立，那么<code>Minor GC</code>可以确保是安全的。如果不成立，则虚拟机会查看HandlePromotionFailure设置值是否允许担保失败。如果允许，那么会继续检查老年代最大可用的连续空间是否大于历次晋升到老年代对象的平均大小，如果大于，将尝试着进行一次Minor GC，尽管这次Minor GC是有风险的；如果小于，或者<code>HandlePromotionFailure</code>设置不允许冒险，那这时也要改为进行一次<code>Full GC</code>。</p>
-<p>下面解释一下“冒险”是冒了什么风险，前面提到过，新生代使用复制收集算法，但为了内存利用率，只使用其中一个Survivor空间来作为轮换备份，因此当出现大量对象在Minor GC后仍然存活的情况（最极端的情况就是内存回收后新生代中所有对象都存活），就需要老年代进行分配担保，把Survivor无法容纳的对象直接进入老年代。与生活中的贷款担保类似，老年代要进行这样的担保，前提是老年代本身还有容纳这些对象的剩余空间，<strong>一共有多少对象会活下来在实际完成内存回收之前是无法明确知道的，所以只好取之前每一次回收晋升到老年代对象容量的平均大小值作为经验值，与老年代的剩余空间进行比较，决定是否进行Full GC来让老年代腾出更多空间。</strong></p>
-<p>取平均值进行比较其实仍然是一种动态概率的手段，也就是说，如果某次Minor GC存活后的对象突增，远远高于平均值的话，依然会导致担保失败（Handle Promotion Failure）。如果出现了HandlePromotionFailure失败，那就只好在失败后重新发起一次Full GC。虽然担保失败时绕的圈子是最大的，但大部分情况下都还是会将HandlePromotionFailure开关打开，避免Full GC过于频繁。</p>
+<h2 id="JDK命令行工具"><a href="#JDK命令行工具" class="headerlink" title="JDK命令行工具"></a>JDK命令行工具</h2><p>Sun JDK监控和故障处理工具：</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>主要作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>jps</td>
+<td>JVM Process Status Tool，显示指定系统内所有的HotSpot虚拟机进程</td>
+</tr>
+<tr>
+<td>jstat</td>
+<td>JVM Statistics Monitoring Tool，用于收集HotSpot虚拟机各方面的运行数据</td>
+</tr>
+<tr>
+<td>jinfo</td>
+<td>Configuration Info for Java，显示虚拟机配置信息</td>
+</tr>
+<tr>
+<td>jmap</td>
+<td>Memory Map for Java，生成虚拟机的内存转出快照(heapdump文件)</td>
+</tr>
+<tr>
+<td>jhat</td>
+<td>JVM Heap Dump Browser，分析heapdump文件，可以在浏览器查看结果</td>
+</tr>
+<tr>
+<td>jstack</td>
+<td>stack trace for java，显示虚拟机的线程快照</td>
+</tr>
+<tr>
+<td>jconsole</td>
+<td>Java监视与管理控制台</td>
+</tr>
+<tr>
+<td>jvisualvm</td>
+<td>多合一故障处理工具</td>
+</tr>
+</tbody>
+</table>
+<h2 id="jps：虚拟机进程状况工具"><a href="#jps：虚拟机进程状况工具" class="headerlink" title="jps：虚拟机进程状况工具"></a>jps：虚拟机进程状况工具</h2><p>JVM Process Status Tool</p>
+<blockquote>
+<p>jps [options] [hostid]</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-q</td>
+<td>只输出LIMID,省略主类的名称</td>
+</tr>
+<tr>
+<td>-m</td>
+<td>输出虚拟机进程启动时候传递给main()函数的参数</td>
+</tr>
+<tr>
+<td>-l</td>
+<td>输出主类的全名，如果进程执行的Jar包，输出的Jar路径</td>
+</tr>
+<tr>
+<td>-v</td>
+<td>输出虚拟机进程启动时候的参数</td>
+</tr>
+</tbody>
+</table>
+<p>示例：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">(testing)root@hahaha-weixin-app:/hahaha# jps -l</span><br><span class="line">3880 sun.tools.jps.Jps</span><br><span class="line">185 org.apache.catalina.startup.Bootstrap</span><br><span class="line">(testing)root@hahaha-weixin-app:/hahaha# jps -q</span><br><span class="line">3895</span><br><span class="line">185</span><br><span class="line">(testing)root@hahaha-weixin-app:/hahaha# jps -m</span><br><span class="line">3911 Jps -m</span><br><span class="line">185 Bootstrap start</span><br><span class="line">(testing)root@hahaha-weixin-app:/hahaha# jps -v</span><br><span class="line">(testing)root@hahaha-weixin-app:/hahaha#</span><br></pre></td></tr></table></figure></p>
+<h2 id="jstat-虚拟机统计信息监视工具"><a href="#jstat-虚拟机统计信息监视工具" class="headerlink" title="jstat:虚拟机统计信息监视工具"></a>jstat:虚拟机统计信息监视工具</h2><p>JVM Statistics Monitoring Tool<br>它显示进程汇总的类加载、内存、垃圾收集、JIT等数据。</p>
+<blockquote>
+<p>jstat [option vmid ] [interval [s|ms] [count]]</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-class</td>
+<td>监视类装载、卸载数量、总空间以及类装载所消耗的时间</td>
+</tr>
+<tr>
+<td>-gc</td>
+<td>监视Java堆状况、包括Eden区、两个Survivor区、老年代、永久带等 容量等信息</td>
+</tr>
+<tr>
+<td>-gccapacity</td>
+<td>监视信息与gc相同，关注各个区域使用的最大、最小空间</td>
+</tr>
+<tr>
+<td>-gcuti</td>
+<td>监视信息与gc相同，关注使用空间占总空间的百分比</td>
+</tr>
+<tr>
+<td>-gcnew</td>
+<td>监视新生代GC情况</td>
+</tr>
+<tr>
+<td>-gcnewcapacity</td>
+<td>与gcnew相同，关注使用最大、最小空间</td>
+</tr>
+<tr>
+<td>-gcold</td>
+<td>监视老年代GC情况</td>
+</tr>
+<tr>
+<td>-gcoldcapacity</td>
+<td>关注使用最大、最小空间</td>
+</tr>
+<tr>
+<td>-gcpermcapatity</td>
+<td>输出永久代最大、最小空间</td>
+</tr>
+<tr>
+<td>-compiler</td>
+<td>输出JIT编译过的方法、耗时</td>
+</tr>
+<tr>
+<td>-printcompilation</td>
+<td>输出已经被JIT编译过的方法</td>
+</tr>
+</tbody>
+</table>
+<p>示例：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">(testing)root@hahaha-weixin-app:/hahaha# jstat -class 185</span><br><span class="line">Loaded  Bytes  Unloaded  Bytes     Time</span><br><span class="line"> 17651 34991.1       27    42.2      23.99</span><br><span class="line">(testing)root@hahaha-weixin-app:/hahaha# jstat -gc 185</span><br><span class="line"> S0C    S1C    S0U    S1U      EC       EU        OC         OU       MC     MU    CCSC   CCSU   YGC     YGCT    FGC    FGCT     GCT</span><br><span class="line">8576.0 8576.0  68.8   0.0   68864.0  66534.1   284692.0   181872.6  119012.0 116192.6 12516.0 12018.1    258    5.197   8      0.229    5.426</span><br><span class="line">(testing)root@hahaha-weixin-app:/hahaha# jstat -gccapacity 185</span><br><span class="line"> NGCMN    NGCMX     NGC     S0C   S1C       EC      OGCMN      OGCMX       OGC         OC       MCMN     MCMX      MC     CCSMN    CCSMX     CCSC    YGC    FGC</span><br><span class="line"> 86016.0 340736.0  86016.0 8576.0 8576.0  68864.0   172032.0  3767552.0   284692.0   284692.0      0.0 1155072.0 119012.0      0.0 1048576.0  12516.0    259     8</span><br><span class="line">(testing)root@hahaha-weixin-app:/hahaha# jstat -gcutil 185</span><br><span class="line">  S0     S1     E      O      M     CCS    YGC     YGCT    FGC    FGCT     GCT</span><br><span class="line">  0.00   0.88   4.28  63.88  97.63  96.02    259    5.204     8    0.229    5.432</span><br><span class="line">(testing)root@hahaha-weixin-app:/hahaha# jstat -gcnew 185</span><br><span class="line"> S0C    S1C    S0U    S1U   TT MTT  DSS      EC       EU     YGC     YGCT</span><br><span class="line">8576.0 8576.0    0.0   75.7  6   6 4288.0  68864.0   3227.5    259    5.204</span><br><span class="line">(testing)root@hahaha-weixin-app:/hahaha#</span><br></pre></td></tr></table></figure></p>
+<p>两个Survivor区（S0、S1,表示 Survivor0、Survivor1） Eden(E,新生代) 老年代（O，表示old） YGC（表示Young GC）10次 FGC（Full GC）3次FGCT（Full GC Time）耗时，GCT（表示总耗时）</p>
+<h2 id="jinfo：Java配置信息工具"><a href="#jinfo：Java配置信息工具" class="headerlink" title="jinfo：Java配置信息工具"></a>jinfo：Java配置信息工具</h2><p>Configuration Info for Java，实时查询虚拟机参数</p>
+<blockquote>
+<p>jinfo [options] pid</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>主要作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-flag</td>
+<td>调整虚拟机参数   jinfo -flag +PrintGCDetails 1479</td>
+</tr>
+<tr>
+<td>-flags</td>
+<td>查看指定进程所有参数 jinfo -flags 1479</td>
+</tr>
+<tr>
+<td>-sysprops</td>
+<td>打印虚拟机进程系统内容 jinfo -sysprops 1479</td>
+</tr>
+<tr>
+<td>无参</td>
+<td>打印所有  jinfo 1479</td>
+</tr>
+</tbody>
+</table>
+<p>示例：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br></pre></td><td class="code"><pre><span class="line">(testing)root@hahaha-weixin-app:/hahaha# jinfo -flag +Denv 185</span><br><span class="line">Exception in thread "main" com.sun.tools.attach.AttachOperationFailedException: flag 'Denv' cannot be changed</span><br><span class="line"></span><br><span class="line">        at sun.tools.attach.LinuxVirtualMachine.execute(LinuxVirtualMachine.java:229)</span><br><span class="line">        at sun.tools.attach.HotSpotVirtualMachine.executeCommand(HotSpotVirtualMachine.java:261)</span><br><span class="line">        at sun.tools.attach.HotSpotVirtualMachine.setFlag(HotSpotVirtualMachine.java:234)</span><br><span class="line">        at sun.tools.jinfo.JInfo.flag(JInfo.java:140)</span><br><span class="line">        at sun.tools.jinfo.JInfo.main(JInfo.java:81)</span><br><span class="line">(testing)root@hahaha-weixin-app:/hahaha# jinfo -flags 185</span><br><span class="line">Attaching to process ID 185, please wait...</span><br><span class="line">Debugger attached successfully.</span><br><span class="line">Server compiler detected.</span><br><span class="line">JVM version is 25.121-b13</span><br><span class="line">Non-default VM flags: -XX:CICompilerCount=3 -XX:+CMSClassUnloadingEnabled -XX:InitialHeapSize=264241152 -XX:MaxHeapSize=4206886912 -XX:MaxNewSize=348913664 -XX:MaxTenuringThreshold=6 -XX:MinHeapDeltaBytes</span><br><span class="line">=196608 -XX:NewSize=88080384 -XX:OldPLABSize=16 -XX:OldSize=176160768 -XX:-OmitStackTraceInFastThrow -XX:+PrintGCDetails -XX:+UseCompressedClassPointers -XX:+UseCompressedOops -XX:+UseConcMarkSweepGC -XX:</span><br><span class="line">+UseParNewGC</span><br><span class="line">Command line:  -Djava.util.logging.config.file=/tomcat/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Denv=dev -Dapp.id=1-weixin -Dvpc=cn-beijing</span><br><span class="line">-Dworker.hostname=1-1-weixin01 -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000 -Duser.timezone=Asia/Shanghai -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -Djava.sec</span><br><span class="line">urity.egd=file:/dev/./urandom -Dfile.encoding=utf-8 -XX:-OmitStackTraceInFastThrow -Dcatalina.log.prefix=1-weixin-app -Djava.library.path=/usr/local/apr/lib -Djdk.tls.ephemeralDHKeySize=2048 -Djava.</span><br><span class="line">protocol.handler.pkgs=org.apache.catalina.webresources -Dignore.endorsed.dirs= -Dcatalina.base=/1/tomcat -Dcatalina.home=/1/tomcat -Djava.io.tmpdir=/1/tomcat/temp</span><br><span class="line">(testing)root@1-weixin-app:/1# jinfo -sysprops 185</span><br><span class="line">Attaching to process ID 185, please wait...</span><br><span class="line">Debugger attached successfully.</span><br><span class="line">Server compiler detected.</span><br><span class="line">JVM version is 25.121-b13</span><br><span class="line">java.vendor = Oracle Corporation</span><br><span class="line">worker.hostname = 1-1-weixin01</span><br><span class="line">sun.java.launcher = SUN_STANDARD</span><br><span class="line">catalina.base = /1/tomcat</span><br><span class="line">sun.management.compiler = HotSpot 64-Bit Tiered Compilers</span><br><span class="line">sun.nio.ch.bugLevel =</span><br><span class="line">catalina.useNaming = true</span><br><span class="line">os.name = Linux</span><br><span class="line">java.util.logging.config.file = /1/tomcat/conf/logging.properties</span><br><span class="line">sun.boot.class.path = /usr/lib/jvm/java-8-oracle/jre/lib/resources.jar:/usr/lib/jvm/java-8-oracle/jre/lib/rt.jar:/usr/lib/jvm/java-8-oracle/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jsse.j</span><br><span class="line">ar:/usr/lib/jvm/java-8-oracle/jre/lib/jce.jar:/usr/lib/jvm/java-8-oracle/jre/lib/charsets.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jfr.jar:/usr/lib/jvm/java-8-oracle/jre/classes</span><br><span class="line">java.vm.specification.vendor = Oracle Corporation</span><br><span class="line">java.runtime.version = 1.8.0_121-b13</span><br><span class="line">catalina.log.prefix = 1-weixin-app</span><br><span class="line">user.name = root</span><br><span class="line">tomcat.util.scan.StandardJarScanFilter.jarsToScan = log4j-core*.jar,log4j-taglib*.jar,log4javascript*.jar</span><br><span class="line">shared.loader =</span><br><span class="line">tomcat.util.buf.StringCache.byte.enabled = true</span><br><span class="line">rocketmq.remoting.version = 74</span><br><span class="line">user.language = en</span><br><span class="line">java.naming.factory.initial = org.apache.naming.java.javaURLContextFactory</span><br><span class="line">sun.boot.library.path = /usr/lib/jvm/java-8-oracle/jre/lib/amd64</span><br><span class="line">jdk.tls.ephemeralDHKeySize = 2048</span><br><span class="line">java.version = 1.8.0_121</span><br><span class="line">java.util.logging.manager = org.apache.juli.ClassLoaderLogManager</span><br><span class="line">user.timezone = Asia/Shanghai</span><br><span class="line">sun.arch.data.model = 64</span><br><span class="line">java.util.concurrent.ForkJoinPool.common.threadFactory = org.apache.catalina.startup.SafeForkJoinWorkerThreadFactory</span><br><span class="line">java.endorsed.dirs = /usr/lib/jvm/java-8-oracle/jre/lib/endorsed</span><br><span class="line">sun.cpu.isalist =</span><br><span class="line">sun.jnu.encoding = UTF-8</span><br><span class="line">file.encoding.pkg = sun.io</span><br><span class="line">package.access = sun.,org.apache.catalina.,org.apache.coyote.,org.apache.jasper.,org.apache.tomcat.</span><br><span class="line">file.separator = /</span><br><span class="line">java.specification.name = Java Platform API Specification</span><br><span class="line">env = dev</span><br><span class="line">java.class.version = 52.0</span><br><span class="line">user.country = US</span><br><span class="line">java.home = /usr/lib/jvm/java-8-oracle/jre</span><br><span class="line">java.vm.info = mixed mode</span><br><span class="line">os.version = 4.4.0-105-generic</span><br><span class="line">sun.font.fontmanager = sun.awt.X11FontManager</span><br><span class="line">path.separator = :</span><br><span class="line">java.vm.version = 25.121-b13</span><br><span class="line">java.protocol.handler.pkgs = org.apache.catalina.webresources</span><br><span class="line">jboss.i18n.generate-proxies = true</span><br><span class="line">java.awt.printerjob = sun.print.PSPrinterJob</span><br><span class="line">sun.io.unicode.encoding = UnicodeLittle</span><br><span class="line">awt.toolkit = sun.awt.X11.XToolkit</span><br><span class="line">package.definition = sun.,java.,org.apache.catalina.,org.apache.coyote.,org.apache.jasper.,org.apache.naming.,org.apache.tomcat.</span><br><span class="line">java.naming.factory.url.pkgs = org.apache.naming</span><br><span class="line">java.security.egd = file:/dev/./urandom</span><br><span class="line">user.home = /root</span><br><span class="line">java.specification.vendor = Oracle Corporation</span><br><span class="line">vpc = cn-beijing</span><br><span class="line">tomcat.util.scan.StandardJarScanFilter.jarsToSkip = bootstrap.jar,commons-daemon.jar,tomcat-juli.jar,annotations-api.jar,el-api.jar,jsp-api.jar,servlet-api.jar,websocket-api.jar,catalina.jar,catalina-ant.</span><br><span class="line">jar,catalina-ha.jar,catalina-storeconfig.jar,catalina-tribes.jar,jasper.jar,jasper-el.jar,ecj-*.jar,tomcat-api.jar,tomcat-util.jar,tomcat-util-scan.jar,tomcat-coyote.jar,tomcat-dbcp.jar,tomcat-jni.jar,tom</span><br><span class="line">cat-websocket.jar,tomcat-i18n-en.jar,tomcat-i18n-es.jar,tomcat-i18n-fr.jar,tomcat-i18n-ja.jar,tomcat-juli-adapters.jar,catalina-jmx-remote.jar,catalina-ws.jar,tomcat-jdbc.jar,tools.jar,commons-beanutils*.</span><br><span class="line">jar,commons-codec*.jar,commons-collections*.jar,commons-dbcp*.jar,commons-digester*.jar,commons-fileupload*.jar,commons-httpclient*.jar,commons-io*.jar,commons-lang*.jar,commons-logging*.jar,commons-math*</span><br><span class="line">.jar,commons-pool*.jar,jstl.jar,taglibs-standard-spec-*.jar,geronimo-spec-jaxrpc*.jar,wsdl4j*.jar,ant.jar,ant-junit*.jar,aspectj*.jar,jmx.jar,h2*.jar,hibernate*.jar,httpclient*.jar,jmx-tools.jar,jta*.jar,</span><br><span class="line">log4j*.jar,mail*.jar,slf4j*.jar,xercesImpl.jar,xmlParserAPIs.jar,xml-apis.jar,junit.jar,junit-*.jar,ant-launcher.jar,cobertura-*.jar,asm-*.jar,dom4j-*.jar,icu4j-*.jar,jaxen-*.jar,jdom-*.jar,jetty-*.jar,or</span><br><span class="line">o-*.jar,servlet-api-*.jar,tagsoup-*.jar,xmlParserAPIs-*.jar,xom-*.jar</span><br><span class="line">java.library.path = /usr/local/apr/lib</span><br><span class="line">java.vendor.url = http://java.oracle.com/</span><br><span class="line">java.vm.vendor = Oracle Corporation</span><br><span class="line">common.loader = "$&#123;catalina.base&#125;/lib","$&#123;catalina.base&#125;/lib/*.jar","$&#123;catalina.home&#125;/lib","$&#123;catalina.home&#125;/lib/*.jar"</span><br><span class="line">java.runtime.name = Java(TM) SE Runtime Environment</span><br><span class="line">sun.java.command = org.apache.catalina.startup.Bootstrap start</span><br><span class="line">java.class.path = /1/tomcat/bin/bootstrap.jar:/1/tomcat/bin/tomcat-juli.jar</span><br><span class="line">java.vm.specification.name = Java Virtual Machine Specification</span><br><span class="line">java.vm.specification.version = 1.8</span><br><span class="line">catalina.home = /1/tomcat</span><br><span class="line">sun.cpu.endian = little</span><br><span class="line">sun.os.patch.level = unknown</span><br><span class="line">java.io.tmpdir = /1/tomcat/temp</span><br><span class="line">java.vendor.url.bug = http://bugreport.sun.com/bugreport/</span><br><span class="line">server.loader =</span><br><span class="line">os.arch = amd64</span><br><span class="line">java.awt.graphicsenv = sun.awt.X11GraphicsEnvironment</span><br><span class="line">java.ext.dirs = /usr/lib/jvm/java-8-oracle/jre/lib/ext:/usr/java/packages/lib/ext</span><br><span class="line">user.dir = /1</span><br><span class="line">line.separator =</span><br><span class="line">java.vm.name = Java HotSpot(TM) 64-Bit Server VM</span><br><span class="line">ignore.endorsed.dirs =</span><br><span class="line">file.encoding = utf-8</span><br><span class="line">app.id = 1-weixin</span><br><span class="line">java.specification.version = 1.8</span><br></pre></td></tr></table></figure></p>
+<h2 id="jmap：Java内存映像工具"><a href="#jmap：Java内存映像工具" class="headerlink" title="jmap：Java内存映像工具"></a>jmap：Java内存映像工具</h2><p>Memory Map for Java，查询finalize执行队列、Java堆和永久代信息，使用哪种收集器等。</p>
+<blockquote>
+<p>jmap [option] vmid</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-dump</td>
+<td>生成存储快照 格式：-dump [live,] format=b,file=,其中live说明是否只是dump存活的对象</td>
+</tr>
+<tr>
+<td>-finalizerinfo</td>
+<td>线上F-Queue在县城执行finalize方法对象</td>
+</tr>
+<tr>
+<td>-heap</td>
+<td>显示使用回收器、参数配置，分代情况</td>
+</tr>
+<tr>
+<td>-histo</td>
+<td>显示堆中统计信息，包括类、实例数量、合计内容</td>
+</tr>
+<tr>
+<td>-permstat</td>
+<td>以ClassLoader为统计口径显示永久代状态 1.8无</td>
+</tr>
+</tbody>
+</table>
+<h2 id="jhat：虚拟机堆转储快照分析工具"><a href="#jhat：虚拟机堆转储快照分析工具" class="headerlink" title="jhat：虚拟机堆转储快照分析工具"></a>jhat：虚拟机堆转储快照分析工具</h2><p>JVM Heap Dump Browser<br>虚拟机堆转储快照分析工具，这里分析jmap堆转储快照的文件。耗时、耗资源，一般不会再服务器上直接分析。一般使用其他工具，比如VisualVM。</p>
+<h2 id="jstack：Java堆栈跟踪工具"><a href="#jstack：Java堆栈跟踪工具" class="headerlink" title="jstack：Java堆栈跟踪工具"></a>jstack：Java堆栈跟踪工具</h2><p>stack trace for java<br>Java堆栈跟踪工具，生成虚拟机当前时刻的线程快照（当前虚拟机内每一条线程正在执行的方法堆栈集合），生成线程快照的主要目的是定位线程出现长时间停顿的原因，如线程间死锁、死循环、请求外部资源导致的长时间等待等都是导致线程长时间停顿的常见原因。</p>
+<blockquote>
+<p>jstack [option] vmid</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-F</td>
+<td>当正常的请求不被响应时候，强制输出线程堆栈</td>
+</tr>
+<tr>
+<td>-I</td>
+<td>显示关于锁的附加信息</td>
+</tr>
+<tr>
+<td>-m</td>
+<td>如果调用的是c，可以打印c/c++堆栈</td>
+</tr>
+</tbody>
+</table>
+<h2 id="JDK可视化工具"><a href="#JDK可视化工具" class="headerlink" title="JDK可视化工具"></a>JDK可视化工具</h2><p>JDK中除了提供大量的命令行工具外，还有两个功能强大的可视化工具：JConsole和VisualVM，这两个工具是JDK的正式成员，没有被贴上“unsupported and experimental”的标签。</p>
+<h2 id="JConsole-Java监视与管理控制台"><a href="#JConsole-Java监视与管理控制台" class="headerlink" title="JConsole:Java监视与管理控制台"></a>JConsole:Java监视与管理控制台</h2><h2 id="VisualVM：多合一故障处理工具"><a href="#VisualVM：多合一故障处理工具" class="headerlink" title="VisualVM：多合一故障处理工具"></a>VisualVM：多合一故障处理工具</h2><p>VisualVM（All-in-One Java Troubleshooting Tool）是到目前为止随JDK发布的功能最强大的运行监视和故障处理程序，并且可以预见在未来一段时间内都是官方主力发展的虚拟机故障处理工具。</p>
 
     
   </div>
@@ -147,7 +340,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -156,6 +349,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/06/12/encode/">字符编码问题</a>
+      </li>
     
       <li>
         <a href="/2019/06/10/arthas/">Arthas——Alibaba Java诊断利器</a>
@@ -171,10 +368,6 @@
     
       <li>
         <a href="/2019/05/31/classLoader/">JVM类加载过程探究</a>
-      </li>
-    
-      <li>
-        <a href="/2019/02/20/mq-scene-in-enterprise/">消息队列——企业使用场景</a>
       </li>
     
   </ul>
