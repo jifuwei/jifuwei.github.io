@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/02/13/mq-design/">
-  <time datetime="2019-02-13T13:11:45.000Z">
-    2019-02-13
+      <a href="/2019/02/20/mq-scene-in-enterprise/">
+  <time datetime="2019-02-20T12:07:26.000Z">
+    2019-02-20
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/02/13/mq-design/">消息队列——自己设计</a></h1>
+    <h1 class="title"><a href="/2019/02/20/mq-scene-in-enterprise/">消息队列——企业使用场景</a></h1>
   
 
   </header>
@@ -77,19 +77,27 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p>比如说这个消息队列系统，我们从以下几个角度来考虑一下：</p>
-<ul>
-<li><p>首先这个 mq 得支持可伸缩性吧，就是需要的时候快速扩容，就可以增加吞吐量和容量，那怎么搞？设计个分布式的系统呗，参照一下 kafka 的设计理念，broker -&gt; topic -&gt; partition，每个 partition 放一个机器，就存一部分数据。如果现在资源不够了，简单啊，给 topic 增加 partition，然后做数据迁移，增加机器，不就可以存放更多数据，提供更高的吞吐量了？</p>
-</li>
-<li><p>其次你得考虑一下这个 mq 的数据要不要落地磁盘吧？那肯定要了，落磁盘才能保证别进程挂了数据就丢了。那落磁盘的时候怎么落啊？顺序写，这样就没有磁盘随机读写的寻址开销，磁盘顺序读写的性能是很高的，这就是 kafka 的思路。</p>
-</li>
-<li><p>其次你考虑一下你的 mq 的可用性啊？这个事儿，具体参考之前可用性那个环节讲解的 kafka 的高可用保障机制。多副本 -&gt; leader &amp; follower -&gt; broker 挂了重新选举 leader 即可对外服务。</p>
-</li>
-<li><p>能不能支持数据 0 丢失啊？可以的，参考我们之前说的那个 kafka 数据零丢失方案。</p>
-</li>
+<h2 id="应用解耦、异步"><a href="#应用解耦、异步" class="headerlink" title="应用解耦、异步"></a>应用解耦、异步</h2><h3 id="创建业务订单"><a href="#创建业务订单" class="headerlink" title="创建业务订单"></a>创建业务订单</h3><p>业务入口处（如借款订单），每天订单量较大，高峰时期平均每分钟有6千笔有效订单;<br>创建订单涉及到订单号分配，消息推送、第三方通知（导流）、邀友、等等复杂情形，此处也需要MQ进行解耦</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">producer.send(topic, loan.getId().toString(), tag, loan.getRefId().getBytes(), <span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+<p><code>messageKey</code>使用业务唯一ID，方便C端加锁防重消费(MQ的messageId不能保证唯一，有一定的重复风险)</p>
+<p>由于C端使用的是从库查询创建的订单，在低峰时刻，MQ消费能力很快，恰巧遇到主备同步延迟或者故障，导致C端并未查询到相应的订单，此时不能提交<code>ack</code>，Rocket MQ提供了场景：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// something happen, notice server push to c later again</span></span><br><span class="line"><span class="keyword">return</span> Action.ReconsumeLater;</span><br><span class="line"></span><br><span class="line"><span class="comment">// handle success, notice server finish the msg</span></span><br><span class="line"><span class="keyword">return</span> Action.CommitMessage;</span><br></pre></td></tr></table></figure></p>
+<h3 id="风控审核"><a href="#风控审核" class="headerlink" title="风控审核"></a>风控审核</h3><ul>
+<li>业务日志标记，后台外围系统打标记，丢入客服池，供业务人员竞标</li>
+<li>消息通知，告知客户订单状态流转</li>
+<li>风控审核，这一步需要大量的时间等待风控计算该笔订单流转状态，耗时最长，5~10分钟</li>
+<li>更新订单状态</li>
 </ul>
-<p>mq 肯定是很复杂的，面试官问你这个问题，其实是个开放题，他就是看看你有没有从架构角度整体构思和设计的思维以及能力。确实这个问题可以刷掉一大批人，因为大部分人平时不思考这些东西。</p>
-<p>参考：<br><a href="https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/mq-design.md" target="_blank" rel="noopener">如果让你写一个消息队列，该如何进行架构设计？说一下你的思路。</a></p>
+<p><img src="https://s2.ax1x.com/2019/02/20/k2jI4e.png" alt=""></p>
+<h2 id="流量削锋"><a href="#流量削锋" class="headerlink" title="流量削锋"></a>流量削锋</h2><h3 id="公众号消息推送与回复"><a href="#公众号消息推送与回复" class="headerlink" title="公众号消息推送与回复"></a>公众号消息推送与回复</h3><p>公众号的入口是我们业务的一大流量入口，客服在公众号对接每天的客户，信息量非常的大（没具体的统计过），<br>常用场景是客户在公众号提出问题，机器人或者人工介入解决问题，此处必须用到MQ</p>
+<ul>
+<li>机器人消息：C端检测关键字，尝试回复简单问题列表供客户选择，解决问题</li>
+<li>人工处理：C端判定客户需要人工处理，则立即将客户的唯一识别码（OpenId或者手机号）绑定到客服应答系统，发送的消息将分配给相应的客服，直到问题解决解绑唯一识别码</li>
+</ul>
+<h2 id="广播"><a href="#广播" class="headerlink" title="广播"></a>广播</h2><p>消息队列的基本功能之一是进行广播。如果没有消息队列，每当一个新的业务方接入，我们都要联调一次新接口。有了消息队列，我们只需要关心消息是否送达了队列，至于谁希望订阅，是下游的事情，无疑极大地减少了开发和联调的工作量。 比如本文开始提到的产品中心发布产品变更的消息，以及景点库很多去重更新的消息，可能“关心”方有很多个，但产品中心和景点库只需要发布变更消息即可，谁关心谁接入。</p>
+<h2 id="延迟消费"><a href="#延迟消费" class="headerlink" title="延迟消费"></a>延迟消费</h2><ul>
+<li>订单一直处于未支付状态时，如何及时的关闭订单，并退还库存？</li>
+<li>定期检查处于退款状态的订单是否已经退款成功？</li>
+</ul>
 
     
   </div>
@@ -125,7 +133,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 12px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -134,6 +142,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/07/31/travel-zhangjiajie/">旅游——张家界8月行</a>
+      </li>
     
       <li>
         <a href="/2019/06/12/encode/">字符编码问题</a>
@@ -149,10 +161,6 @@
     
       <li>
         <a href="/2019/06/03/classLoader-hotswap/">JVM类热加载——基于ClassLoader方案</a>
-      </li>
-    
-      <li>
-        <a href="/2019/05/31/classLoader/">JVM类加载过程探究</a>
       </li>
     
   </ul>
