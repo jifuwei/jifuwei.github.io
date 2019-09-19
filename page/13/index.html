@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/02/13/mq-unique-consume/">
-  <time datetime="2019-02-13T12:52:58.000Z">
+      <a href="/2019/02/13/mq-delay-and-invalid/">
+  <time datetime="2019-02-13T13:09:26.000Z">
     2019-02-13
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/02/13/mq-unique-consume/">消息队列——幂等性</a></h1>
+    <h1 class="title"><a href="/2019/02/13/mq-delay-and-invalid/">消息队列——延时以及过期失效</a></h1>
   
 
   </header>
@@ -77,27 +77,22 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p>首先，比如 RabbitMQ、RocketMQ、Kafka，都有可能会出现消息重复消费的问题，正常。因为这问题通常不是 MQ 自己保证的，是由我们开发来保证的。挑一个 Kafka 来举个例子，说说怎么重复消费吧。</p>
-<p>Kafka 实际上有个 offset 的概念，就是每个消息写进去，都有一个 offset，代表消息的序号，然后 consumer 消费了数据之后，每隔一段时间（定时定期），会把自己消费过的消息的 offset 提交一下，表示“我已经消费过了，下次我要是重启啥的，你就让我继续从上次消费到的 offset 来继续消费吧”。</p>
-<p>但是凡事总有意外，比如我们之前生产经常遇到的，就是你有时候重启系统，看你怎么重启了，如果碰到点着急的，直接 kill 进程了，再重启。这会导致 consumer 有些消息处理了，但是没来得及提交 offset，尴尬了。重启之后，少数消息会再次消费一次。</p>
-<p>举个栗子。</p>
-<p>有这么个场景。数据 1/2/3 依次进入 kafka，kafka 会给这三条数据每条分配一个 offset，代表这条数据的序号，我们就假设分配的 offset 依次是 152/153/154。消费者从 kafka 去消费的时候，也是按照这个顺序去消费。假如当消费者消费了 offset=153 的这条数据，刚准备去提交 offset 到 zookeeper，此时消费者进程被重启了。那么此时消费过的数据 1/2 的 offset 并没有提交，kafka 也就不知道你已经消费了 offset=153 这条数据。那么重启之后，消费者会找 kafka 说，嘿，哥儿们，你给我接着把上次我消费到的那个地方后面的数据继续给我传递过来。由于之前的 offset 没有提交成功，那么数据 1/2 会再次传过来，如果此时消费者没有去重的话，那么就会导致重复消费。<br><img src="https://s2.ax1x.com/2019/02/13/k07d61.png" alt=""></p>
-<p>如果消费者干的事儿是拿一条数据就往数据库里写一条，会导致说，你可能就把数据 1/2 在数据库里插入了 2 次，那么数据就错啦。</p>
-<p>其实重复消费不可怕，可怕的是你没考虑到重复消费之后，怎么保证幂等性。</p>
-<p>举个例子吧。假设你有个系统，消费一条消息就往数据库里插入一条数据，要是你一个消息重复两次，你不就插入了两条，这数据不就错了？但是你要是消费到第二次的时候，自己判断一下是否已经消费过了，若是就直接扔了，这样不就保留了一条数据，从而保证了数据的正确性。</p>
-<p>一条数据重复出现两次，数据库里就只有一条数据，这就保证了系统的幂等性。</p>
-<p>幂等性，通俗点说，就一个数据，或者一个请求，给你重复来多次，你得确保对应的数据是不会改变的，不能出错。</p>
-<p>所以第二个问题来了，怎么保证消息队列消费的幂等性？</p>
-<p>其实还是得结合业务来思考，我这里给几个思路：</p>
+<p>关于这个事儿，我们一个一个来梳理吧，先假设一个场景，我们现在消费端出故障了，然后大量消息在 mq 里积压，现在出事故了，慌了。</p>
+<h3 id="大量消息在-mq-里积压了几个小时了还没解决"><a href="#大量消息在-mq-里积压了几个小时了还没解决" class="headerlink" title="大量消息在 mq 里积压了几个小时了还没解决"></a>大量消息在 mq 里积压了几个小时了还没解决</h3><p>几千万条数据在 MQ 里积压了七八个小时，从下午 4 点多，积压到了晚上 11 点多。这个是我们真实遇到过的一个场景，确实是线上故障了，这个时候要不然就是修复 consumer 的问题，让它恢复消费速度，然后傻傻的等待几个小时消费完毕。这个肯定不能在面试的时候说吧。</p>
+<p>一个消费者一秒是 1000 条，一秒 3 个消费者是 3000 条，一分钟就是 18 万条。所以如果你积压了几百万到上千万的数据，即使消费者恢复了，也需要大概 1 小时的时间才能恢复过来。</p>
+<p>一般这个时候，只能临时紧急扩容了，具体操作步骤和思路如下：</p>
 <ul>
-<li>比如你拿个数据要写库，你先根据主键查一下，如果这数据都有了，你就别插入了，update 一下好吧。</li>
-<li>比如你是写 Redis，那没问题了，反正每次都是 set，天然幂等性。</li>
-<li>比如你不是上面两个场景，那做的稍微复杂一点，你需要让生产者发送每条数据的时候，里面加一个全局唯一的 id，类似订单 id 之类的东西，然后你这里消费到了之后，先根据这个 id 去比如 Redis 里查一下，之前消费过吗？如果没有消费过，你就处理，然后这个 id 写 Redis。如果消费过了，那你就别处理了，保证别重复处理相同的消息即可。</li>
-<li>比如基于数据库的唯一键来保证重复数据不会重复插入多条。因为有唯一键约束了，重复数据插入只会报错，不会导致数据库中出现脏数据。</li>
+<li>先修复 consumer 的问题，确保其恢复消费速度，然后将现有 consumer 都停掉。</li>
+<li>新建一个 topic，partition 是原来的 10 倍，临时建立好原先 10 倍的 queue 数量。</li>
+<li>然后写一个临时的分发数据的 consumer 程序，这个程序部署上去消费积压的数据，<strong>消费之后不做耗时的处理</strong>，直接均匀轮询写入临时建立好的 10 倍数量的 queue。</li>
+<li>接着临时征用 10 倍的机器来部署 consumer，每一批 consumer 消费一个临时 queue 的数据。这种做法相当于是临时将 queue 资源和 consumer 资源扩大 10 倍，以正常的 10 倍速度来消费数据。</li>
+<li>等快速消费完积压数据之后，<strong>得恢复原先部署的架构</strong>，<strong>重新</strong>用原先的 consumer 机器来消费消息。</li>
 </ul>
-<p><img src="https://s2.ax1x.com/2019/02/13/k07cfH.png" alt=""></p>
-<p>当然，如何保证 MQ 的消费是幂等性的，需要结合具体的业务来看。</p>
-<p>参考：<br><a href="https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/how-to-ensure-that-messages-are-not-repeatedly-consumed.md" target="_blank" rel="noopener">如何保证消息不被重复消费？或者说，如何保证消息消费的幂等性？</a></p>
+<h3 id="mq-中的消息过期失效了"><a href="#mq-中的消息过期失效了" class="headerlink" title="mq 中的消息过期失效了"></a>mq 中的消息过期失效了</h3><p>假设你用的是 RabbitMQ，RabbtiMQ 是可以设置过期时间的，也就是 TTL。如果消息在 queue 中积压超过一定的时间就会被 RabbitMQ 给清理掉，这个数据就没了。那这就是第二个坑了。这就不是说数据会大量积压在 mq 里，而是<strong>大量的数据会直接搞丢</strong>。</p>
+<p>这个情况下，就不是说要增加 consumer 消费积压的消息，因为实际上没啥积压，而是丢了大量的消息。我们可以采取一个方案，就是<strong>批量重导</strong>，这个我们之前线上也有类似的场景干过。就是大量积压的时候，我们当时就直接丢弃数据了，然后等过了高峰期以后，比如大家一起喝咖啡熬夜到晚上12点以后，用户都睡觉了。这个时候我们就开始写程序，将丢失的那批数据，写个临时程序，一点一点的查出来，然后重新灌入 mq 里面去，把白天丢的数据给他补回来。也只能是这样了。</p>
+<p>假设 1 万个订单积压在 mq 里面，没有处理，其中 1000 个订单都丢了，你只能手动写程序把那 1000 个订单给查出来，手动发到 mq 里去再补一次。</p>
+<h3 id="mq-都快写满了"><a href="#mq-都快写满了" class="headerlink" title="mq 都快写满了"></a>mq 都快写满了</h3><p>如果消息积压在 mq 里，你很长时间都没有处理掉，此时导致 mq 都快写满了，咋办？这个还有别的办法吗？没有，谁让你第一个方案执行的太慢了，你临时写程序，接入数据来消费，<strong>消费一个丢弃一个，都不要了</strong>，快速消费掉所有的消息。然后走第二个方案，到了晚上再补数据吧。</p>
+<p>参考：<br><a href="https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/mq-time-delay-and-expired-failure.md" target="_blank" rel="noopener">如何解决消息队列的延时以及过期失效问题？消息队列满了以后该怎么处理？有几百万消息持续积压几小时，说说怎么解决？</a></p>
 
     
   </div>
@@ -133,7 +128,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 12px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 10px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -144,23 +139,23 @@
   <ul class="entry">
     
       <li>
+        <a href="/2019/09/19/zookeeper-principle/">Zookeeper:分布式过程协同技术详解</a>
+      </li>
+    
+      <li>
+        <a href="/2019/09/16/distribut-lock-new/">分布式锁详解</a>
+      </li>
+    
+      <li>
+        <a href="/2019/09/10/redis-base/">Redis相关知识点梳理</a>
+      </li>
+    
+      <li>
         <a href="/2019/09/05/java-base-thread/">线程相关知识点梳理</a>
       </li>
     
       <li>
         <a href="/2019/07/31/travel-zhangjiajie/">旅游——张家界8月行</a>
-      </li>
-    
-      <li>
-        <a href="/2019/06/12/encode/">字符编码问题</a>
-      </li>
-    
-      <li>
-        <a href="/2019/06/10/arthas/">Arthas——Alibaba Java诊断利器</a>
-      </li>
-    
-      <li>
-        <a href="/2019/06/04/instrument/">Java Intrumentation 和相关应用</a>
       </li>
     
   </ul>

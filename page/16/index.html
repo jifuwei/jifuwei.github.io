@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/02/12/spring-cloud-config/">
-  <time datetime="2019-02-12T12:15:27.000Z">
-    2019-02-12
+      <a href="/2019/02/13/mq-unique-consume/">
+  <time datetime="2019-02-13T12:52:58.000Z">
+    2019-02-13
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/02/12/spring-cloud-config/">Spring Cloud——配置中心 Config</a></h1>
+    <h1 class="title"><a href="/2019/02/13/mq-unique-consume/">消息队列——幂等性</a></h1>
   
 
   </header>
@@ -77,18 +77,27 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p>Spring Cloud Config 是 Spring Cloud 团队创建的一个全新项目，用来为分布式系统中的基础设施和微服务应用提供集中化的外部配置支持，它分为服务端与客户端两个部分。 其 中服务端也称为分布式配置中心， 它是一个独立的微服务应用， 用来连接配置仓库并为客 户端提供获取配置信息、 加密/解密信息等访问接口;而客户端则是微服务架构中的各个微 服务应用或基础设施， 它们通过指定的配置中心来管理应用资源与业务相关的配置内容， 并在启动的时候从配置中心获取和加载配置信息。 Spring Cloud Config 实现了对服务端和客 户端中环境变量和属性配置的抽象映射， 所以它除了适用于 Spring 构建的应用程序之外， 也可以在任何其他语言运行的应用程序中使用。 由于 Spring Cloud Config 实现的配置中心 默认采用 Git 来存储配置信息， 所以使用 Spring Cloud Config 构建的配置服务器， 天然就 支持对微服务应用配置信息的版本管理， 并且可以通过 Git 客户端工具来方便地管理和访 问配置内容。 当然它也提供了对其他存储方式的支持， 比如 SVN 仓库、 本地化文件系统。 接下来， 我们从一个简单的入门示例开始学习 Spring Cloud Config 服务端以及客户端的详 细构建与使用方法。</p>
-<h2 id="服务端详解"><a href="#服务端详解" class="headerlink" title="服务端详解"></a>服务端详解</h2><p><strong>基础架构</strong><br><img src="https://s2.ax1x.com/2019/02/12/kwWGse.png" alt=""></p>
-<p>客户端应用从配置管理中获取配置信息遵从下面的执行流程:</p>
+<p>首先，比如 RabbitMQ、RocketMQ、Kafka，都有可能会出现消息重复消费的问题，正常。因为这问题通常不是 MQ 自己保证的，是由我们开发来保证的。挑一个 Kafka 来举个例子，说说怎么重复消费吧。</p>
+<p>Kafka 实际上有个 offset 的概念，就是每个消息写进去，都有一个 offset，代表消息的序号，然后 consumer 消费了数据之后，每隔一段时间（定时定期），会把自己消费过的消息的 offset 提交一下，表示“我已经消费过了，下次我要是重启啥的，你就让我继续从上次消费到的 offset 来继续消费吧”。</p>
+<p>但是凡事总有意外，比如我们之前生产经常遇到的，就是你有时候重启系统，看你怎么重启了，如果碰到点着急的，直接 kill 进程了，再重启。这会导致 consumer 有些消息处理了，但是没来得及提交 offset，尴尬了。重启之后，少数消息会再次消费一次。</p>
+<p>举个栗子。</p>
+<p>有这么个场景。数据 1/2/3 依次进入 kafka，kafka 会给这三条数据每条分配一个 offset，代表这条数据的序号，我们就假设分配的 offset 依次是 152/153/154。消费者从 kafka 去消费的时候，也是按照这个顺序去消费。假如当消费者消费了 offset=153 的这条数据，刚准备去提交 offset 到 zookeeper，此时消费者进程被重启了。那么此时消费过的数据 1/2 的 offset 并没有提交，kafka 也就不知道你已经消费了 offset=153 这条数据。那么重启之后，消费者会找 kafka 说，嘿，哥儿们，你给我接着把上次我消费到的那个地方后面的数据继续给我传递过来。由于之前的 offset 没有提交成功，那么数据 1/2 会再次传过来，如果此时消费者没有去重的话，那么就会导致重复消费。<br><img src="https://s2.ax1x.com/2019/02/13/k07d61.png" alt=""></p>
+<p>如果消费者干的事儿是拿一条数据就往数据库里写一条，会导致说，你可能就把数据 1/2 在数据库里插入了 2 次，那么数据就错啦。</p>
+<p>其实重复消费不可怕，可怕的是你没考虑到重复消费之后，怎么保证幂等性。</p>
+<p>举个例子吧。假设你有个系统，消费一条消息就往数据库里插入一条数据，要是你一个消息重复两次，你不就插入了两条，这数据不就错了？但是你要是消费到第二次的时候，自己判断一下是否已经消费过了，若是就直接扔了，这样不就保留了一条数据，从而保证了数据的正确性。</p>
+<p>一条数据重复出现两次，数据库里就只有一条数据，这就保证了系统的幂等性。</p>
+<p>幂等性，通俗点说，就一个数据，或者一个请求，给你重复来多次，你得确保对应的数据是不会改变的，不能出错。</p>
+<p>所以第二个问题来了，怎么保证消息队列消费的幂等性？</p>
+<p>其实还是得结合业务来思考，我这里给几个思路：</p>
 <ul>
-<li>应用启动时，根据bootstrap.proper巨es中配置的应用名{app巨cation}、 环境名{profile}、 分支名{label}, 向ConfigServer请求获取配置信息。</li>
-<li>ConfigServer根据自己维护的Git仓库信息和客户端传递过来的配置定位信息去查找配置信息</li>
-<li>通过git clone命令将找到的配置信息下载到ConfigServer的文件系统中</li>
-<li>ConfigServer创建Spring的ApplicationContext实例，并从Git本地仓库中 加载配置文件， 最后将这些配置内容读取出来返回给客户端应用。</li>
-<li>客户端应用在获得外部配置文件后加载到客户端的ApplicationContext实例， 该配置内容的优先级高于客户端Jar包内部的配置内容， 所以在Jar包中重复的内 容将不再被加载。</li>
+<li>比如你拿个数据要写库，你先根据主键查一下，如果这数据都有了，你就别插入了，update 一下好吧。</li>
+<li>比如你是写 Redis，那没问题了，反正每次都是 set，天然幂等性。</li>
+<li>比如你不是上面两个场景，那做的稍微复杂一点，你需要让生产者发送每条数据的时候，里面加一个全局唯一的 id，类似订单 id 之类的东西，然后你这里消费到了之后，先根据这个 id 去比如 Redis 里查一下，之前消费过吗？如果没有消费过，你就处理，然后这个 id 写 Redis。如果消费过了，那你就别处理了，保证别重复处理相同的消息即可。</li>
+<li>比如基于数据库的唯一键来保证重复数据不会重复插入多条。因为有唯一键约束了，重复数据插入只会报错，不会导致数据库中出现脏数据。</li>
 </ul>
-<p>Config Server巧妙地通过git clone将配置信息存于本地， 起到了缓存的作用， 即使当Git服务端无法访问的时候， 依然可以取ConfigServer中的缓存内容进行使用。</p>
-<p>个人觉得config较简单 不在深入看了。。</p>
+<p><img src="https://s2.ax1x.com/2019/02/13/k07cfH.png" alt=""></p>
+<p>当然，如何保证 MQ 的消费是幂等性的，需要结合具体的业务来看。</p>
+<p>参考：<br><a href="https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/how-to-ensure-that-messages-are-not-repeatedly-consumed.md" target="_blank" rel="noopener">如何保证消息不被重复消费？或者说，如何保证消息消费的幂等性？</a></p>
 
     
   </div>
@@ -124,7 +133,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 12px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 10px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -135,23 +144,23 @@
   <ul class="entry">
     
       <li>
+        <a href="/2019/09/19/zookeeper-principle/">Zookeeper:分布式过程协同技术详解</a>
+      </li>
+    
+      <li>
+        <a href="/2019/09/16/distribut-lock-new/">分布式锁详解</a>
+      </li>
+    
+      <li>
+        <a href="/2019/09/10/redis-base/">Redis相关知识点梳理</a>
+      </li>
+    
+      <li>
         <a href="/2019/09/05/java-base-thread/">线程相关知识点梳理</a>
       </li>
     
       <li>
         <a href="/2019/07/31/travel-zhangjiajie/">旅游——张家界8月行</a>
-      </li>
-    
-      <li>
-        <a href="/2019/06/12/encode/">字符编码问题</a>
-      </li>
-    
-      <li>
-        <a href="/2019/06/10/arthas/">Arthas——Alibaba Java诊断利器</a>
-      </li>
-    
-      <li>
-        <a href="/2019/06/04/instrument/">Java Intrumentation 和相关应用</a>
       </li>
     
   </ul>

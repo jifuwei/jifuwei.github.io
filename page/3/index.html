@@ -59,92 +59,123 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/06/12/encode/">
-  <time datetime="2019-06-12T06:46:03.000Z">
-    2019-06-12
+      <a href="/2019/09/10/redis-base/">
+  <time datetime="2019-09-10T07:16:13.000Z">
+    2019-09-10
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/06/12/encode/">字符编码问题</a></h1>
+    <h1 class="title"><a href="/2019/09/10/redis-base/">Redis相关知识点梳理</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <blockquote>
-<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
-</blockquote>
-<h2 id="为什么需要编码？能不能不编码？"><a href="#为什么需要编码？能不能不编码？" class="headerlink" title="为什么需要编码？能不能不编码？"></a>为什么需要编码？能不能不编码？</h2><p>解释这个问题，必须要回答计算机是如何表示我们人类能够理解符号的，这些符号也就是我们人类使用的语言。由于人类的语言太多，表示这些语言的符号太多，无法用计算机的基本存储单元——字节（byte）来表示，因而必须要经过拆分或一些翻译工作，才能让计算机理解我们的语言。</p>
-<p>把计算机能够理解的语言假定为英语，其他语言要能够在计算机中使用，必须经过一次翻译，把他翻译成英语。这个翻译的过程就是编码。所以可以想象，只要是不说英语的国家，要使用计算机都必须经过编码。这看起有些霸道，但就是现状。职业和我国在大力推广汉语一样，希望其他国家都说汉语，以后其它语言就被翻译成汉语，我们可以吧计算机中存储的信息的最小单位改成汉字，这样就不存在编码的问题了。</p>
-<p>总的来说，编码存在的原因一下几条:</p>
-<ul>
-<li>在计算机中存储信息的最小单元是1个字节，即8 bit，所以能表示的字符范围是 0 ~ 255个</li>
-<li>人类标识的符号太多，无法用一个字节完全表示。比如最常见的汉字都有3000多个，很明显超过了一个字节的承受范围</li>
+      <ul>
+<li>Redis的两种持久化操作以及如何保障数据安全（快照和AOF）</li>
+<li>如何防止数据出错（Redis事务）</li>
+<li>如何使用流水线来提升性能</li>
+<li>Redis主从复制</li>
+<li>Redis集群的搭建</li>
+<li>Redis的几种淘汰策略</li>
+<li>Redis集群宕机，数据迁移问题</li>
+<li>Redis缓存使用有很多，怎么解决缓存雪崩和缓存穿透？</li>
 </ul>
-<h2 id="如何“翻译”"><a href="#如何“翻译”" class="headerlink" title="如何“翻译”"></a>如何“翻译”</h2><p>各种语言交流，经过翻译是必要的，那么如何来翻译呢？<br>在计算机中提供了多种翻译方式，常见的有ASC、ISO-8859-1、GB2312、GBK、UTF-8、UTF-16等，他们都可以被看做是字典。<br>目前编码格式很多，如GB2312、GBK、UTF-8、UTF-16都可以标表示汉字，那我们到底选择哪种格式的编码来存储汉字呢？这就要考虑到其他因素了。例如，是存储空间重要还是编码效率重要。</p>
-<h3 id="存储效率"><a href="#存储效率" class="headerlink" title="存储效率"></a>存储效率</h3><p>不同的编码占用的字节数不一样，头部常用的字符可能只占用1个字节，一些生僻的不常用或者几乎用不到的字符可能排到需要占用3个字节，如何分配内存存储这个鞋字节呢？我们可以为所有字符都分配三个字节的内存，也可以为编号小的字符分配一个字节或者两个字节的内存，而为编号大的字符分配三个字节的内存。</p>
-<p><strong>方案1：为每个字符分配固定长度的内存</strong><br>一种方案是为每个字符分配固定长度的内存，并且这块内存要足够大，可以容纳下所有的字符编号。这种方案最简单，直接将字符编号放入内存中即可，不需要任何转换，并且以后在字符串中定位字符、修改字符都非常容易。</p>
-<p>目前的 Unicode 已经收录了上百万的字符，至少需要三个字节才能容纳下所有的字符编号。假设字符串”A3中￥”的 Unicode 编码值（十六进制形式）分别是 2A、31、DA49、BB672C，那么它们在内存中的存储形式为：<br><img src="https://s2.ax1x.com/2019/06/12/VRyTC4.jpg" alt=""></p>
-<p>在几乎所有的字符集中，常用字符的编号往往比较小，罕见字符的编号往往比较大，包括 Unicode 在内。<br><code>A</code>和<code>3</code>是 ASCII 编码中的字符，Unicode 为了兼容 ASCII，在设计时刻意保留了原来 ASCII 中字符的编号，所以英文字母和阿拉伯数字在 Unicode 中的编号都非常小，用一个字节足以容纳。<code>中</code>是一个汉字，编号比较大，一般要用两个字节才能容纳。<code>￥</code>可以看做是一个极其少见，或者只有极少数地区才会使用到的字符，这样的字符编号往往比较大，有时候需要三个字节才能容纳。</p>
-<p>上图中带灰色背景的字节是没有用到的字节，它们就是被浪费掉的一部分内存空间，这就是用固定长度的内存来存储字符编号的缺点：常用字符的编号都比较小，这种方案会浪费很多内存空间，对于以英文为主的国家，比如美国、加拿大、英国等，内存利用率甚至会低于 50%。</p>
-<p><strong>方案2：为每个字符分配尽量少的内存</strong><br>既然上面的方案有缺点，那我们就来改进一下。改进的思路也很明确，就是把空闲的内存压缩掉，为每个字符分配尽量少的字节，例如，A和3分配一个字节足以，中分配两个字节足以，如下图所示：<br><img src="https://s2.ax1x.com/2019/06/12/VRyxUO.jpg" alt=""></p>
-<p>这样虽然没有了空闲字节，不浪费任何内存空间了，但是又出现新的问题了：如果我不告诉你，你怎么知道<code>2A</code>表示一个字符，而不是<code>2A31</code>或者<code>2A31DA</code>才表示一个字符呢？后面的字符也有类似的问题。</p>
-<p>对于第一种方案，每个字符占用的字节数是固定的，很容易区分各个字符；而这种方案，不同的字符占用的字节数不同，字符之间也没有特殊的标记，计算机是无法定位字符的。</p>
-<p>这种方案还需要改进，必须让不同的字符编码有不同的特征，并且字符处理程序也需要调整，要根据这些特征去识别不同的字符。</p>
-<p>要想让不同的字符编码有不同的特征，可以从两个方面下手：<br>1) 一是从字符集本身下手，在设计字符集时，刻意让不同的字符编号有不同的特征。</p>
-<p>例如，对于编号较小的、用一个字节足以容纳的字符，我们就可以规定这个字符编号的最高位（Bit）必须是 0；对于编号较大的、要用两个字节存储的字符，我们就可以规定这个字符编号的高字节的最高位必须是 1，低字节的最高位必须是 0；对于编号更大的、需要三个字节存储的字符，我们就可以规定这个字符编号的所有字节的最高位都必须是 1。</p>
-<p>程序在定位字符时，从前往后依次扫描，如果发现当前字节的最高位是 0，那么就把这一个字节作为一个字符编号。如果发现当前字节的最高位是 1，那么就继续往后扫描，如果后续字节的最高位是 0，那么就把这两个字节作为一个字符编号；如果后续字节的最高位是 1，那么就把挨着的三个字节作为一个字符编号。</p>
-<p>这种方案的缺点很明显，它会导致字符集不连续，中间留出大量空白区域，这些空白区域不能定义任何字符。</p>
-<p>2) 二是从字符编号下手，可以设计一种转换方案，字符编号在存储之前先转换为有特征的、容易定位的编号，读取时再按照相反的过程转换成字符本来的编号。</p>
-<p>那么，转换后的编号要具备什么样的特征呢？其实也可以像上面一样，根据字节的最高位是 0 还是 1 来判断字符到底占用了几个字节。</p>
-<p>相比第一种方案，这种方案有缺点也有优点：</p>
-<ul>
-<li>缺点就是多了转换过程，字符在存储和读取时要经过转换，效率低；</li>
-<li>优点就是在制定字符集时不用考虑存储的问题，可以任意排布字符。</li>
+<h2 id="Redis与Memcached的区别与比较"><a href="#Redis与Memcached的区别与比较" class="headerlink" title="Redis与Memcached的区别与比较"></a>Redis与Memcached的区别与比较</h2><ul>
+<li>Redis不仅仅支持简单的k/v类型的数据，同时还提供list，set，zset，hash等数据结构的存储。memcache支持简单的数据类型，String</li>
+<li>Redis支持数据的备份，即master-slave模式的数据备份</li>
+<li>Redis支持数据的持久化，可以将内存中的数据保持在磁盘中，重启的时候可以再次加载进行使用,而Memecache把数据全部存在内存之中</li>
+<li>redis的速度比memcached快很多</li>
+<li>Memcached是多线程，非阻塞IO复用的网络模型；Redis使用单线程的IO复用模型</li>
 </ul>
-<h3 id="常用字符编码"><a href="#常用字符编码" class="headerlink" title="常用字符编码"></a>常用字符编码</h3><p><strong>1.ASCII 码</strong><br>学过计算机的都知道ASCII码，总共128个，用1个字节的低7位标识，0-31是控制字符如换行、回车、删除等，32-126是打印字符，可以通过键盘输入并且能够显示出来的。</p>
-<p><strong>ISO-8859-1</strong><br>128个字符显然是不够用的，于是ISO组织ASCII码的基础上又定制了一系列标准来扩展ASCIi编码，他们是ISO-8859-1至ISO-8859-15，其中ISO-8859-1涵盖了大多西欧语言字符，所以应用的最广泛。ISO-8859-1仍然是单字节编码，他总共能表示256个字符。</p>
-<p><strong>GB2312</strong><br>GB2312全称是《信息技术 中文编码字符集》，他是双字节编码，总的编码范围是A1-F7，其中A1-A9是符号区，总共包含682个字符；B0-F7是汉字去，包含6763个汉字。</p>
-<p><strong>GBK</strong><br>GBK裙撑是《汉字内码扩展规范》，是国家技术监督局为Windows 95所定制的新的汉字内码规范，他的出现是为了扩展GB2312，并加入了更多的汉字。他的编码范围是8140~FEFE（去掉XX7F），总共有23940个码位，他能标识21003个汉字，他的编码是和GB2312兼容的，也就是说用GB2312编码的韩总也可以用GBK来解码，并且不会乱码。</p>
-<p><strong>GB18030</strong><br>GB18030全称是《信息技术 中文编码字符集》，是我国的强制标准，他可能是单字节、双字节或者四字节编码，他的编码与GB2312兼容，虽然是国家保准，但是在实际应用中使用的并不广泛。</p>
-<p><strong>UTF-16</strong><br>说到UTF必须提到Unicode，ISO师徒创建一个全新的超语言字典，世界上所有的语言都可以通过这个字典来互相翻译。可想而知这个字典是有多么复杂。关于Unicode的详细管饭可以参考相应文档。Unicode是Java和XML的基础，下面详细介绍Unicode的计算机中的存储形式。</p>
-<p>UTF-16具体定义了Unicode字符在计算机中的存储方法。UTF-16用两个字节来表示Unicode的转化格式，它采用订场的标识方法，即不论什么字符都可以用两个字节表示。两个字节是16个bit，所以叫UTF-16。UTF-16表示字符非常方便，每两个字节表示一个字符，这就大大简化了字符串操作，这也是UTF-16作为内存的字符存储格式的一个重要原因。</p>
-<p><strong>UTF-8</strong><br>UTF-16采用统一的量字节标识一个字符，虽然在标识上非常简单、方便，但是也有很大缺点，有很大部分字符用的一个字节就可以标识的现在要用两个字节表示，存储空间放大了一倍，在现在网络带宽还非常有限的情况下，这样会增大网络传输的流量，而且也没有必要。而UTF-8采用的一种变长的技术，每个编码区域有不同的字码长度。不同类型的字符可以由1-6个字节组成。</p>
-<ul>
-<li>如果是一个字节，最高位（第八位）为0，则表示这个是一个ACII字符（00~7F），所以是兼容ASCII的</li>
-<li>如果是一个字节，以11开头，则连续的1的个数暗示这个字符的字节数，例如：110××××× 代表的是双字节UTF-8字符的首字节</li>
-<li>如果是1个字节，以10开始，标识他不是首字节，则需要向前查找才能得到当前字符的首字节</li>
+<h2 id="6种数据淘汰策略"><a href="#6种数据淘汰策略" class="headerlink" title="6种数据淘汰策略"></a>6种数据淘汰策略</h2><ul>
+<li>volatile-lru：从已设置过期时间的数据集（server.db[i].expires）中挑选最近最少使用的数据淘汰</li>
+<li>volatile-ttl：从已设置过期时间的数据集（server.db[i].expires）中挑选将要过期的数据淘汰</li>
+<li>volatile-random：从已设置过期时间的数据集（server.db[i].expires）中任意选择数据淘汰</li>
+<li>allkeys-lru：从数据集（server.db[i].dict）中挑选最近最少使用的数据淘汰</li>
+<li>allkeys-random：从数据集（server.db[i].dict）中任意选择数据淘汰</li>
+<li>no-enviction（驱逐）：禁止驱逐数据</li>
 </ul>
-<h2 id="在Java中需要用到编码的场景"><a href="#在Java中需要用到编码的场景" class="headerlink" title="在Java中需要用到编码的场景"></a>在Java中需要用到编码的场景</h2><h3 id="I-O操作中存在的编码"><a href="#I-O操作中存在的编码" class="headerlink" title="I/O操作中存在的编码"></a>I/O操作中存在的编码</h3><p>涉及到编码的地方一般都在从字符转字节或者字节转字符，而需要这种转换场景的主要是I/O，这个I/O包括磁盘I/O和网络I/O<br><img src="https://s2.ax1x.com/2019/06/12/VRc5p4.jpg" alt=""></p>
-<p>Reader 类是在Java的I/O中肚子福的父类，而InputStream类是读字节的父类，InputStreamReader类就是关联字节到字符的桥梁，他负责在I/过程中处理读取的字节到字符之间的转换，而对具体字节到字符的解码实现，他又委托StreamDecoder去做，在StreamDecider解码过程中必须由用户指定Charset编码格式。如果未指定Charset，则将使用本地的默认字符集，如果在中文环境中将使用GNK编码。</p>
-<p>写的情况类似。</p>
-<p>实例如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">String file = <span class="string">"~/tmp/tmp.txt"</span>;</span><br><span class="line">String charset = <span class="string">"UTF-8"</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// write</span></span><br><span class="line">FileOutputStream outputStream = <span class="keyword">new</span> FileOutputStream(file);</span><br><span class="line"><span class="keyword">try</span> (OutputStreamWriter writer = <span class="keyword">new</span> OutputStreamWriter(outputStream, charset)) &#123;</span><br><span class="line">    writer.write(<span class="string">"这个是测试的文本"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// read</span></span><br><span class="line">FileInputStream inputStream = <span class="keyword">new</span> FileInputStream(file);</span><br><span class="line"><span class="keyword">try</span> (InputStreamReader reader = <span class="keyword">new</span> InputStreamReader(inputStream, charset)) &#123;</span><br><span class="line">    <span class="keyword">char</span>[] buf = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="number">64</span>];</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    StringBuffer buffer = <span class="keyword">new</span> StringBuffer();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ((count = reader.read(buf)) != -<span class="number">1</span>) &#123;</span><br><span class="line">        buffer.append(buffer, <span class="number">0</span>, count);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h3 id="内存操作中存在的编码"><a href="#内存操作中存在的编码" class="headerlink" title="内存操作中存在的编码"></a>内存操作中存在的编码</h3><p>除了I/O外，最常用的应该是内崔总进行从字符转字节的数据类型转换了，在Java中用到的String表示字符串，所以String提供了转换到字节的方法，也支持将字节转换为字符的构造函数，代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">String s = <span class="string">"这是测试文字"</span>;</span><br><span class="line"><span class="keyword">byte</span>[] b = s.getBytes(<span class="string">"UTF-8"</span>);</span><br><span class="line">String n = <span class="keyword">new</span> String(b, <span class="string">"UTF-8"</span>);</span><br></pre></td></tr></table></figure></p>
-<h3 id="在Java中如何编解码"><a href="#在Java中如何编解码" class="headerlink" title="在Java中如何编解码"></a>在Java中如何编解码</h3><p>实例如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">String name = <span class="string">"I am 君山"</span>;</span><br><span class="line">toHex(name);</span><br><span class="line"><span class="keyword">byte</span>[] iso8859 = name.getBytes(StandardCharsets.ISO_8859_1);</span><br><span class="line">toHex(iso8859);</span><br><span class="line"><span class="keyword">byte</span>[] GB2312 = name.getBytes(<span class="string">"GB2312"</span>);</span><br><span class="line">toHex(GB2312);</span><br><span class="line"><span class="keyword">byte</span>[] gbk = name.getBytes(<span class="string">"GBK"</span>);</span><br><span class="line">toHex(gbk);</span><br><span class="line"><span class="keyword">byte</span>[] utf16 = name.getBytes(<span class="string">"UTF-16"</span>);</span><br><span class="line">toHex(utf16);</span><br><span class="line"><span class="keyword">byte</span>[] utf8 = name.getBytes(<span class="string">"UTF-8"</span>);</span><br><span class="line">toHex(utf8);</span><br></pre></td></tr></table></figure></p>
-<p>字符串“I am 君山”的char数组为49 20 61 6d 20 541b 5c71，下面把它按照不同的编码格式转换成相应的字节</p>
-<p><strong>按照ISO-8859-1</strong><br><img src="https://s2.ax1x.com/2019/06/12/VRf5Lj.md.jpg" alt=""></p>
-<p>可以看到，7个char字符经过ISO-8859-1编码转变成7个byte数组，ISO-8859-1是单字节编码，中文“君山”被转化成值是3f的byte，3f也就是“？”字符，所以经常会出现中文编程“？”，很可能就是错误的使用了ISO-8859-1的这个编码导致的。</p>
-<p><strong>2.按照GB2312编码</strong><br><img src="https://s2.ax1x.com/2019/06/12/VRfqYV.md.jpg" alt=""></p>
-<p>可以看出，前5个字符经过编码仍然是5个字节，而汉字责备编码成了双字节，GB231只支持6763个汉字，所以不是所有的汉字都能使用GB2312编码。</p>
-<p><strong>3.按照GBK编码</strong><br><img src="https://s2.ax1x.com/2019/06/12/VRhr1U.md.jpg" alt=""></p>
-<p>GBK与GB2312的编码结果是一样的，有次得出GBK编码是兼容GB2312编码的，他们 的拜纳姆算法也是一样的。不同的是，他们的码表长度不一样，GBK包含的汉字字符更多。所以只要是经过GB2312编码的汉字都是可以用GBK进行解码的，反之则不然。</p>
-<p><strong>4.按照UTF-16编码</strong><br><img src="https://s2.ax1x.com/2019/06/12/VR4PBj.md.jpg" alt=""></p>
-<p>用UTF-16编码将char数组放大了1倍，单字节范围内的字符在高位补0变成两个字节，中文字符也变成了两个字节。从UTF-16编码规则来看，仅仅是将字符的高位和低位进行拆分变成两个字节，特点是编码效率非常高，规则很简单。</p>
-<p><strong>5.按照UTF-8编码</strong><br><img src="https://s2.ax1x.com/2019/06/12/VR5RW6.md.jpg" alt=""></p>
-<p>UTF-8单字节范围的字符仍然用的是1个字节标识，对汉字采用3个字节表示。</p>
-<h3 id="对几种编码方式比较"><a href="#对几种编码方式比较" class="headerlink" title="对几种编码方式比较"></a>对几种编码方式比较</h3><p>对中文字符串，上述几种编码方式都能处理</p>
-<ul>
-<li>GB2312与GBK贵吗规则类似，但是GBK范围更大，他能处理所有的汉字字符，所以这两个比较的话应选择GBK</li>
-<li>UTF-16与UTF-8都是处理Unicode编码，他们的编码规则不同。相对来说，UTF-16的编码效率较高，从字符到字节的相互转换简单，进行字符串操作也更好。它使用在本地磁盘和内存直接使用，可以进行字符和字节直接快速切换，如Java的内存编码就是采用UTF-16编码。但是他不适合网络之间传输，因为网络传输容易损坏字节流，一旦字节流损坏很难恢复，所以相对比较而言UTF-8更适合网络传输。</li>
-<li>UTF-8对ASCII字符采用单字节存储，另外单个字符损坏也不会影响后续字符，在编码效率上结余GBK和UTF-16之间，所以UTF-8在编码效率和安全性上做了平衡，是理想的中文编码方式。</li>
+<h2 id="并发竞争问题如何解决？"><a href="#并发竞争问题如何解决？" class="headerlink" title="并发竞争问题如何解决？"></a>并发竞争问题如何解决？</h2><p>Redis为单进程单线程模式，采用队列模式将并发访问变为串行访问</p>
+<h2 id="LRU"><a href="#LRU" class="headerlink" title="LRU"></a>LRU</h2><p><img src="https://s2.ax1x.com/2019/09/11/naoe6H.png" alt=""></p>
+<h2 id="Redis常见性能问题和解决方案"><a href="#Redis常见性能问题和解决方案" class="headerlink" title="Redis常见性能问题和解决方案"></a>Redis常见性能问题和解决方案</h2><ul>
+<li>Master最好不要做任何持久化工作，如RDB内存快照和AOF日志文件</li>
+<li>如果数据比较重要，某个Slave开启AOF备份数据，策略设置为每秒同步一次</li>
+<li>为了主从复制的速度和连接的稳定性，Master和Slave最好在同一个局域网内</li>
+<li>尽量避免在压力很大的主库上增加从库</li>
 </ul>
-<p>参考：</p>
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><ul>
+<li>Redis挂掉了，请求全部走数据库。</li>
+<li>对缓存数据设置相同的过期时间，导致某段时间内缓存失效，请求全部走数据库。</li>
+</ul>
+<p>对于“对缓存数据设置相同的过期时间，导致某段时间内缓存失效，请求全部走数据库。”这种情况，非常好解决：</p>
 <ul>
-<li>《深入分析JAVA Web技术内幕》</li>
-<li><a href="http://c.biancheng.net/cpp/html/3420.html" target="_blank" rel="noopener">大话字符编码，UTF-8、UTF-16、UTF-32都是什么鬼</a></li>
+<li>在缓存的时候给过期时间加上一个随机值，这样就会大幅度的减少缓存在同一时间过期。</li>
+</ul>
+<p>对于“Redis挂掉了，请求全部走数据库”这种情况，我们可以有以下的思路：</p>
+<ul>
+<li>事发前：实现Redis的高可用(主从架构+Sentinel 或者Redis Cluster)，尽量避免Redis挂掉这种情况发生。</li>
+<li>事发中：万一Redis真的挂了，我们可以设置本地缓存(ehcache)+限流(hystrix)，尽量避免我们的数据库被干掉(起码能保证我们的服务还是能正常工作的)</li>
+<li>事发后：redis持久化，重启后自动从磁盘上加载数据，快速恢复缓存数据。</li>
+</ul>
+<h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>请求的数据在缓存大量不命中，导致请求走数据库。</p>
+<ul>
+<li>由于请求的参数是不合法的(每次都请求不存在的参数)，于是我们可以使用布隆过滤器(BloomFilter)或者压缩filter提前拦截，不合法就不让这个请求到数据库层！</li>
+<li>当我们从数据库找不到的时候，我们也将这个空对象设置到缓存里边去。下次再请求的时候，就可以从缓存里边获取了。<ul>
+<li>这种情况我们一般会将空对象设置一个较短的过期时间。</li>
+</ul>
+</li>
+</ul>
+<h2 id="Redis如何做持久化的？"><a href="#Redis如何做持久化的？" class="headerlink" title="Redis如何做持久化的？"></a>Redis如何做持久化的？</h2><p>bgsave做镜像全量持久化，aof做增量持久化。因为bgsave会耗费较长时间，不够实时，在停机的时候会导致大量丢失数据，所以需要aof来配合使用。在redis实例重启时，会使用bgsave持久化文件重新构建内存，再使用aof重放近期的操作指令来实现完整恢复重启之前的状态。</p>
+<p>对方追问那如果突然机器掉电会怎样？取决于aof日志sync属性的配置，如果不要求性能，在每条写指令时都sync一下磁盘，就不会丢失数据。但是在高性能的要求下每次都sync是不现实的，一般都使用定时sync，比如1s1次，这个时候最多就会丢失1s的数据。</p>
+<p>对方追问bgsave的原理是什么？你给出两个词汇就可以了，fork和cow。fork是指redis通过创建子进程来进行bgsave操作，cow指的是copy on write，子进程创建后，父子进程共享数据段，父进程继续提供读写服务，写脏的页面数据会逐渐和子进程分离开来。</p>
+<h2 id="Redis的同步机制了解么？"><a href="#Redis的同步机制了解么？" class="headerlink" title="Redis的同步机制了解么？"></a>Redis的同步机制了解么？</h2><p>Redis可以使用主从同步，从从同步。第一次同步时，主节点做一次bgsave，并同时将后续修改操作记录到内存buffer，待完成后将rdb文件全量同步到复制节点，复制节点接受完成后将rdb镜像加载到内存。加载完成后，再通知主节点将期间修改的操作记录同步到复制节点进行重放就完成了同步过程。</p>
+<h2 id="是否使用过Redis集群，集群的原理是什么？"><a href="#是否使用过Redis集群，集群的原理是什么？" class="headerlink" title="是否使用过Redis集群，集群的原理是什么？"></a>是否使用过Redis集群，集群的原理是什么？</h2><ul>
+<li>Redis Sentinal着眼于高可用，在master宕机时会自动将slave提升为master，继续提供服务。</li>
+<li>Redis Cluster着眼于扩展性，在单个redis内存不足时，使用Cluster进行分片存储。</li>
+</ul>
+<h2 id="redis集群原理"><a href="#redis集群原理" class="headerlink" title="redis集群原理"></a>redis集群原理</h2><p><img src="https://s2.ax1x.com/2019/09/16/nRyMee.jpg" alt=""></p>
+<p>Redis 集群中内置了 16384个哈希槽，当需要在 Redis 集群中放置一个 key-value 时，redis 先对 key 使用 crc16 算法算出一个结果，然后把结果对 16384 求余数，这样每个 key 都会对应一个编号在 0-16383 之间的哈希槽，redis 会根据节点数量大致均等的将哈希槽映射到不同的节点。<br><img src="https://s2.ax1x.com/2019/09/16/nR6rHe.png" alt=""></p>
+<p>集群是如何判断是否有某个节点挂掉了呢？</p>
+<p>每一个节点都存有这个集群所有主节点以及从节点的信息。它们之间通过互相的ping-pong判断是否节点可以连接上。如果有一半以上的节点去ping一个节点的时候没有回应，集群就认为这个节点宕机了，然后去连接它的备用节点。如果某个节点和所有从节点全部挂掉，我们集群就进入faill状态。还有就是如果有一半以上的主节点宕机，那么我们集群同样进入发力了状态。这就是我们的redis的投票机制，具体原理如下图所示：<br><img src="https://s2.ax1x.com/2019/09/16/nRgclt.png" alt=""></p>
+<p><strong>解析</strong><br>只有1个Master，可以有N个slaver，而且Slaver也可以有自己的Slaver，由于这种主从的关系决定他们是在配置阶段就要指定他们的上下级关系，而不是Zookeeper那种平行关系是自主推优出来的。</p>
+<p>读写分离，Master只负责写和同步数据给Slaver，Slaver承担了被读的任务，所以Slaver的扩容只能提高读效率不能提高写效率。</p>
+<p>Slaver先将Master那边获取到的信息压入磁盘，再load进内存，client端是从内存中读取信息的，所以Redis是内存数据库。</p>
+<p>当一个新的Slaver加入到这个集群时，会主动找Master来拜码头，Master发现新的小弟后将全量数据发送给新的Slaver，数据量越大性能消耗也就越大，所以尽量避免在运行时做Slaver的扩容。</p>
+<p>简单总结下主从模式的设计：</p>
+<ul>
+<li>优点：读写分离，通过增加Slaver可以提高并发读的能力。</li>
+<li>缺点：Master写能力是瓶颈。</li>
+</ul>
+<p>对象保存到Redis之前先经过CRC16哈希到一个指定的Node上，例如Object4最终Hash到了Node1上。</p>
+<p>每个Node被平均分配了一个Slot段，对应着0-16384，Slot不能重复也不能缺失，否则会导致对象重复存储或无法存储。</p>
+<p>Node之间也互相监听，一旦有Node退出或者加入，会按照Slot为单位做数据的迁移。例如Node1如果掉线了，0-5640这些Slot将会平均分摊到Node2和Node3上,由于Node2和Node3本身维护的Slot还会在自己身上不会被重新分配，所以迁移过程中不会影响到5641-16384Slot段的使用。</p>
+<p>简单总结下哈希Slot的优缺点：</p>
+<ul>
+<li>缺点：每个Node承担着互相监听、高并发数据写入、高并发数据读出，工作任务繁重</li>
+<li>优点：将Redis的写操作分摊到了多个节点上，提高写的并发能力，扩容简单。</li>
+</ul>
+<p><strong>主从和哈希的设计优缺点正好是相互弥补的，将图一每一套主从对应到图二中的每一个Node，就是Redis集群的终极形态，先Hash分逻辑节点，然后每个逻辑节点内部是主从</strong></p>
+<h2 id="redis-sentinel"><a href="#redis-sentinel" class="headerlink" title="redis sentinel"></a>redis sentinel</h2><p><strong>Sentinel状态持久化</strong></p>
+<p>snetinel的状态会被持久化地写入sentinel的配置文件中。每次当收到一个新的配置时，或者新创建一个配置时，配置会被持久化到硬盘中，并带上配置的版本戳。这意味着，可以安全的停止和重启sentinel进程。</p>
+<p><strong>Sentinel作用：</strong></p>
+<ul>
+<li>Master状态检测 </li>
+<li>如果Master异常，则会进行Master-Slave切换，将其中一个Slave作为Master，将之前的Master作为Slave。 </li>
+<li>Master-Slave切换后，master_redis.conf、slave_redis.conf和sentinel.conf的内容都会发生改变，即master_redis.conf中会多一行slaveof的配置，sentinel.conf的监控目标会随之调换。</li>
+</ul>
+<p><strong>Sentinel工作方式（每个Sentinel实例都执行的定时任务）</strong></p>
+<ul>
+<li>每个Sentinel以每秒钟一次的频率向它所知的Master，Slave以及其他 Sentinel 实例发送一个PING命令。</li>
+<li>如果一个实例（instance）距离最后一次有效回复PING命令的时间超过 own-after-milliseconds 选项所指定的值，则这个实例会被Sentinel标记为主观下线。 </li>
+<li>如果一个Master被标记为主观下线，则正在监视这个Master的所有 Sentinel 要以每秒一次的频率确认Master的确进入了主观下线状态。 </li>
+<li>当有足够数量的Sentinel（大于等于配置文件指定的值）在指定的时间范围内确认Master的确进入了主观下线状态，则Master会被标记为客观下线。</li>
+<li>在一般情况下，每个Sentinel 会以每10秒一次的频率向它已知的所有Master，Slave发送 INFO 命令。</li>
+<li>当Master被Sentinel标记为客观下线时，Sentinel 向下线的 Master 的所有Slave发送 INFO命令的频率会从10秒一次改为每秒一次。 </li>
+<li>若没有足够数量的Sentinel同意Master已经下线，Master的客观下线状态就会被移除。 若 Master重新向Sentinel 的PING命令返回有效回复，Master的主观下线状态就会被移除。</li>
 </ul>
 
     
@@ -181,7 +212,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distributed/" style="font-size: 12px;">distributed</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 12px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 10px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -192,23 +223,23 @@
   <ul class="entry">
     
       <li>
+        <a href="/2019/09/19/zookeeper-principle/">Zookeeper:分布式过程协同技术详解</a>
+      </li>
+    
+      <li>
+        <a href="/2019/09/16/distribut-lock-new/">分布式锁详解</a>
+      </li>
+    
+      <li>
+        <a href="/2019/09/10/redis-base/">Redis相关知识点梳理</a>
+      </li>
+    
+      <li>
         <a href="/2019/09/05/java-base-thread/">线程相关知识点梳理</a>
       </li>
     
       <li>
         <a href="/2019/07/31/travel-zhangjiajie/">旅游——张家界8月行</a>
-      </li>
-    
-      <li>
-        <a href="/2019/06/12/encode/">字符编码问题</a>
-      </li>
-    
-      <li>
-        <a href="/2019/06/10/arthas/">Arthas——Alibaba Java诊断利器</a>
-      </li>
-    
-      <li>
-        <a href="/2019/06/04/instrument/">Java Intrumentation 和相关应用</a>
       </li>
     
   </ul>
