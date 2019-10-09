@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2018/08/23/distribut-lock/">
-  <time datetime="2018-08-23T08:47:59.000Z">
-    2018-08-23
+      <a href="/2018/08/27/auth/">
+  <time datetime="2018-08-27T08:54:11.000Z">
+    2018-08-27
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2018/08/23/distribut-lock/">分布式锁</a></h1>
+    <h1 class="title"><a href="/2018/08/27/auth/">Http鉴权罗列</a></h1>
   
 
   </header>
@@ -77,72 +77,76 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>在高并发场景中，我们需要对资源上锁。比如在秒杀商品时，大量请求过来，不上锁可能导致超卖等现象的发生。<br>分布式系统由独立的服务器通过网络松散耦合组成。在这个系统中每个服务器都是一台独立的主机，服务器之间通过内部网络连接。分布式系统有以下几个特点：</p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份.</p>
+<p>显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对服务器页增添了额外的压力.为了解决无状态带来的鉴权问题,大牛们设计多种方案</p>
+<h2 id="1-cookie"><a href="#1-cookie" class="headerlink" title="1.cookie"></a>1.cookie</h2><p>Cookie是储存在客户端的一串字符,一般说来大小不超过4kb.<br>比如我们常见的记住密码功能,或者一些基于之前输入的提醒和默认配置,就是通过cookie来实现的,cookie简单说来就是一种本地存储方法.<br>但是这里存储的信息常用来进行鉴权操作.cookie只能保存文本信息,浏览器可以禁止cookie.cookie的期限可以被自由设定,可以是仅仅一次浏览起效,也可以长达一年.<br>如果是短期的,那么这些信息会被存储在内存中,如果是长期则会存储在硬盘上.cookie的起效范围是路径下的所有子路径.不允许其他来源的访问.</p>
+<p>单纯的采用cookie来认证身份会带来一个比较麻烦的问题,就是伪造比较容易.<br>因为这样处理,cookie中必然要带有身份信息,但是服务器也要解析这个身份信息,所以必然要在原理上支持双向的编码和解码,那么这个信息很容易被破解和进一步伪造.<br>想一想,如果想要解决这个问题,我们常用的方案应该是加一个secret,而这个secret应该是放在服务器上的,服务器返回这样一个带有secret编码的字符串,而在服务器端再带上这个secret反向解密,如此一来,问题不就解决了吗?确实如此,但是这不代表cookie就安全,因为这已经不叫cookie了,而是我们要讲的第二个对象:session.</p>
+<h2 id="2-session"><a href="#2-session" class="headerlink" title="2.session"></a>2.session</h2><p>通过上面说的东西,我们已经能够获得身份信息,额外的,我们还可以把更复杂形式的信息都存储进来,因为这里没有cookie的纯文本限制.<br>但是刚才说的带有secret编码的字符串也就是sessionid,依然要存储在客户端.<br>是不是意味着session必定要依赖cookie呢?不是!想一想,我们实际上需要的是在每一次请求(至少是需要判定身份状态的请求中),都带上这个字符串,我们有以下这几种解决方案:</p>
 <ul>
-<li>可扩展性：可通过横向水平扩展提高系统的性能和吞吐量。</li>
-<li>高可靠性：高容错，即使系统中一台或几台故障，系统仍可提供服务。</li>
-<li>高并发性：各机器并行独立处理和计算。</li>
-<li>廉价高效：多台小型机而非单台高性能机。</li>
+<li>cookie</li>
+<li>表单隐藏字段:在form中放置一个隐藏的域</li>
+<li>url重写:在url后边加上session的query段</li>
 </ul>
-<p>基于分布式系统的这些特征，有两种问题逐渐成为了分布式环境中需要重点关注和解决的典型问题：</p>
+<p>Session也可以设定有效时间.其实际的存储可以在内存、缓存、文件中.通过类似//可能具体实现不同.//hash表的数据结构存储.cookie是一个存在的实体,session是一种机制.</p>
+<h2 id="3-token"><a href="#3-token" class="headerlink" title="3.token"></a>3.token</h2><p>使用基于 Token 的身份验证方法，在服务端不需要存储用户的登录记录。大概的流程是这样的：</p>
 <ul>
-<li>互斥性问题（资源竞争）</li>
-<li>幂等性问题（结果一致）</li>
+<li>客户端使用用户名跟密码请求登录</li>
+<li>服务端收到请求，去验证用户名与密码</li>
+<li>验证成功后，服务端会签发一个 Token，再把这个 Token 发送给客户端</li>
+<li>客户端收到 Token 以后可以把它存储起来，比如放在 Cookie 里或者 Local Storage 里</li>
+<li>客户端每次向服务端请求资源的时候需要带着服务端签发的 Token</li>
+<li>服务端收到请求，然后去验证客户端请求里面带着的 Token，如果验证成功，就向客户端返回请求的数据</li>
 </ul>
-<h2 id="多线程环境解决方案及原理"><a href="#多线程环境解决方案及原理" class="headerlink" title="多线程环境解决方案及原理"></a>多线程环境解决方案及原理</h2><h3 id="1-ReentrantLock"><a href="#1-ReentrantLock" class="headerlink" title="1.ReentrantLock"></a>1.ReentrantLock</h3><p>ReentrantLock主要利用CAS+CLH队列来实现。它支持公平锁和非公平锁，两者的实现类似。</p>
+<p>可以看出来,这里的token与sessionid有些类似,其区别:</p>
 <ul>
-<li>CAS：Compare and Swap，比较并交换。CAS有3个操作数：内存值V、预期值A、要修改的新值B。当且仅当预期值A和内存值V相同时，将内存值V修改为B，否则什么都不做。该操作是一个原子操作，被广泛的应用在Java的底层实现中。在Java中，CAS主要是由sun.misc.Unsafe这个类通过JNI调用CPU底层指令实现。</li>
-<li>CLH队列：带头结点的双向非循环链表</li>
+<li>sessionid是带着之前的状态的,在服务器端可以getSession(sessionid)</li>
+<li>token是在登录验证之后发放的一个包含着用户基本信息的较长的字符串,用处是验证身份以及简化后续获取信息的难度.</li>
+<li>token机制更灵活,可以实现跨域</li>
 </ul>
-<p>ReentrantLock的基本实现可以概括为：先通过CAS尝试获取锁。如果此时已经有线程占据了锁，那就加入CLH队列并且被挂起。当锁被释放之后，排在CLH队列队首的线程会被唤醒，然后CAS再次尝试获取锁。在这个时候，如果：</p>
+<p>此种方案多用于APP等客户端登录使用，一般过期时间是1个月</p>
+<h2 id="4-JWT"><a href="#4-JWT" class="headerlink" title="4.JWT"></a>4.JWT</h2><p>Jwt简单说来是一种token的具体实现规范!<br>Jwt标准的token有三个部分,中间用点分隔开，并且都会使用 Base64 编码:<br>JWT 的三个部分依次如下：</p>
 <ul>
-<li>非公平锁：如果同时还有另一个线程进来尝试获取，那么有可能会让这个线程抢先获取；</li>
-<li>公平锁：如果同时还有另一个线程进来尝试获取，当它发现自己不是在队首的话，就会排到队尾，由队首的线程获取到锁。</li>
+<li>Header（头部）</li>
+<li>Payload（负载）</li>
+<li>Signature（签名）</li>
 </ul>
-<h3 id="2-synchronized"><a href="#2-synchronized" class="headerlink" title="2.synchronized"></a>2.synchronized</h3><p>在Java语言中存在两种内建的synchronized语法：synchronized语句、synchronized方法</p>
+<h3 id="4-1-Header"><a href="#4-1-Header" class="headerlink" title="4.1.Header"></a>4.1.Header</h3><p>Header 部分是一个 JSON 对象，描述 JWT 的元数据，通常是下面的样子。<br><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"alg"</span>: <span class="string">"HS256"</span>,</span><br><span class="line">  <span class="attr">"typ"</span>: <span class="string">"JWT"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>上面代码中，alg属性表示签名的算法（algorithm），默认是 HMAC SHA256（写成 HS256）；typ属性表示这个令牌（token）的类型（type），JWT 令牌统一写为JWT。</p>
+<p>最后，将上面的 JSON 对象使用 Base64URL 算法（详见后文）转成字符串。</p>
+<h3 id="4-2-Payload"><a href="#4-2-Payload" class="headerlink" title="4.2.Payload"></a>4.2.Payload</h3><p>Payload 部分也是一个 JSON 对象，用来存放实际需要传递的数据。JWT 规定了7个官方字段，供选用。</p>
 <ul>
-<li>synchronized语句：当源代码被编译成字节码的时候，会在同步块的入口位置和退出位置分别插入monitorenter和monitorexit字节码指令;</li>
-<li>synchronized方法：在Class文件的方法表中将该方法的access_flags字段中的synchronized标志位置1。这个在specification中没有明确说明。</li>
+<li>iss (issuer)：签发人</li>
+<li>exp (expiration time)：过期时间</li>
+<li>sub (subject)：主题</li>
+<li>aud (audience)：受众</li>
+<li>nbf (Not Before)：生效时间</li>
+<li>iat (Issued At)：签发时间</li>
+<li>jti (JWT ID)：编号</li>
 </ul>
-<h2 id="分布式环境下的解决方案——分布式锁"><a href="#分布式环境下的解决方案——分布式锁" class="headerlink" title="分布式环境下的解决方案——分布式锁"></a>分布式环境下的解决方案——分布式锁</h2><h3 id="分布式锁基本条件"><a href="#分布式锁基本条件" class="headerlink" title="分布式锁基本条件"></a>分布式锁基本条件</h3><p>锁的实现有很多共通之处，它们都需要满足一些最基本的条件</p>
+<p>注意，JWT 默认是不加密的，任何人都可以读到，所以不要把秘密信息放在这个部分。</p>
+<p>这个 JSON 对象也要使用 Base64URL 算法转成字符串。</p>
+<h3 id="4-3-Signature"><a href="#4-3-Signature" class="headerlink" title="4.3.Signature"></a>4.3.Signature</h3><p>Signature 部分是对前两部分的签名，防止数据篡改。<br>首先，需要指定一个密钥（secret）。这个密钥只有服务器才知道，不能泄露给用户。然后，使用 Header 里面指定的签名算法（默认是 HMAC SHA256），按照下面的公式产生签名。</p>
+<p>算出签名以后，把 Header、Payload、Signature 三个部分拼成一个字符串，每个部分之间用”点”（<code>.</code>）分隔，就可以返回给用户。</p>
+<h3 id="4-4-JWT-的使用方式"><a href="#4-4-JWT-的使用方式" class="headerlink" title="4.4.JWT 的使用方式"></a>4.4.JWT 的使用方式</h3><p>客户端收到服务器返回的 JWT，可以储存在 Cookie 里面，也可以储存在 localStorage。</p>
+<p>此后，客户端每次与服务器通信，都要带上这个 JWT。你可以把它放在 Cookie 里面自动发送，但是这样不能跨域，所以更好的做法是放在 HTTP 请求的头信息Authorization字段里面。</p>
+<p>几个特点:</p>
 <ul>
-<li>需要有存储锁的空间，并且锁的空间是可以访问到的。</li>
-<li>锁需要被唯一标识。</li>
-<li>锁要有至少两种状态</li>
+<li>JWT 默认是不加密，但也是可以加密的。生成原始 Token 以后，可以用密钥再加密一次。</li>
+<li>JWT 不加密的情况下，不能将秘密数据写入 JWT。</li>
+<li>JWT 不仅可以用于认证，也可以用于交换信息。有效使用 JWT，可以降低服务器查询数据库的次数。</li>
+<li>WT 的最大缺点是，由于服务器不保存 session 状态，因此无法在使用过程中废止某个 token，或者更改 token 的权限。也就是说，一旦 JWT 签发了，在到期之前就会始终有效，除非服务器部署额外的逻辑。</li>
+<li>JWT 本身包含了认证信息，一旦泄露，任何人都可以获得该令牌的所有权限。为了减少盗用，JWT 的有效期应该设置得比较短。对于一些比较重要的权限，使用时应该再次对用户进行认证。</li>
+<li>为了减少盗用，JWT 不应该使用 HTTP 协议明码传输，要使用 HTTPS 协议传输。</li>
 </ul>
-<h3 id="分布式锁进阶条件"><a href="#分布式锁进阶条件" class="headerlink" title="分布式锁进阶条件"></a>分布式锁进阶条件</h3><p>如果分布式锁的实现，还能再解决上面的三个问题，那么就可以算是一个相对完整的分布式锁了。然而，在实际的系统环境中，还会对分布式锁有更高级的要求。</p>
+<h2 id="5-oauth2"><a href="#5-oauth2" class="headerlink" title="5.oauth2"></a>5.oauth2</h2><p>简单来说,oauth是用来向第三方平台提供可以细致的权限管理的一种方案.</p>
+<p>如何直接向第三方提供账号和密码,可能存在的问题有:</p>
 <ul>
-<li>可重入：线程中的可重入，指的是外层函数获得锁之后，内层也可以获得锁，ReentrantLock和synchronized都是可重入锁；衍生到分布式环境中，一般仍然指的是线程的可重入，在绝大多数分布式环境中，都要求分布式锁是可重入的。</li>
-<li>惊群效应（Herd Effect）：在分布式锁中，惊群效应指的是，在有多个请求等待获取锁的时候，一旦占有锁的线程释放之后，如果所有等待的方都同时被唤醒，尝试抢占锁。但是这样的情况会造成比较大的开销，那么在实现分布式锁的时候，应该尽量避免惊群效应的产生。</li>
-<li>公平锁和非公平锁：不同的需求，可能需要不同的分布式锁。非公平锁普遍比公平锁开销小。但是业务需求如果必须要锁的竞争者按顺序获得锁，那么就需要实现公平锁。</li>
-<li>阻塞锁和自旋锁：针对不同的使用场景，阻塞锁和自旋锁的效率也会有所不同。阻塞锁会有上下文切换，如果并发量比较高且临界区的操作耗时比较短，那么造成的性能开销就比较大了。但是如果临界区操作耗时比较长，一直保持自旋，也会对CPU造成更大的负荷。</li>
+<li>不安全</li>
+<li>无法更细致的限制授权范围和有效期</li>
+<li>只有修改密码才能收回权限</li>
+<li>一个第三方程序被破解将会导致用户密码泄漏</li>
 </ul>
-<h3 id="实现方案"><a href="#实现方案" class="headerlink" title="实现方案"></a>实现方案</h3><h4 id="1-乐观锁"><a href="#1-乐观锁" class="headerlink" title="1.乐观锁"></a>1.乐观锁</h4><p>大多数是基于数据版本(version)的记录机制实现的。一般是通过为数据库表添加一个 “version”字段来实现读取出数据时，将此版本号一同读出，之后更新时，对此版本号加1。在更新过程中，会对版本号进行比较，如果是一致的，没有发生改变，则会成功执行本次操作；如果版本号不一致，则会更新失败。<br>缺点：</p>
-<ul>
-<li>这种操作方式，使原本一次的update操作，必须变为2次操作: select版本号一次；update一次。增加了数据库操作的次数。</li>
-<li>如果业务场景中的一次业务流程中，多个资源都需要用保证数据一致性，那么如果全部使用基于数据库资源表的乐观锁，就要让每个资源都有一张资源表，这个在实际使用场景中肯定是无法满足的。而且这些都基于数据库操作，在高并发的要求下，对数据库连接的开销一定是无法忍受的。</li>
-<li>乐观锁机制往往基于系统中的数据存储逻辑，因此可能会造成脏数据被更新到数据库中。在系统设计阶段，我们应该充分考虑到这些情况出现的可能性，并进行相应调整，如将乐观锁策略在数据库存储过程中实现，对外只开放基于此存储过程的数据更新途径，而不是将数据库表直接对外公开。 </li>
-</ul>
-<h4 id="2-悲观锁"><a href="#2-悲观锁" class="headerlink" title="2.悲观锁"></a>2.悲观锁</h4><p>总是假设最坏的情况，每次取数据时都认为其他线程会修改，所以都会加锁（读锁、写锁、行锁等），当其他线程想要访问数据时，都需要阻塞挂起。可以依靠数据库实现，如行锁、读锁和写锁等，都是在操作之前加锁，在Java中，synchronized的思想也是悲观锁<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">status</span> <span class="keyword">from</span> t_goods <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">1</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure></p>
-<p>优点与不足<br>悲观并发控制实际上是“先取锁再访问”的保守策略，为数据处理的安全提供了保证。但是在效率方面，处理加锁的机制会让数据库产生额外的开销，还有增加产生死锁的机会；另外，在只读型事务处理中由于不会产生冲突，也没必要使用锁，这样做只能增加系统负载；还有会降低了并行性，一个事务如果锁定了某行数据，其他事务就必须等待该事务处理完才可以处理那行数</p>
-<h4 id="3-Redis的实现"><a href="#3-Redis的实现" class="headerlink" title="3.Redis的实现"></a>3.Redis的实现</h4><p>Redis的分布式缓存特性使其成为了分布式锁的一种基础实现。通过Redis中是否存在某个锁ID，则可以判断是否上锁。为了保证判断锁是否存在的原子性，保证只有一个线程获取同一把锁，Redis有SETNX（即SET if Not<br>eXists）和GETSET（先写新值，返回旧值，原子性操作，可以用于分辨是不是首次操作）操作。<br>为了防止主机宕机或网络断开之后的死锁，Redis没有ZK那种天然的实现方式，只能依赖设置超时时间来规避。</p>
-<p>以下是一种比较普遍但不太完善的Redis分布式锁的实现步骤</p>
-<ul>
-<li>线程A发送SETNX lock.orderid 尝试获得锁，如果锁不存在，则set并获得锁。</li>
-<li>如果锁存在，则再判断锁的值（时间戳）是否大于当前时间，如果没有超时，则等待一下再重试。</li>
-<li>如果已经超时了，在用GETSET lock.{orderid} 来尝试获取锁，如果这时候拿到的时间戳仍旧超时，则说明已经获得锁了。</li>
-<li>如果在此之前，另一个线程C快一步执行了上面的操作，那么A拿到的时间戳是个未超时的值，这时A没有如期获得锁，需要再次等待或重试。</li>
-</ul>
-<h4 id="4-ZooKeeper的实现"><a href="#4-ZooKeeper的实现" class="headerlink" title="4.ZooKeeper的实现"></a>4.ZooKeeper的实现</h4><p>ZooKeeper（以下简称“ZK”）中有一种节点叫做顺序节点，假如我们在/lock/目录下创建3个节点，ZK集群会按照发起创建的顺序来创建节点，节点分别为/lock/0000000001、/lock/0000000002、/lock/0000000003。</p>
-<p>ZK中还有一种名为临时节点的节点，临时节点由某个客户端创建，当客户端与ZK集群断开连接，则该节点自动被删除。EPHEMERAL_SEQUENTIAL为临时顺序节点。</p>
-<p>根据ZK中节点是否存在，可以作为分布式锁的锁状态，以此来实现一个分布式锁，下面是分布式锁的基本逻辑：</p>
-<ul>
-<li>客户端调用create()方法创建名为“/dlm-locks/lockname/lock-”的临时顺序节点。</li>
-<li>客户端调用getChildren(“lockname”)方法来获取所有已经创建的子节点。</li>
-<li>客户端获取到所有子节点path之后，如果发现自己在步骤1中创建的节点是所有节点中序号最小的，那么就认为这个客户端获得了锁。</li>
-<li>如果创建的节点不是所有节点中需要最小的，那么则监视比自己创建节点的序列号小的最大的节点，进入等待。直到下次监视的子节点变更的时候，再进行子节点的获取，判断是否获取锁。</li>
-</ul>
-<p>参考：<br><a href="https://tech.meituan.com/distributed_system_mutually_exclusive_idempotence_cerberus_gtis.html" target="_blank" rel="noopener">分布式系统互斥性与幂等性问题的分析与解决</a><br><a href="https://www.jianshu.com/p/535efcab356d" target="_blank" rel="noopener">Java分布式锁三种实现方案</a></p>
+<p>OAuth的基本思路如下:<br>OAuth在”客户端”与”服务提供商”之间，设置了一个授权层（authorization layer）。”客户端”不能直接登录”服务提供商”，只能登录授权层，以此将用户与客户端区分开来。”客户端”登录授权层所用的令牌（token），与用户的密码不同。用户可以在登录的时候，指定授权层令牌的权限范围和有效期。”客户端”登录授权层以后，”服务提供商”根据令牌的权限范围和有效期，向”客户端”开放用户储存的资料。</p>
 
     
   </div>
@@ -178,7 +182,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 12px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 10px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 12px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 10px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -187,6 +191,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/10/09/distribut-dubbo/">dubbo疑难杂症解惑</a>
+      </li>
     
       <li>
         <a href="/2019/09/19/zookeeper-principle/">Zookeeper:分布式过程协同技术详解</a>
@@ -202,10 +210,6 @@
     
       <li>
         <a href="/2019/09/05/java-base-thread/">线程相关知识点梳理</a>
-      </li>
-    
-      <li>
-        <a href="/2019/07/31/travel-zhangjiajie/">旅游——张家界8月行</a>
       </li>
     
   </ul>
