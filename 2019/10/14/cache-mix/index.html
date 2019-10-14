@@ -4,22 +4,40 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>无知是天堂</title>
+  <title>cache-mix | 无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
   
   
-  <meta name="description" content="JAVA Blog">
-<meta property="og:type" content="website">
-<meta property="og:title" content="无知是天堂">
-<meta property="og:url" content="http://yoursite.com/index.html">
+    <meta name="description" content="项目中缓存是如何使用的？为什么要用缓存？缓存使用不当会造成什么后果？用缓存，主要有两个用途：高性能、高并发。
+常见的缓存问题有以下几个：
+
+缓存与数据库双写不一致
+缓存雪崩、缓存穿透
+缓存并发竞争
+
+redis 和 memcached 有啥区别？redis 支持复杂的数据结构redis 相比 memcached 来说，拥有更多的数据结构，能支持更丰富的数据操作。如果需要缓存能够支持更复杂的结构和操">
+  
+  <meta name="description" content="项目中缓存是如何使用的？为什么要用缓存？缓存使用不当会造成什么后果？用缓存，主要有两个用途：高性能、高并发。 常见的缓存问题有以下几个：  缓存与数据库双写不一致 缓存雪崩、缓存穿透 缓存并发竞争  redis 和 memcached 有啥区别？redis 支持复杂的数据结构redis 相比 memcached 来说，拥有更多的数据结构，能支持更丰富的数据操作。如果需要缓存能够支持更复杂的结构和操">
+<meta name="keywords" content="Redis,Cache">
+<meta property="og:type" content="article">
+<meta property="og:title" content="cache-mix">
+<meta property="og:url" content="http://yoursite.com/2019/10/14/cache-mix/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="JAVA Blog">
+<meta property="og:description" content="项目中缓存是如何使用的？为什么要用缓存？缓存使用不当会造成什么后果？用缓存，主要有两个用途：高性能、高并发。 常见的缓存问题有以下几个：  缓存与数据库双写不一致 缓存雪崩、缓存穿透 缓存并发竞争  redis 和 memcached 有啥区别？redis 支持复杂的数据结构redis 相比 memcached 来说，拥有更多的数据结构，能支持更丰富的数据操作。如果需要缓存能够支持更复杂的结构和操">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://s2.ax1x.com/2019/10/14/uzcepR.png">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g7xqq1fkl5j20dj09ta9y.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g7xqusztfnj20ka06iq2v.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g7xqwqe660j20ia08saad.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g7xs67lh2nj20g60bs0sy.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g7xs88y4uxj20ca0dqt90.jpg">
+<meta property="og:updated_time" content="2019-10-14T09:46:21.471Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="无知是天堂">
-<meta name="twitter:description" content="JAVA Blog">
+<meta name="twitter:title" content="cache-mix">
+<meta name="twitter:description" content="项目中缓存是如何使用的？为什么要用缓存？缓存使用不当会造成什么后果？用缓存，主要有两个用途：高性能、高并发。 常见的缓存问题有以下几个：  缓存与数据库双写不一致 缓存雪崩、缓存穿透 缓存并发竞争  redis 和 memcached 有啥区别？redis 支持复杂的数据结构redis 相比 memcached 来说，拥有更多的数据结构，能支持更丰富的数据操作。如果需要缓存能够支持更复杂的结构和操">
+<meta name="twitter:image" content="https://s2.ax1x.com/2019/10/14/uzcepR.png">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -49,13 +67,7 @@
   </nav>
   <div class="clearfix"></div>
 </header>
-    <div class="content">
-
-
-
-
-  
-    <article class="post">
+    <div class="content"><article class="post">
   <header>
     
       <div class="icon"></div>
@@ -67,7 +79,7 @@
     
     
   
-    <h1 class="title"><a href="/2019/10/14/cache-mix/">cache-mix</a></h1>
+    <h1 class="title">cache-mix</h1>
   
 
   </header>
@@ -252,25 +264,19 @@
 
     
   </div>
-  <footer class="end-sep">
+  <footer>
     
       
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/Cache/">Cache</a>, <a class="tags-link" href="/tags/Redis/">Redis</a>
+  </div>
+
       
     
     <div class="clearfix"></div>
   </footer>
 </article>
-
-
-  
-
-  <nav id="pagination">
-  
-  
-    <a href="/page/2/" class="next">Next</a>
-  
-  <div class="clearfix"></div>
-</nav>
 
 </div>
   </div>
