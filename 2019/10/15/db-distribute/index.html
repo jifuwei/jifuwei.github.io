@@ -4,22 +4,32 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>无知是天堂</title>
+  <title>分库分表 | 无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
   
   
-  <meta name="description" content="JAVA Blog">
-<meta property="og:type" content="website">
-<meta property="og:title" content="无知是天堂">
-<meta property="og:url" content="http://yoursite.com/index.html">
+    <meta name="description" content="为什么要分库分表（设计高并发系统的时候，数据库层面该如何设计）？用过哪些分库分表中间件？不同的分库分表中间件都有什么优点和缺点？你们具体是如何对数据库如何进行垂直拆分或水平拆分的？分表比如你单表都几千万数据了，你确定你能扛住么？绝对不行，单表数据量太大，会极大影响你的 sql 执行的性能，到了后面你的 sql 可能就跑的很慢了。一般来说，就以我的经验来看，单表到几百万的时候，性能就会相对差一些了，">
+  
+  <meta name="description" content="为什么要分库分表（设计高并发系统的时候，数据库层面该如何设计）？用过哪些分库分表中间件？不同的分库分表中间件都有什么优点和缺点？你们具体是如何对数据库如何进行垂直拆分或水平拆分的？分表比如你单表都几千万数据了，你确定你能扛住么？绝对不行，单表数据量太大，会极大影响你的 sql 执行的性能，到了后面你的 sql 可能就跑的很慢了。一般来说，就以我的经验来看，单表到几百万的时候，性能就会相对差一些了，">
+<meta name="keywords" content="mysql,distribute">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分库分表">
+<meta property="og:url" content="http://yoursite.com/2019/10/15/db-distribute/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="JAVA Blog">
+<meta property="og:description" content="为什么要分库分表（设计高并发系统的时候，数据库层面该如何设计）？用过哪些分库分表中间件？不同的分库分表中间件都有什么优点和缺点？你们具体是如何对数据库如何进行垂直拆分或水平拆分的？分表比如你单表都几千万数据了，你确定你能扛住么？绝对不行，单表数据量太大，会极大影响你的 sql 执行的性能，到了后面你的 sql 可能就跑的很慢了。一般来说，就以我的经验来看，单表到几百万的时候，性能就会相对差一些了，">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/bb901a77gy1g7z0ny129ej20d608r745.jpg">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/bb901a77gy1g7z0omhwbvj208w07fmwz.jpg">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/bb901a77gy1g7z0qgxdnaj20nz0howeo.jpg">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/bb901a77gy1g7z0ru7bx4j20o00idq39.jpg">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/bb901a77gy1g7z179rhraj20bn0cu3yk.jpg">
+<meta property="og:updated_time" content="2019-10-15T09:55:16.080Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="无知是天堂">
-<meta name="twitter:description" content="JAVA Blog">
+<meta name="twitter:title" content="分库分表">
+<meta name="twitter:description" content="为什么要分库分表（设计高并发系统的时候，数据库层面该如何设计）？用过哪些分库分表中间件？不同的分库分表中间件都有什么优点和缺点？你们具体是如何对数据库如何进行垂直拆分或水平拆分的？分表比如你单表都几千万数据了，你确定你能扛住么？绝对不行，单表数据量太大，会极大影响你的 sql 执行的性能，到了后面你的 sql 可能就跑的很慢了。一般来说，就以我的经验来看，单表到几百万的时候，性能就会相对差一些了，">
+<meta name="twitter:image" content="https://ws1.sinaimg.cn/large/bb901a77gy1g7z0ny129ej20d608r745.jpg">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -49,13 +59,7 @@
   </nav>
   <div class="clearfix"></div>
 </header>
-    <div class="content">
-
-
-
-
-  
-    <article class="post">
+    <div class="content"><article class="post">
   <header>
     
       <div class="icon"></div>
@@ -67,7 +71,7 @@
     
     
   
-    <h1 class="title"><a href="/2019/10/15/db-distribute/">分库分表</a></h1>
+    <h1 class="title">分库分表</h1>
   
 
   </header>
@@ -169,25 +173,19 @@
 
     
   </div>
-  <footer class="end-sep">
+  <footer>
     
       
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/distribute/">distribute</a>, <a class="tags-link" href="/tags/mysql/">mysql</a>
+  </div>
+
       
     
     <div class="clearfix"></div>
   </footer>
 </article>
-
-
-  
-
-  <nav id="pagination">
-  
-  
-    <a href="/page/2/" class="next">Next</a>
-  
-  <div class="clearfix"></div>
-</nav>
 
 </div>
   </div>
