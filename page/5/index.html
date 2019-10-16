@@ -59,84 +59,112 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/09/16/distribut-lock-new/">
-  <time datetime="2019-09-16T07:08:02.000Z">
-    2019-09-16
+      <a href="/2019/10/09/distribut-dubbo/">
+  <time datetime="2019-10-09T02:19:25.000Z">
+    2019-10-09
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/09/16/distribut-lock-new/">分布式锁详解</a></h1>
+    <h1 class="title"><a href="/2019/10/09/distribut-dubbo/">dubbo疑难杂症解惑</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <h2 id="基于Zookeeper的分布式锁"><a href="#基于Zookeeper的分布式锁" class="headerlink" title="基于Zookeeper的分布式锁"></a>基于Zookeeper的分布式锁</h2><h3 id="什么是Zookeeper？"><a href="#什么是Zookeeper？" class="headerlink" title="什么是Zookeeper？"></a>什么是Zookeeper？</h3><p>Zookeeper（业界简称zk）是一种提供配置管理、分布式协同以及命名的中心化服务，这些提供的功能都是分布式系统中非常底层且必不可少的基本功能，但是如果自己实现这些功能而且要达到高吞吐、低延迟同时还要保持一致性和可用性，实际上非常困难。因此zookeeper提供了这些功能，开发者在zookeeper之上构建自己的各种分布式系统。</p>
-<p>虽然zookeeper的实现比较复杂，但是它提供的模型抽象却是非常简单的。Zookeeper提供一个多层级的节点命名空间（节点称为znode），每个节点都用一个以斜杠（/）分隔的路径表示，而且每个节点都有父节点（根节点除外），非常类似于文件系统。例如，/foo/doo这个表示一个znode，它的父节点为/foo，父父节点为/，而/为根节点没有父节点。与文件系统不同的是，这些节点都可以设置关联的数据，而文件系统中只有文件节点可以存放数据而目录节点不行。Zookeeper为了保证高吞吐和低延迟，在内存中维护了这个树状的目录结构，这种特性使得Zookeeper不能用于存放大量的数据，每个节点的存放数据上限为1M。</p>
-<p>而为了保证高可用，zookeeper需要以集群形态来部署，这样只要集群中大部分机器是可用的（能够容忍一定的机器故障），那么zookeeper本身仍然是可用的。客户端在使用zookeeper时，需要知道集群机器列表，通过与集群中的某一台机器建立TCP连接来使用服务，客户端使用这个TCP链接来发送请求、获取结果、获取监听事件以及发送心跳包。如果这个连接异常断开了，客户端可以连接到另外的机器上。</p>
-<p>架构简图如下所示：<br><img src="https://s2.ax1x.com/2019/09/19/nq5cdK.png" alt=""></p>
-<p>客户端的读请求可以被集群中的任意一台机器处理，如果读请求在节点上注册了监听器，这个监听器也是由所连接的zookeeper机器来处理。对于写请求，这些请求会同时发给其他zookeeper机器并且达成一致后，请求才会返回成功。因此，随着zookeeper的集群机器增多，读请求的吞吐会提高但是写请求的吞吐会下降。</p>
-<p>有序性是zookeeper中非常重要的一个特性，所有的更新都是全局有序的，每个更新都有一个唯一的时间戳，这个时间戳称为zxid（Zookeeper Transaction Id）。而读请求只会相对于更新有序，也就是读请求的返回结果中会带有这个zookeeper最新的zxid。</p>
-<h3 id="如何使用zookeeper实现分布式锁？"><a href="#如何使用zookeeper实现分布式锁？" class="headerlink" title="如何使用zookeeper实现分布式锁？"></a>如何使用zookeeper实现分布式锁？</h3><p>在描述算法流程之前，先看下zookeeper中几个关于节点的有趣的性质：</p>
-<ul>
-<li>有序节点：假如当前有一个父节点为/lock，我们可以在这个父节点下面创建子节点；zookeeper提供了一个可选的有序特性，例如我们可以创建子节点“/lock/node-”并且指明有序，那么zookeeper在生成子节点时会根据当前的子节点数量自动添加整数序号，也就是说如果是第一个创建的子节点，那么生成的子节点为/lock/node-0000000000，下一个节点则为/lock/node-0000000001，依次类推。</li>
-<li>临时节点：客户端可以建立一个临时节点，在会话结束或者会话超时后，zookeeper会自动删除该节点。</li>
-<li>事件监听：在读取数据时，我们可以同时对节点设置事件监听，当节点数据或结构变化时，zookeeper会通知客户端。当前zookeeper有如下四种事件：1）节点创建；2）节点删除；3）节点数据修改；4）子节点变更。</li>
+      <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><ul>
+<li>说一下的 dubbo 的工作原理？注册中心挂了可以继续通信吗？</li>
+<li>dubbo 支持哪些序列化协议？说一下 hessian 的数据结构？PB 知道吗？为什么 PB 的效率是最高的？</li>
+<li>dubbo 负载均衡策略和高可用策略都有哪些？动态代理策略呢？</li>
+<li>dubbo 的 spi 思想是什么？</li>
+<li>如何基于 dubbo 进行服务治理、服务降级、失败重试以及超时重试？</li>
+<li>分布式服务接口的幂等性如何设计（比如不能重复扣款）？</li>
+<li>分布式服务接口请求的顺序性如何保证？</li>
+<li>如何自己设计一个类似 dubbo 的 rpc 框架？</li>
 </ul>
-<p>下面描述使用zookeeper实现分布式锁的算法流程，假设锁空间的根节点为/lock：</p>
+<h2 id="dubbo-工作流程"><a href="#dubbo-工作流程" class="headerlink" title="dubbo 工作流程"></a>dubbo 工作流程</h2><p><img src="https://s2.ax1x.com/2019/10/09/u4UzqI.png" alt=""></p>
+<p>注册中心挂了可以继续通信吗？<br>可以，因为刚开始初始化的时候，消费者会将提供者的地址等信息拉取到本地缓存，所以注册中心挂了可以继续通信。</p>
+<h2 id="dubbo-支持不同的通信协议"><a href="#dubbo-支持不同的通信协议" class="headerlink" title="dubbo 支持不同的通信协议"></a>dubbo 支持不同的通信协议</h2><p><strong>dubbo 协议</strong><br>默认就是走 dubbo 协议，单一长连接，进行的是 NIO 异步通信，基于 hessian 作为序列化协议。使用的场景是：传输数据量小（每次请求在 100kb 以内），但是并发量很高。</p>
+<p>为了要支持高并发场景，一般是服务提供者就几台机器，但是服务消费者有上百台，可能每天调用量达到上亿次！此时用长连接是最合适的，就是跟每个服务消费者维持一个长连接就可以，可能总共就 100 个连接。然后后面直接基于长连接 NIO 异步通信，可以支撑高并发请求。</p>
+<p>长连接，通俗点说，就是建立连接过后可以持续发送请求，无须再建立连接。</p>
+<p><strong>rmi 协议</strong><br>走 Java 二进制序列化，多个短连接，适合消费者和提供者数量差不多的情况，适用于文件的传输，一般较少用。</p>
+<p><strong>hessian 协议</strong><br>走 hessian 序列化协议，多个短连接，适用于提供者数量比消费者数量还多的情况，适用于文件的传输，一般较少用。</p>
+<p><strong>http 协议</strong><br>走 json 序列化。</p>
+<p><strong>webservice</strong><br>走 SOAP 文本序列化。</p>
+<p>dubbo 支持的序列化协议<br>dubbo 支持 hession、Java 二进制序列化、json、SOAP 文本序列化多种序列化协议。但是 hessian 是其默认的序列化协议。</p>
+<p><strong>为什么 PB 的效率是最高的？</strong></p>
 <ul>
-<li>客户端连接zookeeper，并在/lock下创建临时的且有序的子节点，第一个客户端对应的子节点为/lock/lock-0000000000，第二个为/lock/lock-0000000001，以此类推。</li>
-<li>客户端获取/lock下的子节点列表，判断自己创建的子节点是否为当前子节点列表中序号最小的子节点，如果是则认为获得锁，否则监听/lock的子节点变更消息，获得子节点变更通知后重复此步骤直至获得锁；</li>
-<li>执行业务代码；</li>
-<li>完成业务流程后，删除对应的子节点释放锁。</li>
+<li>第一，它使用 proto 编译器，自动进行序列化和反序列化，速度非常快，应该比 XML 和 JSON 快上了 20~100 倍；</li>
+<li>第二，它的数据压缩效果好，就是说它序列化后的数据量体积小。因为体积小，传输起来带宽和速度上会有优化。</li>
 </ul>
-<p>步骤1中创建的临时节点能够保证在故障的情况下锁也能被释放，考虑这么个场景：假如客户端a当前创建的子节点为序号最小的节点，获得锁之后客户端所在机器宕机了，客户端没有主动删除子节点；如果创建的是永久的节点，那么这个锁永远不会释放，导致死锁；由于创建的是临时节点，客户端宕机后，过了一定时间zookeeper没有收到客户端的心跳包判断会话失效，将临时节点删除从而释放锁。</p>
-<p>另外细心的朋友可能会想到，在步骤2中获取子节点列表与设置监听这两步操作的原子性问题，考虑这么个场景：客户端a对应子节点为/lock/lock-0000000000，客户端b对应子节点为/lock/lock-0000000001，客户端b获取子节点列表时发现自己不是序号最小的，但是在设置监听器前客户端a完成业务流程删除了子节点/lock/lock-0000000000，客户端b设置的监听器岂不是丢失了这个事件从而导致永远等待了？这个问题不存在的。因为zookeeper提供的API中设置监听器的操作与读操作是原子执行的，也就是说在读子节点列表时同时设置监听器，保证不会丢失事件。</p>
-<p>最后，对于这个算法有个极大的优化点：假如当前有1000个节点在等待锁，如果获得锁的客户端释放锁时，这1000个客户端都会被唤醒，这种情况称为“羊群效应”；在这种羊群效应中，zookeeper需要通知1000个客户端，这会阻塞其他的操作，最好的情况应该只唤醒新的最小节点对应的客户端。应该怎么做呢？在设置事件监听时，每个客户端应该对刚好在它之前的子节点设置事件监听，例如子节点列表为/lock/lock-0000000000、/lock/lock-0000000001、/lock/lock-0000000002，序号为1的客户端监听序号为0的子节点删除消息，序号为2的监听序号为1的子节点删除消息。</p>
-<p>所以调整后的分布式锁算法流程如下：</p>
+<h2 id="dubbo-负载均衡-amp-集群容错"><a href="#dubbo-负载均衡-amp-集群容错" class="headerlink" title="dubbo 负载均衡&amp;集群容错"></a>dubbo 负载均衡&amp;集群容错</h2><ul>
+<li><p>random loadbalance<br>默认情况下，dubbo 是 random load balance ，即随机调用实现负载均衡，可以对 provider 不同实例设置不同的权重，会按照权重来负载均衡，权重越大分配流量越高，一般就用这个默认的就可以了。</p>
+</li>
+<li><p>roundrobin loadbalance<br>这个的话默认就是均匀地将流量打到各个机器上去，但是如果各个机器的性能不一样，容易导致性能差的机器负载过高。所以此时需要调整权重，让性能差的机器承载权重小一些，流量少一些。</p>
+</li>
+<li><p>leastactive loadbalance<br>这个就是自动感知一下，如果某个机器性能越差，那么接收的请求越少，越不活跃，此时就会给不活跃的性能差的机器更少的请求。</p>
+</li>
+<li><p>consistanthash loadbalance<br>一致性 Hash 算法，相同参数的请求一定分发到一个 provider 上去，provider 挂掉的时候，会基于虚拟节点均匀分配剩余的流量，抖动不会太大。如果你需要的不是随机负载均衡，是要一类请求都到一个节点，那就走这个一致性 Hash 策略。</p>
+</li>
+</ul>
+<p><strong>集群容错策略</strong></p>
 <ul>
-<li>客户端连接zookeeper，并在/lock下创建临时的且有序的子节点，第一个客户端对应的子节点为/lock/lock-0000000000，第二个为/lock/lock-0000000001，以此类推。</li>
-<li>客户端获取/lock下的子节点列表，判断自己创建的子节点是否为当前子节点列表中序号最小的子节点，如果是则认为获得锁，否则监听刚好在自己之前一位的子节点删除消息，获得子节点变更通知后重复此步骤直至获得锁；</li>
-<li>执行业务代码；</li>
-<li>完成业务流程后，删除对应的子节点释放锁。</li>
+<li>failover cluster 模式<br>失败自动切换，自动重试其他机器，默认就是这个，常见于读操作。（失败重试其它机器）</li>
 </ul>
-<p>加锁工具使用 Curator</p>
-<h2 id="基于Redis的分布式锁"><a href="#基于Redis的分布式锁" class="headerlink" title="基于Redis的分布式锁"></a>基于Redis的分布式锁</h2><h3 id="获取锁"><a href="#获取锁" class="headerlink" title="获取锁"></a>获取锁</h3><h4 id="错误姿势1"><a href="#错误姿势1" class="headerlink" title="错误姿势1"></a>错误姿势1</h4><p>在介绍获取锁的正确姿势之前先来个错误姿势。大家都知道Redis的分布式锁是利用了Redis单线程的特性加上 SETNX 命令来实现的。而为什么还会加上一个 EXPIRE 命令是为了防止 SETNX 后key一直存在的问题。</p>
-<blockquote>
-<p>SETNX key value：将key设置值为value，如果key不存在，这种情况下等同SET命令。当key存在时，什么也不做。SETNX是 SET if Not Exists 的简写。<br>如果key设置成功返回1，否则返回0。<br>EXPIRE key seconds：设置 key 的过期时间，超过时间后，将会自动删除该 key 。<br>如果成功设置过期时间返回1，否则返回0。</p>
-</blockquote>
-<p>很容易的就能写出这样的代码：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(String key, <span class="keyword">int</span> timeout, TimeUnit timeUnit)</span> </span>&#123;</span><br><span class="line">    Long result = jedis.setnx(key, <span class="string">"CONSTANT_VALUE"</span>);</span><br><span class="line">    <span class="keyword">if</span> (result == <span class="number">1L</span>) &#123;</span><br><span class="line">        Long seconds = timeUnit.toSeconds(timeout);</span><br><span class="line">        <span class="keyword">return</span> jedis.expire(key, seconds.intValue()) == <span class="number">1L</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>细心的朋友很快发现了有这么几个问题：</p>
+<p>可以通过以下几种方式配置重试次数：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:service</span> <span class="attr">retries</span>=<span class="string">"2"</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>或者<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">retries</span>=<span class="string">"2"</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>或者<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dubbo:method</span> <span class="attr">name</span>=<span class="string">"findFoo"</span> <span class="attr">retries</span>=<span class="string">"2"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dubbo:reference</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
 <ul>
-<li>由于 setnx 和 expire 是分开两步进行的操作，不具有原子性。如果客户端在执行完 setnx 后崩溃了，那么就没有机会执行 expire 了，导致它一直持有该锁。</li>
-<li>setnx 的value这里写死了，到时候解锁的时候就不知道是谁设置的key了，很容易锁被其他请求误解了。</li>
+<li><p>failfast cluster 模式<br>一次调用失败就立即失败，常见于非幂等性的写操作，比如新增一条记录（调用失败就立即失败）</p>
+</li>
+<li><p>failsafe cluster 模式<br>出现异常时忽略掉，常用于不重要的接口调用，比如记录日志。</p>
+</li>
 </ul>
-<h4 id="错误姿势2"><a href="#错误姿势2" class="headerlink" title="错误姿势2"></a>错误姿势2</h4><p>很多同学知道redis中的 pipeline 可以作为一个管道批量执行命令，错误的以为它的执行是原子的，以至于用它来结合 setnx 和 expire ，这其实也是不对的。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(String key, <span class="keyword">int</span> timeout, TimeUnit timeUnit)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 不存在key</span></span><br><span class="line">    <span class="keyword">if</span> (!jedis.exists(key)) &#123;</span><br><span class="line">        Long seconds = timeUnit.toSeconds(timeout);</span><br><span class="line">        List&lt;Object&gt; result = setnx(key, UUID.randomUUID().toString(), seconds.intValue());</span><br><span class="line">        <span class="keyword">return</span> Boolean.valueOf(result.get(<span class="number">0</span>).toString()) &amp;&amp;</span><br><span class="line">                Boolean.valueOf(result.get(<span class="number">1</span>).toString());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> List&lt;Object&gt; <span class="title">setnx</span><span class="params">(String key, String value, <span class="keyword">int</span> seconds)</span> </span>&#123;</span><br><span class="line">    List&lt;Object&gt; result = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Pipeline pipelined = jedis.pipelined();</span><br><span class="line">        <span class="comment">// 问题：setNX成功了后redis服务挂了 导致expire失败，一直死锁</span></span><br><span class="line">        pipelined.setnx(key.getBytes(), value.getBytes());</span><br><span class="line">        pipelined.expire(key.getBytes(), seconds);</span><br><span class="line">        result = pipelined.syncAndReturnAll();</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="错误姿势3"><a href="#错误姿势3" class="headerlink" title="错误姿势3"></a>错误姿势3</h4><p>这个用法在我第一次看见的时候觉得特别精妙，一般比较难以发现问题，而且实现也比较复杂。</p>
-<p>实现思路也是利用了 setnx 命令来设置key，不同的地方在于它没有使用 expire 命令来设置过期时间，而在 setnx 的时候把过期时间当做value设置进去，下一次获取的时候比较value和当前时间来决定是否进行覆盖。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(String key, <span class="keyword">int</span> timeout, TimeUnit timeUnit)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> timeoutSecond = timeUnit.toSeconds(timeout);</span><br><span class="line">    <span class="comment">// 过期时间</span></span><br><span class="line">    <span class="keyword">long</span> expireTime = System.currentTimeMillis() + timeoutSecond;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果当前锁不存在，返回加锁成功</span></span><br><span class="line">    <span class="keyword">if</span> (jedis.setnx(key, String.valueOf(expireTime)) == <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    String lastValue = jedis.get(key);</span><br><span class="line">    <span class="keyword">if</span> (lastValue != <span class="keyword">null</span> &amp;&amp; Long.parseLong(lastValue) &lt; System.currentTimeMillis()) &#123;</span><br><span class="line">        <span class="comment">// 锁已过期，获取上一个锁的过期时间，并设置现在锁的过期时间</span></span><br><span class="line">        String oldValue = jedis.getSet(key, String.valueOf(expireTime));</span><br><span class="line">        <span class="keyword">if</span> (oldValue != <span class="keyword">null</span> &amp;&amp; oldValue.equals(lastValue)) &#123;</span><br><span class="line">            <span class="comment">// 考虑多线程并发的情况，只有一个线程的设置值和当前值相同，它才有权利加锁</span></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>其实仔细看，这段代码还是存在很多问题的：</p>
+<p>配置示例如下：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:service</span> <span class="attr">cluster</span>=<span class="string">"failsafe"</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>或者<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">cluster</span>=<span class="string">"failsafe"</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
 <ul>
-<li>由于是客户端自己生成过期时间，所以需要强制要求分布式下每个客户端的时间必须同步，这一点的问题可以忽略。</li>
-<li>当锁过期的时候，如果多个客户端同时执行 jedis.getSet() 方法，那么虽然最终只有一个客户端可以加锁，但是这个客户端的锁的过期时间可能被其他客户端覆盖。</li>
-<li>锁不具备拥有者标识，即任何客户端都可以解锁。</li>
+<li><p>failback cluster 模式<br>失败了后台自动记录请求，然后定时重发，比较适合于写消息队列这种。</p>
+</li>
+<li><p>forking cluster 模式<br>并行调用多个 provider，只要一个成功就立即返回。常用于实时性要求比较高的读操作，但是会浪费更多的服务资源，可通过 forks=”2” 来设置最大并行数。</p>
+</li>
+<li><p>broadcacst cluster<br>逐个调用所有的 provider。任何一个 provider 出错则报错（从2.1.0 版本开始支持）。通常用于通知所有提供者更新缓存或日志等本地资源信息。</p>
+</li>
 </ul>
-<h3 id="正确姿势"><a href="#正确姿势" class="headerlink" title="正确姿势"></a>正确姿势</h3><p>那么获取锁的正确姿势究竟是什么呢？Redis在 2.6.12 版本开始，为 SET 命令增加了一系列选项：<br><code>SET key value [EX seconds][PX milliseconds][NX|XX]</code></p>
-<ul>
-<li>EX seconds：设置指定的过期时间，单位秒。</li>
-<li>PX milliseconds：设置指定的过期时间，单位毫秒。</li>
-<li>NX：仅当key不存在时设置值。</li>
-<li>XX：仅当key存在时设置值。</li>
-</ul>
-<p>可以看出来，SET 命令的天然原子性完全可以取代 SETNX 和 EXPIRE 命令。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(String key, String uniqueId, <span class="keyword">int</span> seconds)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">"OK"</span>.equals(jedis.set(key, uniqueId, <span class="string">"NX"</span>, <span class="string">"EX"</span>, seconds));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>还在使用 2.6.12 版本之前的同学只能使用另一法宝：Lua脚本来保证原子性了。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(String key, String uniqueId, <span class="keyword">int</span> seconds)</span> </span>&#123;</span><br><span class="line">    String luaScript = <span class="string">"if redis.call('setnx', KEYS[1], KEYS[2]) == 1 then "</span> +</span><br><span class="line">            <span class="string">"redis.call('expire', KEYS[1], KEYS[3]) return 1 else return 0 end"</span>;</span><br><span class="line">    List&lt;String&gt; keys = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    keys.add(key);</span><br><span class="line">    keys.add(uniqueId);</span><br><span class="line">    keys.add(String.valueOf(seconds));</span><br><span class="line">    Object result = jedis.eval(luaScript, keys, <span class="keyword">new</span> ArrayList&lt;String&gt;());</span><br><span class="line">    <span class="keyword">return</span> result.equals(<span class="number">1L</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h3 id="释放锁"><a href="#释放锁" class="headerlink" title="释放锁"></a>释放锁</h3><h4 id="错误姿势1-1"><a href="#错误姿势1-1" class="headerlink" title="错误姿势1"></a>错误姿势1</h4><p>最常见的解锁代码就是直接使用 jedis.del() 方法删除锁，这种不先判断锁的拥有者而直接解锁的方式，会导致任何客户端都可以随时进行解锁，即使这把锁不是它的。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">releaseLock</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    jedis.del(key);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h4 id="错误姿势2-1"><a href="#错误姿势2-1" class="headerlink" title="错误姿势2"></a>错误姿势2</h4><p>上面已经说过这种写法的 get 和 del 没有在一个原子操作中。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">releaseLock</span><span class="params">(String key, String uniqueId)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (uniqueId.equals(jedis.get(key))) &#123;</span><br><span class="line">        jedis.del(key);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h3 id="正确姿势-1"><a href="#正确姿势-1" class="headerlink" title="正确姿势"></a>正确姿势</h3><p>同样的，释放锁时设计到多个命令要想保持原子性必须得使用Lua脚本。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">releaseLock</span><span class="params">(String key, String uniqueId)</span> </span>&#123;</span><br><span class="line">    String luaScript = <span class="string">"if redis.call('get', KEYS[1]) == ARGV[1] then "</span> +</span><br><span class="line">            <span class="string">"return redis.call('del', KEYS[1]) else return 0 end"</span>;</span><br><span class="line">    <span class="keyword">return</span> jedis.eval(luaScript, Collections.singletonList(key), Collections.singletonList(uniqueId)).equals(<span class="number">1L</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-
+<p><strong>动态代理策略</strong><br>默认使用 javassist 动态字节码生成，创建代理类。但是可以通过 spi 扩展机制配置自己的动态代理策略。</p>
+<h2 id="dubbo-spi"><a href="#dubbo-spi" class="headerlink" title="dubbo spi"></a>dubbo spi</h2><p><strong>spi 是啥？</strong><br>spi，简单来说，就是 service provider interface，说白了是什么意思呢，比如你有个接口，现在这个接口有 3 个实现类，那么在系统运行的时候对这个接口到底选择哪个实现类呢？这就需要 spi 了，需要根据指定的配置或者是默认的配置，去找到对应的实现类加载进来，然后用这个实现类的实例对象。</p>
+<p>举个栗子。</p>
+<p>你有一个接口 A。A1/A2/A3 分别是接口A的不同实现。你通过配置 接口 A = 实现 A2，那么在系统实际运行的时候，会加载你的配置，用实现 A2 实例化一个对象来提供服务。</p>
+<p>spi 机制一般用在哪儿？插件扩展的场景，比如说你开发了一个给别人使用的开源框架，如果你想让别人自己写个插件，插到你的开源框架里面，从而扩展某个功能，这个时候 spi 思想就用上了。</p>
+<p><strong>Java spi 思想的体现</strong><br>spi 经典的思想体现，大家平时都在用，比如说 jdbc。</p>
+<p>Java 定义了一套 jdbc 的接口，但是 Java 并没有提供 jdbc 的实现类。</p>
+<p>但是实际上项目跑的时候，要使用 jdbc 接口的哪些实现类呢？一般来说，我们要根据自己使用的数据库，比如 mysql，你就将 mysql-jdbc-connector.jar 引入进来；oracle，你就将 oracle-jdbc-connector.jar 引入进来。</p>
+<p>在系统跑的时候，碰到你使用 jdbc 的接口，他会在底层使用你引入的那个 jar 中提供的实现类。</p>
+<p><strong>dubbo 的 spi 思想</strong><br>dubbo 也用了 spi 思想，不过没有用 jdk 的 spi 机制，是自己实现的一套 spi 机制。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();</span><br></pre></td></tr></table></figure></p>
+<p>Protocol 接口，在系统运行的时候，，dubbo 会判断一下应该选用这个 Protocol 接口的哪个实现类来实例化对象来使用。</p>
+<p>它会去找一个你配置的 Protocol，将你配置的 Protocol 实现类，加载到 jvm 中来，然后实例化对象，就用你的那个 Protocol 实现类就可以了。</p>
+<p>上面那行代码就是 dubbo 里大量使用的，就是对很多组件，都是保留一个接口和多个实现，然后在系统运行的时候动态根据配置去找到对应的实现类。如果你没配置，那就走默认的实现好了，没问题。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SPI</span>(<span class="string">"dubbo"</span>)  </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Protocol</span> </span>&#123;  </span><br><span class="line">      </span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">getDefaultPort</span><span class="params">()</span></span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="meta">@Adaptive</span>  </span><br><span class="line">    &lt;T&gt; <span class="function">Exporter&lt;T&gt; <span class="title">export</span><span class="params">(Invoker&lt;T&gt; invoker)</span> <span class="keyword">throws</span> RpcException</span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="meta">@Adaptive</span>  </span><br><span class="line">    &lt;T&gt; <span class="function">Invoker&lt;T&gt; <span class="title">refer</span><span class="params">(Class&lt;T&gt; type, URL url)</span> <span class="keyword">throws</span> RpcException</span>;  </span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">destroy</span><span class="params">()</span></span>;  </span><br><span class="line">  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在 dubbo 自己的 jar 里，在/META_INF/dubbo/internal/com.alibaba.dubbo.rpc.Protocol文件中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dubbo=com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol</span><br><span class="line">http=com.alibaba.dubbo.rpc.protocol.http.HttpProtocol</span><br><span class="line">hessian=com.alibaba.dubbo.rpc.protocol.hessian.HessianProtocol</span><br></pre></td></tr></table></figure>
+<p>所以说，这就看到了 dubbo 的 spi 机制默认是怎么玩儿的了，其实就是 Protocol 接口，@SPI(“dubbo”) 说的是，通过 SPI 机制来提供实现类，实现类是通过 dubbo 作为默认 key 去配置文件里找到的，配置文件名称与接口全限定名一样的，通过 dubbo 作为 key 可以找到默认的实现类就是 com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol。</p>
+<p>如果想要动态替换掉默认的实现类，需要使用 @Adaptive 接口，Protocol 接口中，有两个方法加了 @Adaptive 注解，就是说那俩接口会被代理实现。</p>
+<p>啥意思呢？</p>
+<p>比如这个 Protocol 接口搞了俩 @Adaptive 注解标注了方法，在运行的时候会针对 Protocol 生成代理类，这个代理类的那俩方法里面会有代理代码，代理代码会在运行的时候动态根据 url 中的 protocol 来获取那个 key，默认是 dubbo，你也可以自己指定，你如果指定了别的 key，那么就会获取别的实现类的实例了。</p>
+<p><strong>扩展 dubbo 中的组件</strong><br>自己写个工程，要是那种可以打成 jar 包的，里面的 src/main/resources 目录下，搞一个 META-INF/services，里面放个文件叫：com.alibaba.dubbo.rpc.Protocol，文件里搞一个my=com.bingo.MyProtocol。自己把 jar 弄到 nexus 私服里去。</p>
+<p>然后自己搞一个 dubbo provider 工程，在这个工程里面依赖你自己搞的那个 jar，然后在 spring 配置文件里给个配置：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:protocol</span> <span class="attr">name</span>=<span class="string">”my”</span> <span class="attr">port</span>=<span class="string">”20000”</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>provider 启动的时候，就会加载到我们 jar 包里的my=com.bingo.MyProtocol 这行配置里，接着会根据你的配置使用你定义好的 MyProtocol 了，这个就是简单说明一下，你通过上述方式，可以替换掉大量的 dubbo 内部的组件，就是扔个你自己的 jar 包，然后配置一下即可。</p>
+<p>dubbo 里面提供了大量的类似上面的扩展点，就是说，你如果要扩展一个东西，只要自己写个 jar，让你的 consumer 或者是 provider 工程，依赖你的那个 jar，在你的 jar 里指定目录下配置好接口名称对应的文件，里面通过 key=实现类。</p>
+<p>然后对于对应的组件，类似 <code>&lt;dubbo:protocol&gt;</code> 用你的那个 key 对应的实现类来实现某个接口，你可以自己去扩展 dubbo 的各种功能，提供你自己的实现。</p>
+<h2 id="dubbo-服务高可用"><a href="#dubbo-服务高可用" class="headerlink" title="dubbo 服务高可用"></a>dubbo 服务高可用</h2><h3 id="服务治理"><a href="#服务治理" class="headerlink" title="服务治理"></a>服务治理</h3><p><strong>1. 调用链路自动生成</strong><br>一个大型的分布式系统，或者说是用现在流行的微服务架构来说吧，分布式系统由大量的服务组成。那么这些服务之间互相是如何调用的？调用链路是啥？说实话，几乎到后面没人搞的清楚了，因为服务实在太多了，可能几百个甚至几千个服务。</p>
+<p>那就需要基于 dubbo 做的分布式系统中，对各个服务之间的调用自动记录下来，然后自动将各个服务之间的依赖关系和调用链路生成出来，做成一张图，显示出来，大家才可以看到对吧。</p>
+<p><strong>2. 服务访问压力以及时长统计</strong><br>需要自动统计各个接口和服务之间的调用次数以及访问延时，而且要分成两个级别。</p>
+<p>一个级别是接口粒度，就是每个服务的每个接口每天被调用多少次，TP50/TP90/TP99，三个档次的请求延时分别是多少；<br>第二个级别是从源头入口开始，一个完整的请求链路经过几十个服务之后，完成一次请求，每天全链路走多少次，全链路请求延时的 TP50/TP90/TP99，分别是多少。<br>这些东西都搞定了之后，后面才可以来看当前系统的压力主要在哪里，如何来扩容和优化啊。</p>
+<p><strong>3. 其它</strong><br>服务分层（避免循环依赖）<br>调用链路失败监控和报警<br>服务鉴权<br>每个服务的可用性的监控（接口调用成功率？几个 9？99.99%，99.9%，99%）</p>
+<h3 id="服务降级"><a href="#服务降级" class="headerlink" title="服务降级"></a>服务降级</h3><p>比如说服务 A 调用服务 B，结果服务 B 挂掉了，服务 A 重试几次调用服务 B，还是不行，那么直接降级，走一个备用的逻辑，给用户返回响应。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">id</span>=<span class="string">"fooService"</span> <span class="attr">interface</span>=<span class="string">"com.test.service.FooService"</span>  <span class="attr">timeout</span>=<span class="string">"10000"</span> <span class="attr">check</span>=<span class="string">"false"</span> <span class="attr">mock</span>=<span class="string">"return null"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dubbo:reference</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>mock 的值也可以修改为 true，然后再跟接口同一个路径下实现一个 Mock 类，命名规则是 “接口名称+Mock” 后缀。然后在 Mock 类里实现自己的降级逻辑。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloServiceMock</span> <span class="keyword">implements</span> <span class="title">HelloService</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sayHello</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 降级逻辑</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="失败重试和超时重试"><a href="#失败重试和超时重试" class="headerlink" title="失败重试和超时重试"></a>失败重试和超时重试</h3><p>所谓失败重试，就是 consumer 调用 provider 要是失败了，比如抛异常了，此时应该是可以重试的，或者调用超时了也可以重试。配置如下：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">id</span>=<span class="string">"xxxx"</span> <span class="attr">interface</span>=<span class="string">"xx"</span> <span class="attr">check</span>=<span class="string">"true"</span> <span class="attr">async</span>=<span class="string">"false"</span> <span class="attr">retries</span>=<span class="string">"3"</span> <span class="attr">timeout</span>=<span class="string">"2000"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
     
   </div>
   <footer class="end-sep">
@@ -171,7 +199,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 14px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 14px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 14px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 14px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 14px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -180,6 +208,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/10/16/high-concurrency/">如何设计一个高并发系统？</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/15/mysql-master-slave/">读写分离</a>
+      </li>
     
       <li>
         <a href="/2019/10/15/db-distribute/">分库分表</a>
@@ -191,14 +227,6 @@
     
       <li>
         <a href="/2019/10/09/distribut-dubbo/">dubbo疑难杂症解惑</a>
-      </li>
-    
-      <li>
-        <a href="/2019/09/19/zookeeper-principle/">Zookeeper:分布式过程协同技术详解</a>
-      </li>
-    
-      <li>
-        <a href="/2019/09/16/distribut-lock-new/">分布式锁详解</a>
       </li>
     
   </ul>

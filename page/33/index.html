@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/01/20/jvm-load-class/">
-  <time datetime="2019-01-20T09:08:10.000Z">
-    2019-01-20
+      <a href="/2019/01/23/jvm-memory-model/">
+  <time datetime="2019-01-23T06:07:05.000Z">
+    2019-01-23
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/01/20/jvm-load-class/">JVM——虚拟机加载类机制</a></h1>
+    <h1 class="title"><a href="/2019/01/23/jvm-memory-model/">JVM——内存模型与线程</a></h1>
   
 
   </header>
@@ -77,58 +77,41 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p>虚拟机把描述类的数据从Class文件加载到内存，并对数据进行校验、转换解析和初始化，最终形成可以被虚拟机直接使用的Java类型，这就是虚拟机的类的加载机制。</p>
-<h2 id="类的加载时机"><a href="#类的加载时机" class="headerlink" title="类的加载时机"></a>类的加载时机</h2><p><img src="https://cdn.nlark.com/yuque/0/2018/jpeg/155206/1541062624122-dc4cd2bd-c685-43d4-8fa6-e7a6ce231a6d.jpeg" alt=""></p>
+<p>衡量一个服务的性能高低好坏，美妙的事务处理数（Transactions Per Second, TPS）是最重要的指标之一，TPS值与程序的并发能力又有非常密切的关系。</p>
+<p>为什么需要定义内存模型？<br>屏蔽掉各种硬件和操作系统的内存访问差异，已实现让Java程序在各个平台下都能达到一致的内存访问效果。<br>在此之前之列的程序语言（如C/C++）都直接使用物理硬件和操作系统的内存模型，因此，会由于不同平台上的内存模型的差异，有可能导致程序在一套平台上并发完全正常，而在另外一套平台上并发访问经常出错。</p>
+<h2 id="主内存与工作内存"><a href="#主内存与工作内存" class="headerlink" title="主内存与工作内存"></a>主内存与工作内存</h2><p>Java内存模型主要目标是定义程序中各个变量的访问规则，即虚拟机中将变量存储到内存和从内存中取出变量这样的底层细节。</p>
+<p>Java内存模型规定了所有的变量都存储在主内存（Main Memory）中。每条内存还有自己的工作内存，保存了该线程使用到的变量的主内存副本拷贝，线程对变量的所有操作必须在自己的工作内存中进行，而不能直接读写主内存的变量。</p>
+<p>不同线程之间无法直接访问对方工作内存中的变量，线程间变量值的传递均需要通过主内存来完成。<br>线程、主内存、工作内存三者的交互如下：<br><img src="https://cdn.nlark.com/yuque/0/2018/png/155206/1541065286017-9b9c7304-4b83-4fb2-92c4-7d245416b511.png" alt=""></p>
+<h2 id="内存之间的交互操作"><a href="#内存之间的交互操作" class="headerlink" title="内存之间的交互操作"></a>内存之间的交互操作</h2><p>即变量如何从主内存拷贝到工作内存、如何从工作内存同步回主内存之类的实现细节，Java内存模型中定义8中操作完成，每种操作必须是原子的、不可再分的</p>
 <ul>
-<li>加载（Loading）：按照虚拟机规范，有且只有以下四种情况下必须立即对类进行“初始化”：</li>
-<li>遇到new、getstatic、putstatic或invokestatic这4条字节码指令时，如果类没有初始化，则需要先出发其初始化。生成这4条指令的典型场景是：使用 new 关键字实例化对象的时候、读取或设置一个类的静态字段的时候（被final修饰、已在编译期把结果放入常量池的静态字段除外）、以及调用一个类的静态方法的时候</li>
-<li>使用 java.lang.reflect 包的方法对类进行反射调用的时候</li>
-<li>当初始化一个类时，如果发现它的父类还没有进行初始化，则需要先触发其父类进行初始化</li>
-<li>当虚拟机启动时，用户需要指定一个要执行的主类（包含main方法的类），虚拟机会先初始化这个类</li>
+<li>lock（锁定）：作用于主内存变量，吧一个变量标识为一个线程独占</li>
+<li>unlock（解锁）：做用户主内存，解锁变量，才能被其它线程锁定使用</li>
+<li>read（读取）：将主内存的变量传输到工作内存中，以便随后的load动作使用</li>
+<li>load（载入）：作用于工作内存变量，他把read操作从主内存中得到的值放入工作内存的变量副本中</li>
+<li>user（使用）：作用于工作内存变量，把工作内存中的一个变量值传递给执行引擎，每当虚拟机遇到一个需要使用变量值的字节码指令时将会执行这个操作</li>
+<li>assign（赋值）：作用于工作内存变量，把工作内存中一个变量的值传递给主内存中，一遍随后操作使用</li>
+<li>store（存储）：作用于工作变量，把工作变量的值传送到主内存中，一遍随后的write操作</li>
+<li>write（写入）：作用于主内存变量，把store操作从工作内存中得到的变量的值放入主内存中</li>
 </ul>
-<h2 id="类的加载过程"><a href="#类的加载过程" class="headerlink" title="类的加载过程"></a>类的加载过程</h2><p>加载、验证、准备、解析、初始化</p>
-<h3 id="加载"><a href="#加载" class="headerlink" title="加载"></a>加载</h3><p>三件事：</p>
+<p>其中，read &amp; load、store &amp; write操作必须捆绑出现，且最终顺序一致</p>
+<h2 id="Volatile型变量的特殊规则"><a href="#Volatile型变量的特殊规则" class="headerlink" title="Volatile型变量的特殊规则"></a>Volatile型变量的特殊规则</h2><p>当一个变量定义为volatile之后，他将具备两种特性</p>
 <ul>
-<li>通过一个类的全限定名来获取定义这个类对应的二进制字节流</li>
-<li>将这个类的二进制字节流所代表的静态存储结构转换为方法区的运行时数据结构</li>
-<li>在Java堆中生成一个代表这个类的 java.lang.Class 对象，作为方法区这些数据的访问入口。</li>
+<li>保证此变量对所有线程可见性，指当一条线程修改了这个变量的值，新值对于其他的线程来说是立即可知的。（Java里面的运算并不是原子的，如过在运算过程hold，那么GG了，出现缓存不一致的多线程脏数据问题了）</li>
+<li>禁止指令重排序：内存屏障(Memory Barrier），</li>
 </ul>
-<p>虚拟机其实并未限定具体二进制字节流从哪里获取，不是必须从一个Class文件中获取，以此诞生了：</p>
+<h2 id="指令重排"><a href="#指令重排" class="headerlink" title="指令重排"></a>指令重排</h2><p>计算机在执行程序时，为了提高性能，编译器和处理器的常常会对指令做重排，一般分以下3种</p>
 <ul>
-<li>从ZIP包中读取，最终变为日后JAR、EAR、WAR格式的基础</li>
-<li>从网络中获取，典型场景是Applet</li>
-<li>运行时计算生成，典型的就是动态代理技术</li>
-<li>由其他文件生成，典型的场景是JSP应用，有JSP生成对应的Class类</li>
-<li>从数据库中读取</li>
-<li>….</li>
+<li>编译器优化的重排：编译器在不改变单线程程序语义的前提下，可以重新安排语句的执行顺序。</li>
+<li>指令并行的重排：现代处理器采用了指令级并行技术来将多条指令重叠执行。如果不存在数据依赖性(即后一个执行的语句无需依赖前面执行的语句的结果)，处理器可以改变语句对应的机器指令的执行顺序</li>
+<li>内存系统的重排：由于处理器使用缓存和读写缓存冲区，这使得加载(load)和存储(store)操作看上去可能是在乱序执行，因为三级缓存的存在，导致内存与缓存的数据同步存在时间差。</li>
 </ul>
-<p>开发人员可以自定义类加载器去完成，即重写一个类加载器的<code>loanClass()</code>方法</p>
-<h3 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h3><p>验证是虚拟机对自身保护的一项重要工作。</p>
-<ul>
-<li>文件格式验证，验证字节流是否符合Class文件格式规范，并且能被当前版本的虚拟机处理。</li>
-<li>元数据验证，对字节码描述的信息进行语义分析，以保证其描述的信息符合Java语言规范要求。</li>
-<li>字节码验证，主要工作是进行数据流和控制流分析，保证被校验类的方法不会危害到虚拟机的安全。</li>
-<li>符号引用验证，可以看作是对类自身以外（常量池中的各种符号引用）的信息进行匹配性的校验。</li>
-</ul>
-<h2 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h2><p>准备阶段是正式为类变量分配内存并设置类变量初始值的阶段，这些内存都将在方法区中进行分配。</p>
-<h2 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h2><p>是虚拟机将常量池中的符号引用替换为直接引用的过程。<br>解析动作主要针对类或接口、字段、类方法、接口方法四类符号引用分别进行。</p>
-<h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p>真正开始执行类中定义的Java程序代码（或者说是字节码）。</p>
-<h2 id="类加载器"><a href="#类加载器" class="headerlink" title="类加载器"></a>类加载器</h2><p>类加载过程中的<strong>通过一个类的全限定名来获取描述这个类的二进制字节流”这个动作是放在Java虚拟机的外部来实现的，以便于让应用程序自己来决定如何去获取所需要的类，实现这个动作的代码模块被称为*“类加载器</strong>。</p>
-<h2 id="类和类加载器"><a href="#类和类加载器" class="headerlink" title="类和类加载器"></a>类和类加载器</h2><p>类加载器虽然只用于实现类的加载动作，但是它的作用却远远不限于此，比较两个类是否“相等”，不仅仅要确认这两个类是否来源于同一个class文件，还需要加载这两个类的类加载器相同。</p>
-<h2 id="双亲委派模型"><a href="#双亲委派模型" class="headerlink" title="双亲委派模型"></a>双亲委派模型</h2><p>站在虚拟机的角度，只存在两种类加载器：</p>
-<ul>
-<li>启动类加载器（Bootstrap ClassLoader），使用C++实现，是虚拟机的一部分</li>
-<li>其他类加载器，由Java语言实现，独立于虚拟机之外的，全部继承自抽象类 java.lang.ClassLoader</li>
-</ul>
-<p>从开发人员的角度，类加载器可以划分得更细致一些：</p>
-<ul>
-<li>启动类加载器（Bootstrap ClassLoader）：负责将存放在 &lt;JAVA_HOME&gt;\lib 目录中的，或者被 -Xbootclasspath 参数所指定的路径中的，并且是虚拟机识别的类库加载到虚拟机内存中。</li>
-<li>扩展类加载器（Extension ClassLoader）：负责加载 &lt;JAVA_HOME&gt;\lib\ext 目录下的，或者被 java.ext.dirs 系统变量所指定的路径中的所有类库，开发者可以直接使用扩展类加载器。</li>
-<li>应用程序类加载器（Application ClassLoader）：负责加载用户类路径（ClassPath）上所指定的类库，一般情况下这个就是程序中默认的类加载器。</li>
-</ul>
-<p>以上加载器互相配合来加载我们自己的应用程序，如果有必要，我们还可以加入自己定义的加载器。这些加载器之间的关系一般如下图示：<br><img src="https://cdn.nlark.com/yuque/0/2018/png/155206/1541062642968-64815811-71b5-4003-82ae-738d0df7fc78.png" alt=""></p>
-<p>类加载器的<strong>双亲委派模型（Parent Delegation Model）</strong>：要求除了顶层的启动类加载器外，其余的类加载器都必须有自己的父类加载器。（⚠️，这里类加载器之间的父子关系一般不会以继承（Inheritance）来实现，而是使用组合（Composition）来复用父加载器的代码）。这种模型被广泛使用于几乎所有的Java程序中，但是它并不是一个强制性的约束，只是Java设计者推荐给开发者使用的一种类加载器实现方式。<br>双亲委派模型的具体工作过程是：如果一个类收到了加载请求，它首先不会尝试自己去加载这个类，而是把这个请求委派给他的父类加载器去完成，每一层次的加载类都是如此，因此所有的加载请求都会传递给最顶层的启动类加载器中，只有当父加载器反馈自己无法完成这个加载请求（它的搜索范围内找不到需要加载的类）时，子类才会尝试自己去加载。<br>好处：java类随着它的类加载器一起具备了一种带有优先层级的层次关系，保证了Java程序的稳定运行。</p>
-<p><strong>好处：使用双亲委派模型来组织类加载职期间的关系，随着他的类加载器一起具备了一种带有优先级的层次关系。例如<code>java.lang.Object</code>，他存在rt.jar之中，无论哪个类加载器都要加载这个类，最终都是为派给处于模型最顶端的启动类加载器进行加载，因此Object类在程序的各种类加载器环境中都是同一个类。相反，如果没有使用双亲委派模型，由各个加载器自行加载的话，如果用户自己编写了一个称谓Java.lang.Object的类，并放在程序的ClassPath中，那系统将会出现多个不同的Object类，Java类型体系中最基础的行为无法保证，应用程序将变得一片混乱</strong></p>
+<p>其中编译器优化的重排属于编译期重排，指令并行的重排和内存系统的重排属于处理器重排，在多线程环境中，这些重排优化可能会导致程序出现内存可见性问题，下面分别阐明这两种重排优化可能带来的问题</p>
+<h3 id="1）编译器重排"><a href="#1）编译器重排" class="headerlink" title="1）编译器重排"></a>1）编译器重排</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">线程 <span class="number">1</span>             线程 <span class="number">2</span></span><br><span class="line"><span class="number">1</span>： x2 = a ;      <span class="number">3</span>: x1 = b ;</span><br><span class="line"><span class="number">2</span>: b = <span class="number">1</span>;         <span class="number">4</span>: a = <span class="number">2</span> ;</span><br></pre></td></tr></table></figure>
+<p>两个线程同时执行，分别有1、2、3、4四段执行代码，其中1、2属于线程1 ， 3、4属于线程2 ，从程序的执行顺序上看，似乎不太可能出现x1 = 1 和x2 = 2 的情况，但实际上这种情况是有可能发现的，因为如果编译器对这段程序代码执行重排优化后，可能出现下列情况<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">线程 <span class="number">1</span>              线程 <span class="number">2</span></span><br><span class="line"><span class="number">2</span>: b = <span class="number">1</span>;          <span class="number">4</span>: a = <span class="number">2</span> ; </span><br><span class="line"><span class="number">1</span>：x2 = a ;        <span class="number">3</span>: x1 = b ;</span><br></pre></td></tr></table></figure></p>
+<p>这种执行顺序下就有可能出现x1 = 1 和x2 = 2 的情况，这也就说明在<strong>多线程环境</strong>下，由于编译器优化重排的存在，两个线程中使用的变量能否保证一致性是无法确定的。</p>
+<h3 id="2）处理器指令重排"><a href="#2）处理器指令重排" class="headerlink" title="2）处理器指令重排"></a>2）处理器指令重排</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MixedOrder</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">boolean</span> flag = <span class="keyword">false</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writer</span><span class="params">()</span></span>&#123;</span><br><span class="line">        a = <span class="number">1</span>;</span><br><span class="line">        flag = <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">read</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(flag)&#123;</span><br><span class="line">            <span class="keyword">int</span> i = a + <span class="number">1</span>；</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如上述代码，同时存在线程A和线程B对该实例对象进行操作，其中A线程调用写入方法，而B线程调用读取方法，由于指令重排等原因，可能导致程序执行顺序变为如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">线程A                    线程B</span><br><span class="line"> writer：                 read：</span><br><span class="line"> <span class="number">1</span>:flag = <span class="keyword">true</span>;           <span class="number">1</span>:flag = <span class="keyword">true</span>;</span><br><span class="line"> <span class="number">2</span>:a = <span class="number">1</span>;                 <span class="number">2</span>: a = <span class="number">0</span> ; <span class="comment">//误读</span></span><br><span class="line">                          <span class="number">3</span>: i = <span class="number">1</span> ;</span><br></pre></td></tr></table></figure></p>
+<p>由于指令重排的原因，线程A的flag置为true被提前执行了，而a赋值为1的程序还未执行完，此时线程B，恰好读取flag的值为true，直接获取a的值（此时B线程并不知道a为0）并执行i赋值操作，结果i的值为1，而不是预期的2，这就是多线程环境下，指令重排导致的程序乱序执行的结果。因此，请记住，指令重排只会保证单线程中串行语义的执行的一致性，但并不会关心多线程间的语义一致性。</p>
 
     
   </div>
@@ -164,7 +147,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 14px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 14px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 14px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 14px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 14px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -173,6 +156,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/10/16/high-concurrency/">如何设计一个高并发系统？</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/15/mysql-master-slave/">读写分离</a>
+      </li>
     
       <li>
         <a href="/2019/10/15/db-distribute/">分库分表</a>
@@ -184,14 +175,6 @@
     
       <li>
         <a href="/2019/10/09/distribut-dubbo/">dubbo疑难杂症解惑</a>
-      </li>
-    
-      <li>
-        <a href="/2019/09/19/zookeeper-principle/">Zookeeper:分布式过程协同技术详解</a>
-      </li>
-    
-      <li>
-        <a href="/2019/09/16/distribut-lock-new/">分布式锁详解</a>
       </li>
     
   </ul>

@@ -59,158 +59,124 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/07/31/travel-zhangjiajie/">
-  <time datetime="2019-07-31T08:53:39.000Z">
-    2019-07-31
+      <a href="/2019/09/10/redis-base/">
+  <time datetime="2019-09-10T07:16:13.000Z">
+    2019-09-10
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/07/31/travel-zhangjiajie/">旅游——张家界8月行</a></h1>
+    <h1 class="title"><a href="/2019/09/10/redis-base/">Redis相关知识点梳理</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <h2 id="必备"><a href="#必备" class="headerlink" title="必备"></a>必备</h2><p>如下列出，个人自查，旅游必备，缺一不可</p>
-<ul>
-<li>证件：身份证、学生证</li>
-<li>个人洗漱：换洗衣服，牙刷毛巾建议自备（酒店怕是不卫生），防晒 @黄黄</li>
-<li>药品：驱蚊、其它随意，如创口贴之类</li>
-<li>生活：雨伞，带一把 看了最近天气，有备无患</li>
-<li>充电线、充电宝！！！！！！！这个重要了</li>
+      <ul>
+<li>Redis的两种持久化操作以及如何保障数据安全（快照和AOF）</li>
+<li>如何防止数据出错（Redis事务）</li>
+<li>如何使用流水线来提升性能</li>
+<li>Redis主从复制</li>
+<li>Redis集群的搭建</li>
+<li>Redis的几种淘汰策略</li>
+<li>Redis集群宕机，数据迁移问题</li>
+<li>Redis缓存使用有很多，怎么解决缓存雪崩和缓存穿透？</li>
 </ul>
-<h2 id="保险"><a href="#保险" class="headerlink" title="保险"></a>保险</h2><p>出行意外保险必备，为大家准备的如下保险，也希望养成买保险的意识~</p>
-<table>
-<thead>
-<tr>
-<th>品牌</th>
-<th>被保人</th>
-<th>额度</th>
-<th>备注</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>齐乐游-计划F</td>
-<td>**伟</td>
-<td>60w</td>
-<td>保额到顶，<a href="https://cps.xiebao18.com/wj1000090/product/detail-100371-100719.html" target="_blank" rel="noopener">详情</a></td>
-</tr>
-<tr>
-<td>齐乐游-计划F</td>
-<td>**蕾</td>
-<td>60w</td>
-<td>保额到顶，<a href="https://cps.xiebao18.com/wj1000090/product/detail-100371-100719.html" target="_blank" rel="noopener">详情</a></td>
-</tr>
-<tr>
-<td>齐乐游-计划E</td>
-<td>**宇</td>
-<td>50w</td>
-<td>未成年保额到顶只能50w，<a href="https://cps.xiebao18.com/wj1000090/product/detail-100371-100719.html" target="_blank" rel="noopener">详情</a></td>
-</tr>
-</tbody>
-</table>
-<h2 id="交通"><a href="#交通" class="headerlink" title="交通"></a>交通</h2><table>
-<thead>
-<tr>
-<th>日期</th>
-<th>路线</th>
-<th>航班</th>
-<th>备注</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>8月1号 20:10 ~ 22:35</td>
-<td>上海（浦东机场T2） -&gt; 张家界（荷花机场T2）</td>
-<td>春秋航空 9C8983</td>
-<td>行程预计2小时25分钟</td>
-</tr>
-<tr>
-<td>8月5号 23:20 ~ 01:20</td>
-<td>张家界（荷花机场T2） -&gt; 上海（浦东机场T2）</td>
-<td>春秋航空 9C8984</td>
-<td>行程预计2小时</td>
-</tr>
-</tbody>
-</table>
-<p><strong>8月1号晚22:35到达机场，考虑人生地不熟，出租容易被宰，决定安排接机 @黄黄 搞定</strong></p>
-<h2 id="住宿"><a href="#住宿" class="headerlink" title="住宿"></a>住宿</h2><table>
-<thead>
-<tr>
-<th>日期</th>
-<th>酒店</th>
-<th>备注</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>[8月1号 ~ 8月3号)</td>
-<td>张家界六甲酒店</td>
-<td>共2天、景观家庭亲子套房、1间房、含早、提供接机</td>
-</tr>
-<tr>
-<td>(8月3号 ~ 8月5号)</td>
-<td>张家界华天酒店</td>
-<td>共2天、家庭套餐、1间房、不含早、提供接机</td>
-</tr>
-</tbody>
-</table>
-<h2 id="天气"><a href="#天气" class="headerlink" title="天气"></a>天气</h2><p>一周基本在下阵雨，温度维持在24~35左右，感觉还行<br><img src="https://s2.ax1x.com/2019/07/31/eN95RK.jpg" alt=""></p>
-<h2 id="行程"><a href="#行程" class="headerlink" title="行程"></a>行程</h2><p><strong>8月2号</strong><br>天门山国家森林公园</p>
+<h2 id="Redis与Memcached的区别与比较"><a href="#Redis与Memcached的区别与比较" class="headerlink" title="Redis与Memcached的区别与比较"></a>Redis与Memcached的区别与比较</h2><ul>
+<li>Redis不仅仅支持简单的k/v类型的数据，同时还提供list，set，zset，hash等数据结构的存储。memcache支持简单的数据类型，String</li>
+<li>Redis支持数据的备份，即master-slave模式的数据备份</li>
+<li>Redis支持数据的持久化，可以将内存中的数据保持在磁盘中，重启的时候可以再次加载进行使用,而Memecache把数据全部存在内存之中</li>
+<li>redis的速度比memcached快很多</li>
+<li>Memcached是多线程，非阻塞IO复用的网络模型；Redis使用单线程的IO复用模型</li>
+</ul>
+<h2 id="6种数据淘汰策略"><a href="#6种数据淘汰策略" class="headerlink" title="6种数据淘汰策略"></a>6种数据淘汰策略</h2><ul>
+<li>volatile-lru：从已设置过期时间的数据集（server.db[i].expires）中挑选最近最少使用的数据淘汰</li>
+<li>volatile-ttl：从已设置过期时间的数据集（server.db[i].expires）中挑选将要过期的数据淘汰</li>
+<li>volatile-random：从已设置过期时间的数据集（server.db[i].expires）中任意选择数据淘汰</li>
+<li>allkeys-lru：从数据集（server.db[i].dict）中挑选最近最少使用的数据淘汰</li>
+<li>allkeys-random：从数据集（server.db[i].dict）中任意选择数据淘汰</li>
+<li>no-enviction（驱逐）：禁止驱逐数据</li>
+</ul>
+<h2 id="并发竞争问题如何解决？"><a href="#并发竞争问题如何解决？" class="headerlink" title="并发竞争问题如何解决？"></a>并发竞争问题如何解决？</h2><p>Redis为单进程单线程模式，采用队列模式将并发访问变为串行访问</p>
+<h2 id="LRU"><a href="#LRU" class="headerlink" title="LRU"></a>LRU</h2><p><img src="https://s2.ax1x.com/2019/09/11/naoe6H.png" alt=""></p>
+<h2 id="Redis常见性能问题和解决方案"><a href="#Redis常见性能问题和解决方案" class="headerlink" title="Redis常见性能问题和解决方案"></a>Redis常见性能问题和解决方案</h2><ul>
+<li>Master最好不要做任何持久化工作，如RDB内存快照和AOF日志文件</li>
+<li>如果数据比较重要，某个Slave开启AOF备份数据，策略设置为每秒同步一次</li>
+<li>为了主从复制的速度和连接的稳定性，Master和Slave最好在同一个局域网内</li>
+<li>尽量避免在压力很大的主库上增加从库</li>
+</ul>
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><ul>
+<li>Redis挂掉了，请求全部走数据库。</li>
+<li>对缓存数据设置相同的过期时间，导致某段时间内缓存失效，请求全部走数据库。</li>
+</ul>
+<p>对于“对缓存数据设置相同的过期时间，导致某段时间内缓存失效，请求全部走数据库。”这种情况，非常好解决：</p>
 <ul>
-<li>简介<ul>
-<li>很大，景点很多，<strong>门票是可以进出四天的</strong>，</li>
-<li>景点主要分为山上跟山下，山上跟山下的环保车不是互通的。</li>
-<li>黄石寨是一个单独的景区，可以选择步行或者坐缆车。</li>
-<li>张家界森林公园山上山下互通的交通工具有：三个缆车和一个百龙天梯，都是收费的，72元。缆车有天子山缆车、黄石寨缆车、杨家界缆车。</li>
+<li>在缓存的时候给过期时间加上一个随机值，这样就会大幅度的减少缓存在同一时间过期。</li>
+</ul>
+<p>对于“Redis挂掉了，请求全部走数据库”这种情况，我们可以有以下的思路：</p>
+<ul>
+<li>事发前：实现Redis的高可用(主从架构+Sentinel 或者Redis Cluster)，尽量避免Redis挂掉这种情况发生。</li>
+<li>事发中：万一Redis真的挂了，我们可以设置本地缓存(ehcache)+限流(hystrix)，尽量避免我们的数据库被干掉(起码能保证我们的服务还是能正常工作的)</li>
+<li>事发后：redis持久化，重启后自动从磁盘上加载数据，快速恢复缓存数据。</li>
+</ul>
+<h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>请求的数据在缓存大量不命中，导致请求走数据库。</p>
+<ul>
+<li>由于请求的参数是不合法的(每次都请求不存在的参数)，于是我们可以使用布隆过滤器(BloomFilter)或者压缩filter提前拦截，不合法就不让这个请求到数据库层！</li>
+<li>当我们从数据库找不到的时候，我们也将这个空对象设置到缓存里边去。下次再请求的时候，就可以从缓存里边获取了。<ul>
+<li>这种情况我们一般会将空对象设置一个较短的过期时间。</li>
 </ul>
 </li>
-<li>如何去<br>六甲酒店就在公园旁边，两条腿即可<br><img src="https://s2.ax1x.com/2019/07/31/etIHts.jpg" alt=""></li>
-<li>游玩路线<br>森林公园大门—金鞭溪—乱窜坡—袁家界—杨家界—百龙天梯—武陵源大门<br><img src="https://s2.ax1x.com/2019/07/31/etoLUH.jpg" alt=""></li>
-<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/etIzBF.jpg" alt=""><br><img src="https://s2.ax1x.com/2019/07/31/etomHe.jpg" alt=""></li>
 </ul>
-<p><strong>8月3号</strong><br><strong>早上退房</strong>，前往张家界华天大酒店，32.9公里，45分钟左右</p>
-<p>今天看情况只能在下面景点任选其一，不然行程有点挤，看大家精力和状态</p>
-<p>1.黄龙洞</p>
+<h2 id="Redis如何做持久化的？"><a href="#Redis如何做持久化的？" class="headerlink" title="Redis如何做持久化的？"></a>Redis如何做持久化的？</h2><p>bgsave做镜像全量持久化，aof做增量持久化。因为bgsave会耗费较长时间，不够实时，在停机的时候会导致大量丢失数据，所以需要aof来配合使用。在redis实例重启时，会使用bgsave持久化文件重新构建内存，再使用aof重放近期的操作指令来实现完整恢复重启之前的状态。</p>
+<p>对方追问那如果突然机器掉电会怎样？取决于aof日志sync属性的配置，如果不要求性能，在每条写指令时都sync一下磁盘，就不会丢失数据。但是在高性能的要求下每次都sync是不现实的，一般都使用定时sync，比如1s1次，这个时候最多就会丢失1s的数据。</p>
+<p>对方追问bgsave的原理是什么？你给出两个词汇就可以了，fork和cow。fork是指redis通过创建子进程来进行bgsave操作，cow指的是copy on write，子进程创建后，父子进程共享数据段，父进程继续提供读写服务，写脏的页面数据会逐渐和子进程分离开来。</p>
+<h2 id="Redis的同步机制了解么？"><a href="#Redis的同步机制了解么？" class="headerlink" title="Redis的同步机制了解么？"></a>Redis的同步机制了解么？</h2><p>Redis可以使用主从同步，从从同步。第一次同步时，主节点做一次bgsave，并同时将后续修改操作记录到内存buffer，待完成后将rdb文件全量同步到复制节点，复制节点接受完成后将rdb镜像加载到内存。加载完成后，再通知主节点将期间修改的操作记录同步到复制节点进行重放就完成了同步过程。</p>
+<h2 id="是否使用过Redis集群，集群的原理是什么？"><a href="#是否使用过Redis集群，集群的原理是什么？" class="headerlink" title="是否使用过Redis集群，集群的原理是什么？"></a>是否使用过Redis集群，集群的原理是什么？</h2><ul>
+<li>Redis Sentinal着眼于高可用，在master宕机时会自动将slave提升为master，继续提供服务。</li>
+<li>Redis Cluster着眼于扩展性，在单个redis内存不足时，使用Cluster进行分片存储。</li>
+</ul>
+<h2 id="redis集群原理"><a href="#redis集群原理" class="headerlink" title="redis集群原理"></a>redis集群原理</h2><p><img src="https://s2.ax1x.com/2019/09/16/nRyMee.jpg" alt=""></p>
+<p>Redis 集群中内置了 16384个哈希槽，当需要在 Redis 集群中放置一个 key-value 时，redis 先对 key 使用 crc16 算法算出一个结果，然后把结果对 16384 求余数，这样每个 key 都会对应一个编号在 0-16383 之间的哈希槽，redis 会根据节点数量大致均等的将哈希槽映射到不同的节点。<br><img src="https://s2.ax1x.com/2019/09/16/nR6rHe.png" alt=""></p>
+<p>集群是如何判断是否有某个节点挂掉了呢？</p>
+<p>每一个节点都存有这个集群所有主节点以及从节点的信息。它们之间通过互相的ping-pong判断是否节点可以连接上。如果有一半以上的节点去ping一个节点的时候没有回应，集群就认为这个节点宕机了，然后去连接它的备用节点。如果某个节点和所有从节点全部挂掉，我们集群就进入faill状态。还有就是如果有一半以上的主节点宕机，那么我们集群同样进入发力了状态。这就是我们的redis的投票机制，具体原理如下图所示：<br><img src="https://s2.ax1x.com/2019/09/16/nRgclt.png" alt=""></p>
+<p><strong>解析</strong><br>只有1个Master，可以有N个slaver，而且Slaver也可以有自己的Slaver，由于这种主从的关系决定他们是在配置阶段就要指定他们的上下级关系，而不是Zookeeper那种平行关系是自主推优出来的。</p>
+<p>读写分离，Master只负责写和同步数据给Slaver，Slaver承担了被读的任务，所以Slaver的扩容只能提高读效率不能提高写效率。</p>
+<p>Slaver先将Master那边获取到的信息压入磁盘，再load进内存，client端是从内存中读取信息的，所以Redis是内存数据库。</p>
+<p>当一个新的Slaver加入到这个集群时，会主动找Master来拜码头，Master发现新的小弟后将全量数据发送给新的Slaver，数据量越大性能消耗也就越大，所以尽量避免在运行时做Slaver的扩容。</p>
+<p>简单总结下主从模式的设计：</p>
 <ul>
-<li>简介<ul>
-<li>高阔的洞天、幽深的暗河、密集的石笋而出名</li>
-<li><strong>标志性景点</strong>是已生长了二十万年的“定海神针”，高达20米的石笋柱，最细处直径只有10厘米</li>
-<li>“水陆兼备”的游览观光线路，先步行游览一段，然后在洞中暗河边的码头上船，在水中赏沿河美景和石笋奇观</li>
+<li>优点：读写分离，通过增加Slaver可以提高并发读的能力。</li>
+<li>缺点：Master写能力是瓶颈。</li>
 </ul>
-</li>
-<li>如何去<br>距离华天酒店有点远，44.9公里，打车1小时左右<br><img src="https://s2.ax1x.com/2019/07/31/eNi326.jpg" alt=""></li>
-<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/et7pWR.jpg" alt=""></li>
-</ul>
-<p>2.大峡谷</p>
+<p>对象保存到Redis之前先经过CRC16哈希到一个指定的Node上，例如Object4最终Hash到了Node1上。</p>
+<p>每个Node被平均分配了一个Slot段，对应着0-16384，Slot不能重复也不能缺失，否则会导致对象重复存储或无法存储。</p>
+<p>Node之间也互相监听，一旦有Node退出或者加入，会按照Slot为单位做数据的迁移。例如Node1如果掉线了，0-5640这些Slot将会平均分摊到Node2和Node3上,由于Node2和Node3本身维护的Slot还会在自己身上不会被重新分配，所以迁移过程中不会影响到5641-16384Slot段的使用。</p>
+<p>简单总结下哈希Slot的优缺点：</p>
 <ul>
-<li>简介<ul>
-<li>集山、水、洞于一身，可观赏到北温带喀斯特地形的全部风景</li>
-<li>天然大氧吧</li>
-<li>目前世界最高、跨度最长的玻璃桥，据地高度400米处的谷底风光尽收眼底（放心大胆的走 保险我买了~）</li>
+<li>缺点：每个Node承担着互相监听、高并发数据写入、高并发数据读出，工作任务繁重</li>
+<li>优点：将Redis的写操作分摊到了多个节点上，提高写的并发能力，扩容简单。</li>
 </ul>
-</li>
-<li>如何去<br>从黄龙洞出发去大峡谷，20.2公里，车程35分钟左右<br><img src="https://s2.ax1x.com/2019/07/31/etHhCj.jpg" alt=""></li>
-<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/etHx2R.jpg" alt=""></li>
-</ul>
-<p>今天的行程有点满，看情况适当往后推</p>
-<p>从大峡谷返回华天大酒店，65.5公里，行程1个半小时左右<br><img src="https://s2.ax1x.com/2019/07/31/etOrFS.jpg" alt=""></p>
-<p><strong>8月4号</strong><br>回到市区</p>
-<p>天门山玻璃栈道</p>
+<p><strong>主从和哈希的设计优缺点正好是相互弥补的，将图一每一套主从对应到图二中的每一个Node，就是Redis集群的终极形态，先Hash分逻辑节点，然后每个逻辑节点内部是主从</strong></p>
+<h2 id="redis-sentinel"><a href="#redis-sentinel" class="headerlink" title="redis sentinel"></a>redis sentinel</h2><p><strong>Sentinel状态持久化</strong></p>
+<p>snetinel的状态会被持久化地写入sentinel的配置文件中。每次当收到一个新的配置时，或者新创建一个配置时，配置会被持久化到硬盘中，并带上配置的版本戳。这意味着，可以安全的停止和重启sentinel进程。</p>
+<p><strong>Sentinel作用：</strong></p>
 <ul>
-<li>简介<ul>
-<li>天门山玻璃栈道悬于天门山顶西线，是一处悬于峭壁之上的玻璃眺望台。</li>
-<li>天门山玻璃栈道给人带来的刺激震撼感，可以与美国大峡谷玻璃走廊“天空之路”媲美</li>
+<li>Master状态检测 </li>
+<li>如果Master异常，则会进行Master-Slave切换，将其中一个Slave作为Master，将之前的Master作为Slave。 </li>
+<li>Master-Slave切换后，master_redis.conf、slave_redis.conf和sentinel.conf的内容都会发生改变，即master_redis.conf中会多一行slaveof的配置，sentinel.conf的监控目标会随之调换。</li>
 </ul>
-</li>
-<li>如何去<br>距离入住的华天大酒店非常近，步行10分钟即可到达<br><img src="https://s2.ax1x.com/2019/07/31/eNElwD.jpg" alt=""></li>
-<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/etLcb6.jpg" alt=""></li>
+<p><strong>Sentinel工作方式（每个Sentinel实例都执行的定时任务）</strong></p>
+<ul>
+<li>每个Sentinel以每秒钟一次的频率向它所知的Master，Slave以及其他 Sentinel 实例发送一个PING命令。</li>
+<li>如果一个实例（instance）距离最后一次有效回复PING命令的时间超过 own-after-milliseconds 选项所指定的值，则这个实例会被Sentinel标记为主观下线。 </li>
+<li>如果一个Master被标记为主观下线，则正在监视这个Master的所有 Sentinel 要以每秒一次的频率确认Master的确进入了主观下线状态。 </li>
+<li>当有足够数量的Sentinel（大于等于配置文件指定的值）在指定的时间范围内确认Master的确进入了主观下线状态，则Master会被标记为客观下线。</li>
+<li>在一般情况下，每个Sentinel 会以每10秒一次的频率向它已知的所有Master，Slave发送 INFO 命令。</li>
+<li>当Master被Sentinel标记为客观下线时，Sentinel 向下线的 Master 的所有Slave发送 INFO命令的频率会从10秒一次改为每秒一次。 </li>
+<li>若没有足够数量的Sentinel同意Master已经下线，Master的客观下线状态就会被移除。 若 Master重新向Sentinel 的PING命令返回有效回复，Master的主观下线状态就会被移除。</li>
 </ul>
-<p><strong>8月5号</strong><br>逛吃逛吃~，品尝当地特色和采购特产，具体前一天晚上待定，大众点评掏出来选选即可</p>
 
     
   </div>
@@ -246,7 +212,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 14px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 14px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 14px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 14px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 14px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
   </div>
 </div>
 
@@ -255,6 +221,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/10/16/high-concurrency/">如何设计一个高并发系统？</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/15/mysql-master-slave/">读写分离</a>
+      </li>
     
       <li>
         <a href="/2019/10/15/db-distribute/">分库分表</a>
@@ -266,14 +240,6 @@
     
       <li>
         <a href="/2019/10/09/distribut-dubbo/">dubbo疑难杂症解惑</a>
-      </li>
-    
-      <li>
-        <a href="/2019/09/19/zookeeper-principle/">Zookeeper:分布式过程协同技术详解</a>
-      </li>
-    
-      <li>
-        <a href="/2019/09/16/distribut-lock-new/">分布式锁详解</a>
       </li>
     
   </ul>

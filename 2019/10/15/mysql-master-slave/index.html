@@ -1,0 +1,214 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>读写分离 | 无知是天堂</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="jifuwei">
+  
+  
+    <meta name="description" content="MySQL 读写分离？如何实现 MySQL 的读写分离？MySQL 主从复制原理的是啥？如何解决 MySQL 主从同步的延时问题？如何实现 MySQL 的读写分离？其实很简单，就是基于主从复制架构，简单来说，就搞一个主库，挂多个从库，然后我们就单单只是写主库，然后主库会自动把数据给同步到从库上去。
+MySQL 主从复制原理的是啥？主库将变更写入 binlog 日志，然后从库连接到主库之后，从库有一">
+  
+  <meta name="description" content="MySQL 读写分离？如何实现 MySQL 的读写分离？MySQL 主从复制原理的是啥？如何解决 MySQL 主从同步的延时问题？如何实现 MySQL 的读写分离？其实很简单，就是基于主从复制架构，简单来说，就搞一个主库，挂多个从库，然后我们就单单只是写主库，然后主库会自动把数据给同步到从库上去。 MySQL 主从复制原理的是啥？主库将变更写入 binlog 日志，然后从库连接到主库之后，从库有一">
+<meta name="keywords" content="mysql">
+<meta property="og:type" content="article">
+<meta property="og:title" content="读写分离">
+<meta property="og:url" content="http://yoursite.com/2019/10/15/mysql-master-slave/index.html">
+<meta property="og:site_name" content="无知是天堂">
+<meta property="og:description" content="MySQL 读写分离？如何实现 MySQL 的读写分离？MySQL 主从复制原理的是啥？如何解决 MySQL 主从同步的延时问题？如何实现 MySQL 的读写分离？其实很简单，就是基于主从复制架构，简单来说，就搞一个主库，挂多个从库，然后我们就单单只是写主库，然后主库会自动把数据给同步到从库上去。 MySQL 主从复制原理的是啥？主库将变更写入 binlog 日志，然后从库连接到主库之后，从库有一">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/bb901a77gy1g7z1v8c4wqj20jy0by749.jpg">
+<meta property="og:updated_time" content="2019-10-16T02:12:57.851Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="读写分离">
+<meta name="twitter:description" content="MySQL 读写分离？如何实现 MySQL 的读写分离？MySQL 主从复制原理的是啥？如何解决 MySQL 主从同步的延时问题？如何实现 MySQL 的读写分离？其实很简单，就是基于主从复制架构，简单来说，就搞一个主库，挂多个从库，然后我们就单单只是写主库，然后主库会自动把数据给同步到从库上去。 MySQL 主从复制原理的是啥？主库将变更写入 binlog 日志，然后从库连接到主库之后，从库有一">
+<meta name="twitter:image" content="https://ws1.sinaimg.cn/large/bb901a77gy1g7z1v8c4wqj20jy0by749.jpg">
+  
+  
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  <!--[if lt IE 9]><script src="//cdn.bootcss.com/html5shiv/3.7.0/html5shiv.min.js"></script><![endif]-->
+  
+  
+</head>
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">无知是天堂</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2019/10/15/mysql-master-slave/">
+  <time datetime="2019-10-15T10:13:05.000Z">
+    2019-10-15
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">读写分离</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h2 id="MySQL-读写分离？如何实现-MySQL-的读写分离？MySQL-主从复制原理的是啥？如何解决-MySQL-主从同步的延时问题？"><a href="#MySQL-读写分离？如何实现-MySQL-的读写分离？MySQL-主从复制原理的是啥？如何解决-MySQL-主从同步的延时问题？" class="headerlink" title="MySQL 读写分离？如何实现 MySQL 的读写分离？MySQL 主从复制原理的是啥？如何解决 MySQL 主从同步的延时问题？"></a>MySQL 读写分离？如何实现 MySQL 的读写分离？MySQL 主从复制原理的是啥？如何解决 MySQL 主从同步的延时问题？</h2><h3 id="如何实现-MySQL-的读写分离？"><a href="#如何实现-MySQL-的读写分离？" class="headerlink" title="如何实现 MySQL 的读写分离？"></a>如何实现 MySQL 的读写分离？</h3><p>其实很简单，就是基于主从复制架构，简单来说，就搞一个主库，挂多个从库，然后我们就单单只是写主库，然后主库会自动把数据给同步到从库上去。</p>
+<h3 id="MySQL-主从复制原理的是啥？"><a href="#MySQL-主从复制原理的是啥？" class="headerlink" title="MySQL 主从复制原理的是啥？"></a>MySQL 主从复制原理的是啥？</h3><p>主库将变更写入 binlog 日志，然后从库连接到主库之后，从库有一个 IO 线程，将主库的 binlog 日志拷贝到自己本地，写入一个 relay 中继日志中。接着从库中有一个 SQL 线程会从中继日志读取 binlog，然后执行 binlog 日志中的内容，也就是在自己本地再次执行一遍 SQL，这样就可以保证自己跟主库的数据是一样的。<br><img src="https://ws1.sinaimg.cn/large/bb901a77gy1g7z1v8c4wqj20jy0by749.jpg" alt=""></p>
+<p>这里有一个非常重要的一点，就是从库同步主库数据的过程是串行化的，也就是说主库上并行的操作，在从库上会串行执行。所以这就是一个非常重要的点了，由于从库从主库拷贝日志以及串行执行 SQL 的特点，在高并发场景下，从库的数据一定会比主库慢一些，是有延时的。所以经常出现，刚写入主库的数据可能是读不到的，要过几十毫秒，甚至几百毫秒才能读取到。</p>
+<p>而且这里还有另外一个问题，就是如果主库突然宕机，然后恰好数据还没同步到从库，那么有些数据可能在从库上是没有的，有些数据可能就丢失了。</p>
+<p>所以 MySQL 实际上在这一块有两个机制，一个是半同步复制，用来解决主库数据丢失问题；一个是并行复制，用来解决主从同步延时问题。</p>
+<p>这个所谓半同步复制，也叫 semi-sync 复制，指的就是主库写入 binlog 日志之后，就会将强制此时立即将数据同步到从库，从库将日志写入自己本地的 relay log 之后，接着会返回一个 ack 给主库，主库接收到至少一个从库的 ack 之后才会认为写操作完成了。</p>
+<p>所谓并行复制，指的是从库开启多个线程，并行读取 relay log 中不同库的日志，然后并行重放不同库的日志，这是库级别的并行。</p>
+<h3 id="MySQL-主从同步延时问题（精华）"><a href="#MySQL-主从同步延时问题（精华）" class="headerlink" title="MySQL 主从同步延时问题（精华）"></a>MySQL 主从同步延时问题（精华）</h3><p>以前线上确实处理过因为主从同步延时问题而导致的线上的 bug，属于小型的生产事故。</p>
+<p>是这个么场景。有个同学是这样写代码逻辑的。先插入一条数据，再把它查出来，然后更新这条数据。在生产环境高峰期，写并发达到了 2000/s，这个时候，主从复制延时大概是在小几十毫秒。线上会发现，每天总有那么一些数据，我们期望更新一些重要的数据状态，但在高峰期时候却没更新。用户跟客服反馈，而客服就会反馈给我们。</p>
+<p>我们通过 MySQL 命令：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">status</span></span><br></pre></td></tr></table></figure></p>
+<p>查看 Seconds_Behind_Master，可以看到从库复制主库的数据落后了几 ms。</p>
+<p>一般来说，如果主从延迟较为严重，有以下解决方案：</p>
+<ul>
+<li>分库，将一个主库拆分为多个主库，每个主库的写并发就减少了几倍，此时主从延迟可以忽略不计。</li>
+<li>打开 MySQL 支持的并行复制，多个库并行复制。如果说某个库的写入并发就是特别高，单库写并发达到了 2000/s，并行复制还是没意义。</li>
+<li>重写代码，写代码的同学，要慎重，插入数据时立马查询可能查不到。</li>
+<li>如果确实是存在必须先插入，立马要求就查询到，然后立马就要反过来执行一些操作，对这个查询设置直连主库。不推荐这种方法，你要是这么搞，读写分离的意义就丧失了。</li>
+</ul>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/mysql/">mysql</a>
+  </div>
+
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  
+  <div id="sidebar" class="widgets-right">
+  
+
+  
+<div class="widget tagcloud">
+  <h3 class="title">tagcloud</h3>
+  <div class="entry">
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 14px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 14px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 14px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a>
+  </div>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">recent_posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2019/10/16/high-concurrency/">如何设计一个高并发系统？</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/15/mysql-master-slave/">读写分离</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/15/db-distribute/">分库分表</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/14/cache-mix/">分布式缓存相关</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/09/distribut-dubbo/">dubbo疑难杂症解惑</a>
+      </li>
+    
+  </ul>
+</div>
+
+</div>
+  
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2019 <a href="/">jifuwei</a>
+  
+</div>
+<!-- 
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://blog.dafengning.com/" target="_blank">Chong Zi</a>
+</div>
+-->
+<div class="clearfix"></div>
+</footer>
+  <script src="//lib.sinaapp.com/js/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+<div id="rightfix" style="display:none;">
+
+
+<a href="javascript:void(0)" id="gotop" class="fix_btn" onclick="gotop();" title="回到顶部"><i></i></a>
+<script>
+  function gotop(){
+    $('html,body').animate({
+        scrollTop : '0px'
+      }, 800);
+  }
+  $(function(){
+    _rightfix = $('#rightfix');
+    $(window).scroll(function(){
+      $sollTop = document.documentElement.scrollTop + document.body.scrollTop;
+      if($sollTop > 350){
+        _rightfix.show();
+      }else{
+        _rightfix.hide();
+      }
+    });
+  });
+</script>
+
+</div>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>
