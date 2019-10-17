@@ -4,22 +4,42 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>无知是天堂</title>
+  <title>hashmap-complete-know | 无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
   
   
-  <meta name="description" content="JAVA Blog">
-<meta property="og:type" content="website">
-<meta property="og:title" content="无知是天堂">
-<meta property="og:url" content="http://yoursite.com/index.html">
+    <meta name="description" content="问题
+桶容量如何初始化？
+添加元素put流程？
+为何加载因子默认为0.75，而不是其他数字？
+为何数组容量必须是2次幂，默认值为何是16而不是其他数字？
+获取hash值时：为何在hash方法中加上异或无符号右移16位的操作？
+红黑树了解么？为何1.8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？
+扩容流程？老节点位置是如何变化的？1.7和1.">
+  
+  <meta name="description" content="问题 桶容量如何初始化？ 添加元素put流程？ 为何加载因子默认为0.75，而不是其他数字？ 为何数组容量必须是2次幂，默认值为何是16而不是其他数字？ 获取hash值时：为何在hash方法中加上异或无符号右移16位的操作？ 红黑树了解么？为何1.8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？ 扩容流程？老节点位置是如何变化的？1.7和1.">
+<meta name="keywords" content="Java,HashMap">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hashmap-complete-know">
+<meta property="og:url" content="http://yoursite.com/2019/10/16/hashmap-complete-know/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="JAVA Blog">
+<meta property="og:description" content="问题 桶容量如何初始化？ 添加元素put流程？ 为何加载因子默认为0.75，而不是其他数字？ 为何数组容量必须是2次幂，默认值为何是16而不是其他数字？ 获取hash值时：为何在hash方法中加上异或无符号右移16位的操作？ 红黑树了解么？为何1.8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？ 扩容流程？老节点位置是如何变化的？1.7和1.">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g811jztle6j20eq0i80ti.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g811kmx99cj20eq0i8wf9.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g811r6y3nhj20u012674q.jpg">
+<meta property="og:image" content="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2016/d669d29c.png">
+<meta property="og:image" content="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2016/b2330062.png">
+<meta property="og:image" content="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2016/4d8022db.png">
+<meta property="og:image" content="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2016/d773f86e.png">
+<meta property="og:image" content="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2016/3cc9813a.png">
+<meta property="og:updated_time" content="2019-10-17T10:13:48.071Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="无知是天堂">
-<meta name="twitter:description" content="JAVA Blog">
+<meta name="twitter:title" content="hashmap-complete-know">
+<meta name="twitter:description" content="问题 桶容量如何初始化？ 添加元素put流程？ 为何加载因子默认为0.75，而不是其他数字？ 为何数组容量必须是2次幂，默认值为何是16而不是其他数字？ 获取hash值时：为何在hash方法中加上异或无符号右移16位的操作？ 红黑树了解么？为何1.8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？ 扩容流程？老节点位置是如何变化的？1.7和1.">
+<meta name="twitter:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g811jztle6j20eq0i80ti.jpg">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -49,13 +69,7 @@
   </nav>
   <div class="clearfix"></div>
 </header>
-    <div class="content">
-
-
-
-
-  
-    <article class="post">
+    <div class="content"><article class="post">
   <header>
     
       <div class="icon"></div>
@@ -67,7 +81,7 @@
     
     
   
-    <h1 class="title"><a href="/2019/10/16/hashmap-complete-know/">hashmap-complete-know</a></h1>
+    <h1 class="title">hashmap-complete-know</h1>
   
 
   </header>
@@ -117,25 +131,19 @@
 
     
   </div>
-  <footer class="end-sep">
+  <footer>
     
       
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/HashMap/">HashMap</a>, <a class="tags-link" href="/tags/Java/">Java</a>
+  </div>
+
       
     
     <div class="clearfix"></div>
   </footer>
 </article>
-
-
-  
-
-  <nav id="pagination">
-  
-  
-    <a href="/page/2/" class="next">Next</a>
-  
-  <div class="clearfix"></div>
-</nav>
 
 </div>
   </div>
