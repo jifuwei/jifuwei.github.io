@@ -84,6 +84,7 @@
 <li>扩容流程？老节点位置是如何变化的？1.7和1.8有何区别？</li>
 <li>Hashmap 为何不是线程安全的？什么情况下会发生？</li>
 <li>为何hashmap允许存储key和value都会null的值，而hashtable不允许？</li>
+<li>JDK 7与 8中关于HashMap的对比</li>
 </ul>
 <h2 id="HashMap如何初始化？"><a href="#HashMap如何初始化？" class="headerlink" title="HashMap如何初始化？"></a>HashMap如何初始化？</h2><ul>
 <li>应不应该设置HashMap的默认容量？</li>
@@ -144,6 +145,17 @@
 <p>这个设计确实非常的巧妙，既省去了重新计算hash值的时间，而且同时，由于新增的1bit是0还是1可以认为是随机的，因此resize的过程，均匀的把之前的冲突的节点分散到新的bucket了。这一块就是JDK1.8新增的优化点。有一点注意区别，<strong>JDK1.7中rehash的时候，旧链表迁移新链表的时候，如果在新表的数组索引位置相同，则链表元素会倒置，但是从上图可以看出，JDK1.8不会倒置</strong></p>
 <p>内部流程：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g82e25crhoj20u004dt8r.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g82e2jyeftj20u00c3dfx.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g82e2qqb54j20u00f3t8w.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g82e2xnignj20u00dfdfx.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g82e34vok1j20u00akwem.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g82e3bgt43j20u0094dg1.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g82e3m3jxij20u009caa8.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g82e3ss3z5j20u009xt8v.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g82e3yqh31j20u00d5dfy.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g82e474m1uj20u00drt8t.jpg" alt=""></p>
 <h2 id="为何hashmap允许存储key和value都会null的值，而hashtable不允许？"><a href="#为何hashmap允许存储key和value都会null的值，而hashtable不允许？" class="headerlink" title="为何hashmap允许存储key和value都会null的值，而hashtable不允许？"></a>为何hashmap允许存储key和value都会null的值，而hashtable不允许？</h2><p>在并发下，如果 map.get(key) = null，ConcurrentMap 无法判断 key 的 value 为null，还是 key 不存在。<br>但是 HashMap 只考虑在非并发下运行，可以用 map.contains(key) 来做判断。</p>
+<h2 id="JDK-7与-8中关于HashMap的对比"><a href="#JDK-7与-8中关于HashMap的对比" class="headerlink" title="JDK 7与 8中关于HashMap的对比"></a>JDK 7与 8中关于HashMap的对比</h2><ul>
+<li>jdk7中使用数组+链表来实现，jdk8使用的数组+链表+红黑树</li>
+<li>hash 值的计算方式不同 (jdk 8 简化)<br>为什么jdk8的hash函数会变简单？jdk8中我们知道用的是链表过度到红黑树，效率会提高，所以jdk8提高查询效率的地方由红黑树去实现，没必要像jdk那样右移那么复杂。</li>
+<li>1.7 table 在创建 hashmap 时分配空间，而 1.8 在 put 的时候分配，如果 table 为空，则为 table 分配空间</li>
+<li>在发生冲突，插入链中时，7 是头插法，8 是尾插法<br>jdk8中为什么新来的元素是放在节点的后面？我们知道jdk8链表大于8的时候就要树化，本身就要算这个链表的长度有多大，链表算大小就要一个个去遍历了，遍历到了才能知道数量，也可以直接把数据放到后面了，这样也是很方便，减少了把数据移动到头数组位置这一步，效率也提高了。而且，jdk7中出现的那个HashMap死循环bug不会有了，因为这里是只是平移，没有调换顺序</li>
+<li>在 resize 操作中，7 需要重新进行 index 的计算，而 8 不需要，通过判断相应的位是 0 还是 1，要么依旧是原 index，要么是 oldCap + 原 index</li>
+<li>在jdk7中，节点是Entry，在jdk8中节点是Node，其实是一样的</li>
+</ul>
+<p>一些不重要的：</p>
+<p>jdk7里面addEntry方法扩容的条件size&gt;threshold，还有一个很容易忽略的，就是null!=table[bucketIndex],这个是什么意思？意思是如果当前放进来的值的那个位置也被占用了，才进行扩容，否则还是放到那个空的位置就行了，反正不存在hash冲突。（但是在jdk8里面取消了这个限制，只要达到了threshold，不管原来的位置空不空，还是要扩容）</p>
+<p>jdk8 默认初始化大小16，加载因子0.75。还有一个默认的树化的大小8。非树化大小为6，也就是红黑树的元素小于6的时候，又会变回一个链表。</p>
 
     
   </div>
