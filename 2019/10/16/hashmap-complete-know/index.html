@@ -29,6 +29,8 @@ HashMap如何初始化？
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g811r6y3nhj20u012674q.jpg">
 <meta property="og:image" content="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2016/d669d29c.png">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g85o0neq0oj20ci061dg0.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g85o15x4peg209506pwl8.gif">
 <meta property="og:image" content="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2016/b2330062.png">
 <meta property="og:image" content="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2016/4d8022db.png">
 <meta property="og:image" content="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2016/d773f86e.png">
@@ -43,7 +45,7 @@ HashMap如何初始化？
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g82e3ss3z5j20u009xt8v.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g82e3yqh31j20u00d5dfy.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g82e474m1uj20u00drt8t.jpg">
-<meta property="og:updated_time" content="2019-10-18T09:56:41.543Z">
+<meta property="og:updated_time" content="2019-10-21T06:08:29.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="【精分】HashMap最全最详细分析汇总">
 <meta name="twitter:description" content="问题 HashMap如何初始化？ 添加元素put流程？ 为何加载因子默认为0.75，而不是其他数字？ 为何数组容量必须是2次幂，默认值为何是16而不是其他数字？ 获取hash值时：为何在hash方法中加上异或无符号右移16位的操作？ 红黑树了解么？为何1.8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？ 扩容流程？老节点位置是如何变化的？1.">
@@ -139,7 +141,17 @@ HashMap如何初始化？
 <p>默认的负载系数（.75）在时间和空间成本之间提供了一个很好的权衡。较高的值会减少空间开销，但会增加查找成本（在HashMap类的大多数操作中都得到体现，包括get和put）。</p>
 <h2 id="为何数组容量必须是2次幂？"><a href="#为何数组容量必须是2次幂？" class="headerlink" title="为何数组容量必须是2次幂？"></a>为何数组容量必须是2次幂？</h2><p>索引计算公式为i = (n - 1) &amp; hash，如果n为2次幂，那么n-1的低位就全是1，哈希值进行与操作时可以保证低位的值不变，从而保证分布均匀，效果等同于hash%n，但是位运算比取余运算要高效的多。</p>
 <h2 id="获取hash值时：为何在hash方法中加上异或无符号右移16位的操作？"><a href="#获取hash值时：为何在hash方法中加上异或无符号右移16位的操作？" class="headerlink" title="获取hash值时：为何在hash方法中加上异或无符号右移16位的操作？"></a>获取hash值时：为何在hash方法中加上异或无符号右移16位的操作？</h2><p>此方式是采用”扰乱函数”的解决方案，将key的哈希值，进行高16位和低16位异或操作，增加低16位的随机性，降低哈希冲突的可能性。</p>
-<h2 id="红黑树了解么？为何1-8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？"><a href="#红黑树了解么？为何1-8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？" class="headerlink" title="红黑树了解么？为何1.8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？"></a>红黑树了解么？为何1.8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？</h2><p>当 HashMap 中有大量的元素都存放到同一个桶中时，这个桶下有一条长长的链表，这个时候 HashMap 就相当于一个单链表，假如单链表有 n 个元素，遍历的时间复杂度就是 O(n)，如果 hash 冲突严重，由这里产生的性能问题尤为突显。</p>
+<h2 id="红黑树了解么？为何1-8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？"><a href="#红黑树了解么？为何1-8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？" class="headerlink" title="红黑树了解么？为何1.8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？"></a>红黑树了解么？为何1.8后要改为红黑树？为何链表转红黄黑树的默认值是8而不是其他数字？为何树形化需要检测当前数组长度超过64？</h2><h3 id="红黑树"><a href="#红黑树" class="headerlink" title="红黑树"></a>红黑树</h3><p>红黑树顾名思义就是节点是红色或者黑色的平衡二叉树，它通过颜色的约束来维持着二叉树的平衡。对于一棵有效的红黑树二叉树而言我们必须增加如下规则：</p>
+<ul>
+<li>每个节点都只能是红色或者黑色</li>
+<li>根节点是黑色</li>
+<li>每个叶节点（NIL节点，空节点）是黑色的。</li>
+<li>如果一个结点是红的，则它两个子节点都是黑的。也就是说在一条路径上不能出现相邻的两个红色结点。</li>
+<li>从任一节点到其每个叶子的所有路径都包含相同数目的黑色节点。</li>
+</ul>
+<p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g85o0neq0oj20ci061dg0.jpg" alt=""></p>
+<p>对于红黑二叉树而言它主要包括三大基本操作：左旋、右旋、着色。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g85o15x4peg209506pwl8.gif" alt=""></p>
+<p>当 HashMap 中有大量的元素都存放到同一个桶中时，这个桶下有一条长长的链表，这个时候 HashMap 就相当于一个单链表，假如单链表有 n 个元素，遍历的时间复杂度就是 O(n)，如果 hash 冲突严重，由这里产生的性能问题尤为突显。</p>
 <p>JDK 1.8 中引入了红黑树，当链表长度 &gt;= TREEIFY_THRESHOLD（8） &amp; tab.length &gt;= MIN_TREEIFY_CAPACITY（64）时，链表就会转化为红黑树，它的查找时间复杂度为 O(logn)，以此来优化这个问题。</p>
 <p><strong>为什么链表的长度为8是变成红黑树？为什么为6时又变成链表？</strong></p>
 <p>document say’s:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Because TreeNodes are about twice the size of regular nodes, we</span></span><br><span class="line"><span class="comment">* use them only when bins contain enough nodes to warrant use</span></span><br><span class="line"><span class="comment">* (see TREEIFY_THRESHOLD). And when they become too small (due to</span></span><br><span class="line"><span class="comment">* removal or resizing) they are converted back to plain bins.  In</span></span><br><span class="line"><span class="comment">* usages with well-distributed user hashCodes, tree bins are</span></span><br><span class="line"><span class="comment">* rarely used.  Ideally, under random hashCodes, the frequency of</span></span><br><span class="line"><span class="comment">* nodes in bins follows a Poisson distribution</span></span><br><span class="line"><span class="comment">* (http://en.wikipedia.org/wiki/Poisson_distribution) with a</span></span><br><span class="line"><span class="comment">* parameter of about 0.5 on average for the default resizing</span></span><br><span class="line"><span class="comment">* threshold of 0.75, although with a large variance because of</span></span><br><span class="line"><span class="comment">* resizing granularity. Ignoring variance, the expected</span></span><br><span class="line"><span class="comment">* occurrences of list size k are (exp(-0.5) * pow(0.5, k) /</span></span><br><span class="line"><span class="comment">* factorial(k)). The first values are:</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* 0:    0.60653066</span></span><br><span class="line"><span class="comment">* 1:    0.30326533</span></span><br><span class="line"><span class="comment">* 2:    0.07581633</span></span><br><span class="line"><span class="comment">* 3:    0.01263606</span></span><br><span class="line"><span class="comment">* 4:    0.00157952</span></span><br><span class="line"><span class="comment">* 5:    0.00015795</span></span><br><span class="line"><span class="comment">* 6:    0.00001316</span></span><br><span class="line"><span class="comment">* 7:    0.00000094</span></span><br><span class="line"><span class="comment">* 8:    0.00000006</span></span><br><span class="line"><span class="comment">* more: less than 1 in ten million</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure></p>
@@ -205,7 +217,7 @@ HashMap如何初始化？
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 14px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 14px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 14px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a> <a href="/tags/精分/" style="font-size: 10px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 14px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 14px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/JVM/" style="font-size: 18px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16px;">MQ</a> <a href="/tags/Redis/" style="font-size: 14px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 14px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 14px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 14px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 12px;">zookeeper</a> <a href="/tags/原/" style="font-size: 14px;">原</a> <a href="/tags/精分/" style="font-size: 12px;">精分</a>
   </div>
 </div>
 
@@ -214,6 +226,10 @@ HashMap如何初始化？
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/10/18/java-collection-complete-know/">【精分】Java集合最全最详细分析汇总</a>
+      </li>
     
       <li>
         <a href="/2019/10/16/hashmap-complete-know/">【精分】HashMap最全最详细分析汇总</a>
@@ -229,10 +245,6 @@ HashMap如何初始化？
     
       <li>
         <a href="/2019/10/15/db-distribute/">分库分表</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/14/cache-mix/">分布式缓存相关</a>
       </li>
     
   </ul>
