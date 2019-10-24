@@ -1,0 +1,242 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>【精分】Java IO最全最详细分析汇总 | 无知是天堂</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="jifuwei">
+  
+  
+    <meta name="description" content="问题
+BIO (Blocking I/O)
+
+BIO (Blocking I/O)同步阻塞I/O模式，数据的读取写入必须阻塞在一个线程内等待其完成。
+传统 BIO
+采用 BIO 通信模型 的服务端，通常由一个独立的 Acceptor 线程负责监听客户端的连接。我们一般通过在while(true) 循环中服务端会调用 accept() 方法等待接收客户端的连接的方式监听请求，请求一旦接收到一个连接请">
+  
+  <meta name="description" content="问题 BIO (Blocking I/O)  BIO (Blocking I/O)同步阻塞I/O模式，数据的读取写入必须阻塞在一个线程内等待其完成。 传统 BIO 采用 BIO 通信模型 的服务端，通常由一个独立的 Acceptor 线程负责监听客户端的连接。我们一般通过在while(true) 循环中服务端会调用 accept() 方法等待接收客户端的连接的方式监听请求，请求一旦接收到一个连接请">
+<meta name="keywords" content="Java,IO,精分">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【精分】Java IO最全最详细分析汇总">
+<meta property="og:url" content="http://yoursite.com/2019/10/24/java-io-complete-know/index.html">
+<meta property="og:site_name" content="无知是天堂">
+<meta property="og:description" content="问题 BIO (Blocking I/O)  BIO (Blocking I/O)同步阻塞I/O模式，数据的读取写入必须阻塞在一个线程内等待其完成。 传统 BIO 采用 BIO 通信模型 的服务端，通常由一个独立的 Acceptor 线程负责监听客户端的连接。我们一般通过在while(true) 循环中服务端会调用 accept() 方法等待接收客户端的连接的方式监听请求，请求一旦接收到一个连接请">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g899sbfe1mj20ig0chmxl.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g899wlkcw9j20ig0chq3j.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g89adbtde5j209q07z3zx.jpg">
+<meta property="og:updated_time" content="2019-10-24T08:10:14.208Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="【精分】Java IO最全最详细分析汇总">
+<meta name="twitter:description" content="问题 BIO (Blocking I/O)  BIO (Blocking I/O)同步阻塞I/O模式，数据的读取写入必须阻塞在一个线程内等待其完成。 传统 BIO 采用 BIO 通信模型 的服务端，通常由一个独立的 Acceptor 线程负责监听客户端的连接。我们一般通过在while(true) 循环中服务端会调用 accept() 方法等待接收客户端的连接的方式监听请求，请求一旦接收到一个连接请">
+<meta name="twitter:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g899sbfe1mj20ig0chmxl.jpg">
+  
+  
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  <!--[if lt IE 9]><script src="//cdn.bootcss.com/html5shiv/3.7.0/html5shiv.min.js"></script><![endif]-->
+  
+  
+</head>
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">无知是天堂</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2019/10/24/java-io-complete-know/">
+  <time datetime="2019-10-24T06:10:16.000Z">
+    2019-10-24
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">【精分】Java IO最全最详细分析汇总</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><ul>
+<li>BIO (Blocking I/O)</li>
+</ul>
+<h2 id="BIO-Blocking-I-O"><a href="#BIO-Blocking-I-O" class="headerlink" title="BIO (Blocking I/O)"></a>BIO (Blocking I/O)</h2><p>同步阻塞I/O模式，数据的读取写入必须阻塞在一个线程内等待其完成。</p>
+<h3 id="传统-BIO"><a href="#传统-BIO" class="headerlink" title="传统 BIO"></a>传统 BIO</h3><p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g899sbfe1mj20ig0chmxl.jpg" alt=""></p>
+<p>采用 BIO 通信模型 的服务端，通常由一个独立的 Acceptor 线程负责监听客户端的连接。我们一般通过在while(true) 循环中服务端会调用 accept() 方法等待接收客户端的连接的方式监听请求，请求一旦接收到一个连接请求，就可以建立通信套接字在这个通信套接字上进行读写操作，此时不能再接收其他客户端连接请求，只能等待同当前连接的客户端的操作执行完成， 不过可以通过多线程来支持多个客户端的连接，如上图所示。</p>
+<p>如果要让 BIO 通信模型 能够同时处理多个客户端请求，就必须使用多线程（主要原因是socket.accept()、socket.read()、socket.write() 涉及的三个主要函数都是同步阻塞的），也就是说它在接收到客户端连接请求之后为每个客户端创建一个新的线程进行链路处理，处理完成之后，通过输出流返回应答给客户端，线程销毁。这就是典型的 一请求一应答通信模型 。我们可以设想一下如果这个连接不做任何事情的话就会造成不必要的线程开销，不过可以通过 线程池机制 改善，线程池还可以让线程的创建和回收成本相对较低。使用FixedThreadPool 可以有效的控制了线程的最大数量，保证了系统有限的资源的控制，实现了N(客户端请求数量):M(处理客户端请求的线程数量)的伪异步I/O模型（N 可以远远大于 M），下面一节”伪异步 BIO”中会详细介绍到.</p>
+<p><strong>我们再设想一下当客户端并发访问量增加后这种模型会出现什么问题？</strong></p>
+<p>在 Java 虚拟机中，线程是宝贵的资源，线程的创建和销毁成本很高，除此之外，线程的切换成本也是很高的。尤其在 Linux 这样的操作系统中，线程本质上就是一个进程，创建和销毁线程都是重量级的系统函数。如果并发访问量增加会导致线程数急剧膨胀可能会导致线程堆栈溢出、创建新线程失败等问题，最终导致进程宕机或者僵死，不能对外提供服务。</p>
+<h3 id="伪异步-IO"><a href="#伪异步-IO" class="headerlink" title="伪异步 IO"></a>伪异步 IO</h3><p>为了解决同步阻塞I/O面临的一个链路需要一个线程处理的问题，后来有人对它的线程模型进行了优化一一一后端通过一个线程池来处理多个客户端的请求接入，形成客户端个数M：线程池最大线程数N的比例关系，其中M可以远远大于N.通过线程池可以灵活地调配线程资源，设置线程的最大值，防止由于海量并发接入导致线程耗尽。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g899wlkcw9j20ig0chq3j.jpg" alt=""></p>
+<p>采用线程池和任务队列可以实现一种叫做伪异步的 I/O 通信框架，它的模型图如上图所示。当有新的客户端接入时，将客户端的 Socket 封装成一个Task（该任务实现java.lang.Runnable接口）投递到后端的线程池中进行处理，JDK 的线程池维护一个消息队列和 N 个活跃线程，对消息队列中的任务进行处理。由于线程池可以设置消息队列的大小和最大线程数，因此，它的资源占用是可控的，无论多少个客户端并发访问，都不会导致资源的耗尽和宕机。</p>
+<p>伪异步I/O通信框架采用了线程池实现，因此避免了为每个请求都创建一个独立线程造成的线程资源耗尽问题。不过因为它的底层仍然是同步阻塞的BIO模型，因此无法从根本上解决问题。</p>
+<h3 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h3><h4 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">IOClient</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// TODO 创建多个线程，模拟多个客户端连接服务端</span></span><br><span class="line">    <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        Socket socket = <span class="keyword">new</span> Socket(<span class="string">"127.0.0.1"</span>, <span class="number">3333</span>);</span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">          <span class="keyword">try</span> &#123;</span><br><span class="line">            socket.getOutputStream().write((<span class="keyword">new</span> Date() + <span class="string">": hello world"</span>).getBytes());</span><br><span class="line">            Thread.sleep(<span class="number">2000</span>);</span><br><span class="line">          &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;).start();</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">IOServer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    <span class="comment">// TODO 服务端处理客户端连接请求</span></span><br><span class="line">    ServerSocket serverSocket = <span class="keyword">new</span> ServerSocket(<span class="number">3333</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 接收到客户端连接请求之后为每个客户端创建一个新的线程进行链路处理</span></span><br><span class="line">    <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">      <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">          <span class="comment">// 阻塞方法获取新的连接</span></span><br><span class="line">          Socket socket = serverSocket.accept();</span><br><span class="line"></span><br><span class="line">          <span class="comment">// 每一个新的连接都创建一个线程，负责读取数据</span></span><br><span class="line">          <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">              <span class="keyword">int</span> len;</span><br><span class="line">              <span class="keyword">byte</span>[] data = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">1024</span>];</span><br><span class="line">              InputStream inputStream = socket.getInputStream();</span><br><span class="line">              <span class="comment">// 按字节流方式读取数据</span></span><br><span class="line">              <span class="keyword">while</span> ((len = inputStream.read(data)) != -<span class="number">1</span>) &#123;</span><br><span class="line">                System.out.println(<span class="keyword">new</span> String(data, <span class="number">0</span>, len));</span><br><span class="line">              &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;).start();</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;).start();</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="NIO-New-I-O"><a href="#NIO-New-I-O" class="headerlink" title="NIO (New I/O)"></a>NIO (New I/O)</h2><p>NIO是一种同步非阻塞的I/O模型，在Java 1.4 中引入了NIO框架，对应 java.nio 包，提供了 Channel , Selector，Buffer等抽象。</p>
+<p>NIO中的N可以理解为Non-blocking，不单纯是New。它支持面向缓冲的，基于通道的I/O操作方法。 NIO提供了与传统BIO模型中的 Socket 和 ServerSocket 相对应的 SocketChannel 和 ServerSocketChannel 两种不同的套接字通道实现,两种通道都支持阻塞和非阻塞两种模式。阻塞模式使用就像传统中的支持一样，比较简单，但是性能和可靠性都不好；非阻塞模式正好与之相反。对于低负载、低并发的应用程序，可以使用同步阻塞I/O来提升开发速率和更好的维护性；对于高负载、高并发的（网络）应用，应使用 NIO 的非阻塞模式来开发。</p>
+<h3 id="NIO的特性-NIO与IO区别"><a href="#NIO的特性-NIO与IO区别" class="headerlink" title="NIO的特性/NIO与IO区别"></a>NIO的特性/NIO与IO区别</h3><h4 id="IO流是阻塞的，NIO流是不阻塞的"><a href="#IO流是阻塞的，NIO流是不阻塞的" class="headerlink" title="IO流是阻塞的，NIO流是不阻塞的"></a>IO流是阻塞的，NIO流是不阻塞的</h4><p>Java NIO使我们可以进行非阻塞IO操作。比如说，单线程中从通道读取数据到buffer，同时可以继续做别的事情，当数据读取到buffer中后，线程再继续处理数据。写数据也是一样的。另外，非阻塞写也是如此。一个线程请求写入一些数据到某通道，但不需要等待它完全写入，这个线程同时可以去做别的事情。</p>
+<p>Java IO的各种流是阻塞的。这意味着，当一个线程调用 read() 或 write() 时，该线程被阻塞，直到有一些数据被读取，或数据完全写入。该线程在此期间不能再干任何事情了</p>
+<h4 id="Buffer-缓冲区"><a href="#Buffer-缓冲区" class="headerlink" title="Buffer(缓冲区)"></a>Buffer(缓冲区)</h4><p>IO 面向流(Stream oriented)，而 NIO 面向缓冲区(Buffer oriented)</p>
+<p>Buffer是一个对象，它包含一些要写入或者要读出的数据。在NIO类库中加入Buffer对象，体现了新库与原I/O的一个重要区别。在面向流的I/O中·可以将数据直接写入或者将数据直接读到 Stream 对象中。虽然 Stream 中也有 Buffer 开头的扩展类，但只是流的包装类，还是从流读到缓冲区，而 NIO 却是直接读到 Buffer 中进行操作。</p>
+<p>在NIO厍中，所有数据都是用缓冲区处理的。在读取数据时，它是直接读到缓冲区中的; 在写入数据时，写入到缓冲区中。任何时候访问NIO中的数据，都是通过缓冲区进行操作。</p>
+<p>最常用的缓冲区是 ByteBuffer,一个 ByteBuffer 提供了一组功能用于操作 byte 数组。除了ByteBuffer,还有其他的一些缓冲区，事实上，每一种Java基本类型（除了Boolean类型）都对应有一种缓冲区。</p>
+<h4 id="Channel-通道"><a href="#Channel-通道" class="headerlink" title="Channel (通道)"></a>Channel (通道)</h4><p>通道是双向的，可读也可写，而流的读写是单向的。无论读写，通道只能和Buffer交互。因为 Buffer，通道可以异步地读写。</p>
+<h4 id="Selector-选择器"><a href="#Selector-选择器" class="headerlink" title="Selector (选择器)"></a>Selector (选择器)</h4><p>选择器用于使用单个线程处理多个通道。因此，它需要较少的线程来处理这些通道。线程之间的切换对于操作系统来说是昂贵的。 因此，为了提高系统效率选择器是有用的。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g89adbtde5j209q07z3zx.jpg" alt=""></p>
+<h3 id="NIO-读数据和写数据方式"><a href="#NIO-读数据和写数据方式" class="headerlink" title="NIO 读数据和写数据方式"></a>NIO 读数据和写数据方式</h3><p>通常来说NIO中的所有IO都是从 Channel（通道） 开始的。</p>
+<ul>
+<li>从通道进行数据读取 ：创建一个缓冲区，然后请求通道读取数据。</li>
+<li>从通道进行数据写入 ：创建一个缓冲区，填充数据，并要求通道写入数据。</li>
+</ul>
+<h3 id="NIO核心组件简单介绍"><a href="#NIO核心组件简单介绍" class="headerlink" title="NIO核心组件简单介绍"></a>NIO核心组件简单介绍</h3><p>NIO 包含下面几个核心的组件：</p>
+<ul>
+<li>Channel(通道)</li>
+<li>Buffer(缓冲区)</li>
+<li>Selector(选择器)</li>
+</ul>
+<h3 id="代码示例-1"><a href="#代码示例-1" class="headerlink" title="代码示例"></a>代码示例</h3><p>服务端<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NIOServer</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    <span class="comment">// 1. serverSelector负责轮询是否有新的连接，服务端监测到新的连接之后，不再创建一个新的线程，</span></span><br><span class="line">    <span class="comment">// 而是直接将新连接绑定到clientSelector上，这样就不用 IO 模型中 1w 个 while 循环在死等</span></span><br><span class="line">    Selector serverSelector = Selector.open();</span><br><span class="line">    <span class="comment">// 2. clientSelector负责轮询连接是否有数据可读</span></span><br><span class="line">    Selector clientSelector = Selector.open();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 对应IO编程中服务端启动</span></span><br><span class="line">        ServerSocketChannel listenerChannel = ServerSocketChannel.open();</span><br><span class="line">        listenerChannel.socket().bind(<span class="keyword">new</span> InetSocketAddress(<span class="number">3333</span>));</span><br><span class="line">        listenerChannel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">        listenerChannel.register(serverSelector, SelectionKey.OP_ACCEPT);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">          <span class="comment">// 监测是否有新的连接，这里的1指的是阻塞的时间为 1ms</span></span><br><span class="line">          <span class="keyword">if</span> (serverSelector.select(<span class="number">1</span>) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            Set&lt;SelectionKey&gt; set = serverSelector.selectedKeys();</span><br><span class="line">            Iterator&lt;SelectionKey&gt; keyIterator = set.iterator();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">while</span> (keyIterator.hasNext()) &#123;</span><br><span class="line">              SelectionKey key = keyIterator.next();</span><br><span class="line"></span><br><span class="line">              <span class="keyword">if</span> (key.isAcceptable()) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                  <span class="comment">// (1) 每来一个新连接，不需要创建一个线程，而是直接注册到clientSelector</span></span><br><span class="line">                  SocketChannel clientChannel = ((ServerSocketChannel) key.channel()).accept();</span><br><span class="line">                  clientChannel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">                  clientChannel.register(clientSelector, SelectionKey.OP_READ);</span><br><span class="line">                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                  keyIterator.remove();</span><br><span class="line">                &#125;</span><br><span class="line">              &#125;</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125; <span class="keyword">catch</span> (IOException ignored) &#123;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;).start();</span><br><span class="line">    <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">          <span class="comment">// (2) 批量轮询是否有哪些连接有数据可读，这里的1指的是阻塞的时间为 1ms</span></span><br><span class="line">          <span class="keyword">if</span> (clientSelector.select(<span class="number">1</span>) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            Set&lt;SelectionKey&gt; set = clientSelector.selectedKeys();</span><br><span class="line">            Iterator&lt;SelectionKey&gt; keyIterator = set.iterator();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">while</span> (keyIterator.hasNext()) &#123;</span><br><span class="line">              SelectionKey key = keyIterator.next();</span><br><span class="line"></span><br><span class="line">              <span class="keyword">if</span> (key.isReadable()) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                  SocketChannel clientChannel = (SocketChannel) key.channel();</span><br><span class="line">                  ByteBuffer byteBuffer = ByteBuffer.allocate(<span class="number">1024</span>);</span><br><span class="line">                  <span class="comment">// (3) 面向 Buffer</span></span><br><span class="line">                  clientChannel.read(byteBuffer);</span><br><span class="line">                  byteBuffer.flip();</span><br><span class="line">                  System.out.println(</span><br><span class="line">                      Charset.defaultCharset().newDecoder().decode(byteBuffer).toString());</span><br><span class="line">                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                  keyIterator.remove();</span><br><span class="line">                  key.interestOps(SelectionKey.OP_READ);</span><br><span class="line">                &#125;</span><br><span class="line">              &#125;</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125; <span class="keyword">catch</span> (IOException ignored) &#123;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;).start();</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>为什么大家都不愿意用 JDK 原生 NIO 进行开发呢？从上面的代码中大家都可以看出来，是真的难用！除了编程复杂、编程模型难之外，它还有以下让人诟病的问题：</p>
+<p>JDK 的 NIO 底层由 epoll 实现，该实现饱受诟病的空轮询 bug 会导致 cpu 飙升 100%<br>项目庞大之后，自行实现的 NIO 很容易出现各类 bug，维护成本较高，上面这一坨代码我都不能保证没有 bug<br>Netty 的出现很大程度上改善了 JDK 原生 NIO 所存在的一些让人难以忍受的问题。</p>
+<h2 id="AIO-Asynchronous-I-O"><a href="#AIO-Asynchronous-I-O" class="headerlink" title="AIO (Asynchronous I/O)"></a>AIO (Asynchronous I/O)</h2><p>AIO 也就是 NIO 2。在 Java 7 中引入了 NIO 的改进版 NIO 2,它是异步非阻塞的IO模型。异步 IO 是基于事件和回调机制实现的，也就是应用操作之后会直接返回，不会堵塞在那里，当后台处理完成，操作系统会通知相应的线程进行后续的操作。</p>
+<p>AIO 是异步IO的缩写，虽然 NIO 在网络操作中，提供了非阻塞的方法，但是 NIO 的 IO 行为还是同步的。对于 NIO 来说，我们的业务线程是在 IO 操作准备好时，得到通知，接着就由这个线程自行进行 IO 操作，IO操作本身是同步的。</p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/IO/">IO</a>, <a class="tags-link" href="/tags/Java/">Java</a>, <a class="tags-link" href="/tags/精分/">精分</a>
+  </div>
+
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  
+  <div id="sidebar" class="widgets-right">
+  
+
+  
+<div class="widget tagcloud">
+  <h3 class="title">tagcloud</h3>
+  <div class="entry">
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 13.33px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 13.33px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Concurrent/" style="font-size: 10px;">Concurrent</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.33px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16.67px;">MQ</a> <a href="/tags/Redis/" style="font-size: 13.33px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16.67px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 13.33px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 13.33px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 13.33px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.67px;">zookeeper</a> <a href="/tags/原/" style="font-size: 13.33px;">原</a> <a href="/tags/精分/" style="font-size: 15px;">精分</a>
+  </div>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">recent_posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2019/10/24/java-io-complete-know/">【精分】Java IO最全最详细分析汇总</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/23/java-jvm-complete-know/">【精分】Java JVM最全最详细分析汇总</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/22/java-concurrent-complete-know/">【精分】Java并发最全最详细分析汇总</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/18/java-collection-complete-know/">【精分】Java集合最全最详细分析汇总</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/16/hashmap-complete-know/">【精分】HashMap最全最详细分析汇总</a>
+      </li>
+    
+  </ul>
+</div>
+
+</div>
+  
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2019 <a href="/">jifuwei</a>
+  
+</div>
+<!-- 
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://blog.dafengning.com/" target="_blank">Chong Zi</a>
+</div>
+-->
+<div class="clearfix"></div>
+</footer>
+  <script src="//lib.sinaapp.com/js/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+<div id="rightfix" style="display:none;">
+
+
+<a href="javascript:void(0)" id="gotop" class="fix_btn" onclick="gotop();" title="回到顶部"><i></i></a>
+<script>
+  function gotop(){
+    $('html,body').animate({
+        scrollTop : '0px'
+      }, 800);
+  }
+  $(function(){
+    _rightfix = $('#rightfix');
+    $(window).scroll(function(){
+      $sollTop = document.documentElement.scrollTop + document.body.scrollTop;
+      if($sollTop > 350){
+        _rightfix.show();
+      }else{
+        _rightfix.hide();
+      }
+    });
+  });
+</script>
+
+</div>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>
