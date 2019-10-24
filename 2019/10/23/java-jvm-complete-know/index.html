@@ -4,22 +4,85 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>无知是天堂</title>
+  <title>【精分】Java JVM最全最详细分析汇总 | 无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
   
   
-  <meta name="description" content="JAVA Blog">
-<meta property="og:type" content="website">
-<meta property="og:title" content="无知是天堂">
-<meta property="og:url" content="http://yoursite.com/index.html">
+    <meta name="description" content="问题
+运行时数据区域
+程序计数器
+虚拟机栈
+本地方法栈
+堆
+方法区
+运行时常量池
+直接内存
+
+
+虚拟机对象
+对象的创建
+类加载检查
+分配内存
+初始化零值
+设置对象头
+执行 init 方法
+
+
+对象的内存布局
+对象的访问定位
+
+
+8 种基本类型的包装类和常量池
+JVM垃圾回收
+对象优先在 eden 区分配
+对象已经死亡？
+
+
+
+运行时数据区域ava 虚拟机在执行 Java 程序的过程中会把它管理的内">
+  
+  <meta name="description" content="问题 运行时数据区域 程序计数器 虚拟机栈 本地方法栈 堆 方法区 运行时常量池 直接内存   虚拟机对象 对象的创建 类加载检查 分配内存 初始化零值 设置对象头 执行 init 方法   对象的内存布局 对象的访问定位   8 种基本类型的包装类和常量池 JVM垃圾回收 对象优先在 eden 区分配 对象已经死亡？    运行时数据区域ava 虚拟机在执行 Java 程序的过程中会把它管理的内">
+<meta name="keywords" content="Java,JVM,精分">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【精分】Java JVM最全最详细分析汇总">
+<meta property="og:url" content="http://yoursite.com/2019/10/23/java-jvm-complete-know/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="JAVA Blog">
+<meta property="og:description" content="问题 运行时数据区域 程序计数器 虚拟机栈 本地方法栈 堆 方法区 运行时常量池 直接内存   虚拟机对象 对象的创建 类加载检查 分配内存 初始化零值 设置对象头 执行 init 方法   对象的内存布局 对象的访问定位   8 种基本类型的包装类和常量池 JVM垃圾回收 对象优先在 eden 区分配 对象已经死亡？    运行时数据区域ava 虚拟机在执行 Java 程序的过程中会把它管理的内">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8840r56spj20ja0i340x.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g88411fc2gj20ja0i3gob.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g884x98hsbj20fy03hq2u.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g885kvqrl2j21a10nvjtf.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g885q5ivorj20fu04oaaj.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g885vo6dgoj213m099q3d.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8875nmwvaj20mh09v758.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8876rqgt9j20la09ttb4.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8886j20azj20fy03hq2u.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8887c6geej20hs0a4djz.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g888faexlzj20ik0dyjsg.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g888hsoblzj20cx08z3ym.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g889pu21dnj20ny0jp0tg.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g889rhjaxgj20ny0jpq3p.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g889sg5i08j20hs09ht8t.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g889x7k7pyj20a205raap.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g889yuav49j20bx079gmh.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g88a1tgv0pj20bx079gmh.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g88auoaf1dj20gl07tq50.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g88f97c5roj20js08s74h.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g88fcizvswj20nl0rl3zt.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g88ftr5okgj20x60uuwut.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g891hgqyg6j20gj05vaa7.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g892plfmk2j20dn05074n.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8958mh7dgj20r80bnjs5.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g892vsv5fqj20ej0ck75g.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g893ay3v3kj20dp0e7ab9.jpg">
+<meta property="og:updated_time" content="2019-10-24T06:07:05.870Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="无知是天堂">
-<meta name="twitter:description" content="JAVA Blog">
+<meta name="twitter:title" content="【精分】Java JVM最全最详细分析汇总">
+<meta name="twitter:description" content="问题 运行时数据区域 程序计数器 虚拟机栈 本地方法栈 堆 方法区 运行时常量池 直接内存   虚拟机对象 对象的创建 类加载检查 分配内存 初始化零值 设置对象头 执行 init 方法   对象的内存布局 对象的访问定位   8 种基本类型的包装类和常量池 JVM垃圾回收 对象优先在 eden 区分配 对象已经死亡？    运行时数据区域ava 虚拟机在执行 Java 程序的过程中会把它管理的内">
+<meta name="twitter:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8840r56spj20ja0i340x.jpg">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -49,13 +112,7 @@
   </nav>
   <div class="clearfix"></div>
 </header>
-    <div class="content">
-
-
-
-
-  
-    <article class="post">
+    <div class="content"><article class="post">
   <header>
     
       <div class="icon"></div>
@@ -67,7 +124,7 @@
     
     
   
-    <h1 class="title"><a href="/2019/10/23/java-jvm-complete-know/">【精分】Java JVM最全最详细分析汇总</a></h1>
+    <h1 class="title">【精分】Java JVM最全最详细分析汇总</h1>
   
 
   </header>
@@ -364,25 +421,19 @@
 
     
   </div>
-  <footer class="end-sep">
+  <footer>
     
       
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/JVM/">JVM</a>, <a class="tags-link" href="/tags/Java/">Java</a>, <a class="tags-link" href="/tags/精分/">精分</a>
+  </div>
+
       
     
     <div class="clearfix"></div>
   </footer>
 </article>
-
-
-  
-
-  <nav id="pagination">
-  
-  
-    <a href="/page/2/" class="next">Next</a>
-  
-  <div class="clearfix"></div>
-</nav>
 
 </div>
   </div>
