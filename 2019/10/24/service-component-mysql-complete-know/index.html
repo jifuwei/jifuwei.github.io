@@ -10,19 +10,25 @@
     <meta name="author" content="jifuwei">
   
   
-    <meta name="description" content="存储引擎一些常用命令查看MySQL提供的所有存储引擎1mysql&amp;gt; show engines;
+    <meta name="description" content="问题mysql相关（这边指用InnoDB引擎）
 
-从上图我们可以查看出 MySQL 当前默认的存储引擎是InnoDB,并且在5.7版本所有的存储引擎中只有 InnoDB 是事务性存储引擎，也就是说只有 InnoDB 支持事务。
-查看MySQL当前默认的存储引擎我们也可以通过下面的命令查看默认的存储引擎1mysql&amp;gt; show variab">
+索引为何用B+？红黑树可以么？什么样的数据接口适合mysql索引？
+一条sql语句的生命周期？
+sql语句查询慢的原因？（一直慢 OR 忽然慢）
+服务运行会产生哪些日志？都什么功能？何时产生？
+索引字段应如何选择？（为何不建议过长的字段作为主键？）
+为何索引字段推荐自增字段？（随机字段会导致什么问题？）
+为何建议字段设置NOT NULL？（NULL">
   
-  <meta name="description" content="存储引擎一些常用命令查看MySQL提供的所有存储引擎1mysql&amp;gt; show engines;  从上图我们可以查看出 MySQL 当前默认的存储引擎是InnoDB,并且在5.7版本所有的存储引擎中只有 InnoDB 是事务性存储引擎，也就是说只有 InnoDB 支持事务。 查看MySQL当前默认的存储引擎我们也可以通过下面的命令查看默认的存储引擎1mysql&amp;gt; show variab">
+  <meta name="description" content="问题mysql相关（这边指用InnoDB引擎）  索引为何用B+？红黑树可以么？什么样的数据接口适合mysql索引？ 一条sql语句的生命周期？ sql语句查询慢的原因？（一直慢 OR 忽然慢） 服务运行会产生哪些日志？都什么功能？何时产生？ 索引字段应如何选择？（为何不建议过长的字段作为主键？） 为何索引字段推荐自增字段？（随机字段会导致什么问题？） 为何建议字段设置NOT NULL？（NULL">
 <meta name="keywords" content="精分,Service,Component,MySQL">
 <meta property="og:type" content="article">
 <meta property="og:title" content="【精分】MySQL最全最详细分析汇总">
 <meta property="og:url" content="http://yoursite.com/2019/10/24/service-component-mysql-complete-know/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="存储引擎一些常用命令查看MySQL提供的所有存储引擎1mysql&amp;gt; show engines;  从上图我们可以查看出 MySQL 当前默认的存储引擎是InnoDB,并且在5.7版本所有的存储引擎中只有 InnoDB 是事务性存储引擎，也就是说只有 InnoDB 支持事务。 查看MySQL当前默认的存储引擎我们也可以通过下面的命令查看默认的存储引擎1mysql&amp;gt; show variab">
+<meta property="og:description" content="问题mysql相关（这边指用InnoDB引擎）  索引为何用B+？红黑树可以么？什么样的数据接口适合mysql索引？ 一条sql语句的生命周期？ sql语句查询慢的原因？（一直慢 OR 忽然慢） 服务运行会产生哪些日志？都什么功能？何时产生？ 索引字段应如何选择？（为何不建议过长的字段作为主键？） 为何索引字段推荐自增字段？（随机字段会导致什么问题？） 为何建议字段设置NOT NULL？（NULL">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8f3zu8hzoj214f11tn1g.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g89nuorjx2j20ub08hwes.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g89okq2rtjj205q05mweo.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g89p0bko4dj20ns0acq5o.jpg">
@@ -30,11 +36,20 @@
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g89pkzgjyhj20j607jjrq.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8ebscdrk2j20ct05b746.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8ebsnv4w9j206t055a9v.jpg">
-<meta property="og:updated_time" content="2019-10-29T03:38:19.220Z">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fhvxc977j20hn0adq2x.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fhz886wpj20hp07dgln.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fi9jwjipj20ft09ugll.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fiefhuxbj20jl0d7wey.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8figp9vwxj20nu02xjrb.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fihiz4w9j20ot09bdg5.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fii1ved3j20f00400sj.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fiiq7fs1j20cs0eb746.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fijf9forj20iv0akmx3.jpg">
+<meta property="og:updated_time" content="2019-10-29T16:04:21.690Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="【精分】MySQL最全最详细分析汇总">
-<meta name="twitter:description" content="存储引擎一些常用命令查看MySQL提供的所有存储引擎1mysql&amp;gt; show engines;  从上图我们可以查看出 MySQL 当前默认的存储引擎是InnoDB,并且在5.7版本所有的存储引擎中只有 InnoDB 是事务性存储引擎，也就是说只有 InnoDB 支持事务。 查看MySQL当前默认的存储引擎我们也可以通过下面的命令查看默认的存储引擎1mysql&amp;gt; show variab">
-<meta name="twitter:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g89nuorjx2j20ub08hwes.jpg">
+<meta name="twitter:description" content="问题mysql相关（这边指用InnoDB引擎）  索引为何用B+？红黑树可以么？什么样的数据接口适合mysql索引？ 一条sql语句的生命周期？ sql语句查询慢的原因？（一直慢 OR 忽然慢） 服务运行会产生哪些日志？都什么功能？何时产生？ 索引字段应如何选择？（为何不建议过长的字段作为主键？） 为何索引字段推荐自增字段？（随机字段会导致什么问题？） 为何建议字段设置NOT NULL？（NULL">
+<meta name="twitter:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8f3zu8hzoj214f11tn1g.jpg">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -83,7 +98,20 @@
   
   <div class="entry">
     
-      <h2 id="存储引擎"><a href="#存储引擎" class="headerlink" title="存储引擎"></a>存储引擎</h2><h3 id="一些常用命令"><a href="#一些常用命令" class="headerlink" title="一些常用命令"></a>一些常用命令</h3><p><strong>查看MySQL提供的所有存储引擎</strong><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show engines;</span><br></pre></td></tr></table></figure></p>
+      <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>mysql相关（这边指用InnoDB引擎）</p>
+<ul>
+<li>索引为何用B+？红黑树可以么？什么样的数据接口适合mysql索引？</li>
+<li>一条sql语句的生命周期？</li>
+<li>sql语句查询慢的原因？（一直慢 OR 忽然慢）</li>
+<li>服务运行会产生哪些日志？都什么功能？何时产生？</li>
+<li>索引字段应如何选择？（为何不建议过长的字段作为主键？）</li>
+<li>为何索引字段推荐自增字段？（随机字段会导致什么问题？）</li>
+<li>为何建议字段设置NOT NULL？（NULL 和 空值的区别是啥？）如果索引列存在NULL会发生什么？</li>
+<li>mysql服务如何读取磁盘数据的？</li>
+<li>覆盖索引？实例？</li>
+</ul>
+<p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8f3zu8hzoj214f11tn1g.jpg" alt=""></p>
+<h2 id="存储引擎"><a href="#存储引擎" class="headerlink" title="存储引擎"></a>存储引擎</h2><h3 id="一些常用命令"><a href="#一些常用命令" class="headerlink" title="一些常用命令"></a>一些常用命令</h3><p><strong>查看MySQL提供的所有存储引擎</strong><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show engines;</span><br></pre></td></tr></table></figure></p>
 <p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g89nuorjx2j20ub08hwes.jpg" alt=""></p>
 <p>从上图我们可以查看出 MySQL 当前默认的存储引擎是InnoDB,并且在5.7版本所有的存储引擎中只有 InnoDB 是事务性存储引擎，也就是说只有 InnoDB 支持事务。</p>
 <p><strong>查看MySQL当前默认的存储引擎</strong><br>我们也可以通过下面的命令查看默认的存储引擎<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show variables like &apos;%storage_engine%&apos;;</span><br></pre></td></tr></table></figure></p>
@@ -273,7 +301,255 @@
 <p>此时MySQL不得不为了将新记录插到合适位置而移动数据，甚至目标页面可能已经被回写到磁盘上而从缓存中清掉，此时又要从磁盘上读回来，这增加了很多开销，同时频繁的移动、分页操作造成了大量的碎片，得到了不够紧凑的索引结构，后续不得不通过OPTIMIZE TABLE来重建表并优化填充页面。</p>
 <p>因此，只要可以，请尽量在InnoDB上采用自增字段做主键。</p>
 <p>另外，InnoDB存储引擎，自增持列必须是索引，同时必须是索引的第一个列，如果不是第一个列，会抛出异常，而MyiSAM不会有这个问题。</p>
-<p>参考：<br><a href="https://zhuanlan.zhihu.com/p/54665280" target="_blank" rel="noopener">mysql索引底层原理</a></p>
+<h2 id="MySQL数据库cpu飙升到500-的话他怎么处理？"><a href="#MySQL数据库cpu飙升到500-的话他怎么处理？" class="headerlink" title="MySQL数据库cpu飙升到500%的话他怎么处理？"></a>MySQL数据库cpu飙升到500%的话他怎么处理？</h2><ul>
+<li>列出所有进程 show processlist,观察所有进程 ,多秒没有状态变化的(干掉)</li>
+<li>查看超时日志或者错误日志 (做了几年开发,一般会是查询以及大批量的插入会导致cpu与i/o上涨,当然不排除网络状态突然断了,导致一个请求服务器只接受到一半，比如where子句或分页子句没有发送,,当然的一次被坑经历)</li>
+</ul>
+<h2 id="InnoDB体系架构"><a href="#InnoDB体系架构" class="headerlink" title="InnoDB体系架构"></a>InnoDB体系架构</h2><p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8fhvxc977j20hn0adq2x.jpg" alt=""></p>
+<p>上图简单显示了InnoDB存储引擎的体系架构图中可见，InnoDB存储引擎有多个内存块，可以认为这些内存块组成了一个大的内存池，负责如下工作：</p>
+<blockquote>
+<p>维护所有进程/线程需要访问的多个内部数据结构。<br>缓存磁盘上的数据，方便快速地读取，同时在对磁盘文件的数据修改之前在这里缓存。<br>重做日志（redo log）缓冲</p>
+</blockquote>
+<p>后台线程的主要作用是负责刷新内存池中的数据，保证缓冲池中的内存缓存是最近的数据。此外将已修改的数据文件刷新到磁盘文件，同时保证在数据库发生异常的情况下InnoDB能恢复到正常运行状态。</p>
+<h2 id="后台线程"><a href="#后台线程" class="headerlink" title="后台线程"></a>后台线程</h2><p>InnoDB存储引擎是多线程的模型，因此其后台有多个不同的后台线程，负责处理不同的任务。</p>
+<ul>
+<li>Master Thread<br>Master Thread是一个非常核心的后台线程，主要负责将缓冲池中的数据异步刷新到磁盘，保证数据的一致性，包括脏页的刷新，合并插入缓冲、UNDO页的回收等。</li>
+<li>IO Thread<br>在InnoDB中大量使用了AIO来处理写IO请求，这样可以极大提高数据库的性能。而IO Thread的工作主要负责这些IO请求的回调处理。<br>可通过命令SHOW ENGINE INNODB STATUS来观察InnoDB中的IO Thread。</li>
+<li>Purge Thread<br>事务被提交后，其所使用的undo log可能不再需要，因此需要PurgeThread来回收已经使用并分配的undo页。用户可以在MySQL数据库的配置文件中添加如下命令来启动独立的Purge Thread：<blockquote>
+<p>innodb_purge_threads=1</p>
+</blockquote>
+</li>
+<li>Page Cleaner Thread<br>InnoDB 1.2版本中引入。其作用是将之前版本中脏页的刷新操作都放到单独的线程中来完成，目的是减轻原Master Thread的工作及对于用户查询线程的阻塞，进一步提高InnoDB存储引擎的性能。</li>
+</ul>
+<h2 id="内存"><a href="#内存" class="headerlink" title="内存"></a>内存</h2><h3 id="缓冲池（Database-Buffer-Pool）"><a href="#缓冲池（Database-Buffer-Pool）" class="headerlink" title="缓冲池（Database Buffer Pool）"></a>缓冲池（Database Buffer Pool）</h3><p>nnoDB存储引擎是基于磁盘存储的，并将其中的记录按照页的方式进行管理。在数据库管理系统中，由于CPU速度与磁盘速度之间的鸿沟，基于磁盘的数据库系统通常使用缓冲池技术来提高数据库的整体性能。</p>
+<p>缓存池简单来说就是一块内存区域，通过内存的速度来弥补磁盘速度较慢对数据库性能的影响。在数据库中进行读取页的操作，首先将从磁盘读到的页存放在缓冲池中，这个过程称为“FIX”在缓冲池中。下一次再读相同的页时，首先判断该页是否在缓冲池中。若在缓冲池中，称为页在缓冲池中被命中，直接读取该页。否则，读取磁盘上的页。</p>
+<p>对于数据库中页的修改操作，则首先修改在缓冲池中的页，然后再以一定的频率刷新到磁盘上（并不是每次页发生更新时刷新，而是通过一种称为CheckPoint的机制刷新回磁盘）。</p>
+<p>综上所述，缓冲池的大小直接影响数据库的整体性能。对于InnoDB而言，通过参数innodb_buffer_pool_size来设置。</p>
+<p>缓冲池中缓存的数据页类型有：索引页、数据页、undo页、插入缓冲、自适应哈希索引、InnoDB存储的锁信息、数据字典信息等。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8fhz886wpj20hp07dgln.jpg" alt=""></p>
+<p>InnoDB允许有多个缓冲池实例。每个页根据哈希值平均分配到不同的缓冲池实例中，好处是减少数据库内部的资源竞争，增加数据库的并发能力。</p>
+<h3 id="LRU-List、Free-List和Flush-List"><a href="#LRU-List、Free-List和Flush-List" class="headerlink" title="LRU List、Free List和Flush List"></a>LRU List、Free List和Flush List</h3><p>通常来说，数据库中的缓冲池是通过LRU（Latest Recent Used）算法来进行管理的。即最频繁使用的页在LRU列表的前端，而最少使用的页在LRU列表的尾端。当缓冲池不能存放新读取到的页时，将首先释放LRU列表中尾端的页。</p>
+<p>在InnoDB中，对传统的LRU算法做了一些优化，添加了midpoint位置。新读取到的页不是直接放到LRU列表的首部，而是放到midpoint位置。在默认配置下，该位置在LRU列表长度的5/8处。通过参数innodb_old_blocks_pct控制。</p>
+<p>在InnoDB中，把midpoint之后的列表称为old列表，之前的列表称为new列表。InnoDB引入另一个参数innodb_old_blocks_time来管理列表，用于表示页读取到mid位置后需要等待多久才会被加入到LRU列表的热端。</p>
+<p>LRU列表用来管理已经读取的页，但当数据库刚启动时，LRU列表是空的，即没有任何的页。这时页先存放在Free列表中。当需要从缓冲池中分页时，首先从Free列表中查找是否有可用的空闲页若有则将该页从Free列表中删除，放入到LRU列表中。否则，根据LRU算法，淘汰LRU列表末尾的页，将该内存空间分配给新的页。当页从LRU列表的old部分加入到new部分时，称此时的操作为page made young，而因为innodb_old_blocks_time的设置而导致页没有从old部分移动到new部分的操作称为page not made young。</p>
+<p>可以通过命令SHOW ENGINE INNODB STATUS来查看LRU列表及FREE列表的使用情况和运行状态。</p>
+<blockquote>
+<p>其中Buffer pool size表示缓冲池中页的数量。<br>Free Buffers表示当前Free列表中页的数量。<br>Database pages表示LRU列表中页的数量。<br>pages made young显示了LRU列表中页移动到前端的次数。<br>Buffer pool hit rate表示缓冲池命中率，通常该值不应该小于95%，否则需要观察是否由于全表扫描引起的LRU列表被污染。<br>Modified db pages 表示脏页的数量。</p>
+</blockquote>
+<p>在LRU列表中的页被修改后，称该页为脏页，即缓冲池中的页和磁盘上的页的数据产生了不一致。这时数据库会通过CHECKPOINT机制将脏页刷新回磁盘，而Flush列表中的页即为脏页列表。需要注意的是，脏页既存在于LRU列表中，也存在于Flush列表中，二者互不影响。</p>
+<h3 id="重做日志缓冲"><a href="#重做日志缓冲" class="headerlink" title="重做日志缓冲"></a>重做日志缓冲</h3><p>InnoDB存储引擎首先将重做日志信息先放入到这个缓冲区，然后按一定的频率将其刷新到重做日志文件。重做日志缓冲一般不需要设置得很大，因为一般每秒就会刷新一次。</p>
+<p>重做日志在下列三种情况下会将缓冲内容刷新到外部磁盘的重做日志文件中：</p>
+<blockquote>
+<p>Master Thread每一秒将重做日志缓冲刷新到重做日志文件。<br>每个事务提交时会将重做日志缓冲刷新到重做日志文件。<br>当重做日志缓冲池剩余空间小于1/2时，重做日志缓冲刷新到重做日志文件。</p>
+</blockquote>
+<h3 id="额外的内存池"><a href="#额外的内存池" class="headerlink" title="额外的内存池"></a>额外的内存池</h3><p>在InnoDB存储引擎中，对内存的管理是通过一种称为内存堆的方式进行的。在对一些数据结构本身的内存进行分配时，需要从额外的内存池中进行申请，当该区域的内存不够时会从缓冲池中进行申请。例如，分配了缓冲池，但是每个缓冲池中的帧缓冲还有对应的缓冲控制对象，这些对象记录了一些诸如LRU、锁、等待等信息，而这个对象的内存需要从额外内存池中申请。因此申请了很大的InnoDB缓冲池时，也需要考虑相应增加这个值。</p>
+<h2 id="Checkpoint技术"><a href="#Checkpoint技术" class="headerlink" title="Checkpoint技术"></a>Checkpoint技术</h2><p>为了避免每次页发送变化就将其刷新至磁盘，采用了Checkpoint技术统一对刷新进行管理。但是为了防止刷新时发生宕机引起数据丢失的情况，数据库系统普遍采用了Write Ahead Log策略，即当前事务提交时，先写重做日志，再修改页。这样宕机导致数据丢失时，可以通过重做日志来完成数据的恢复。</p>
+<p>Checkpoint技术是为了解决以下几个问题：</p>
+<ul>
+<li>缩短数据库的恢复时间</li>
+<li>缓冲池不够用时，将脏页刷新到磁盘</li>
+<li>重做日志不可用时，刷新脏页</li>
+</ul>
+<p>当数据库发生宕机时，数据库不需要重做所有的日志，因为Checkpoint之前的页都已经刷新回磁盘。只需要对Checkpoint后的重做日志进行恢复。这样就大大缩短了恢复时间。</p>
+<p>当缓冲池不够用时，根据LRU算法会溢出最近最少使用的页，若此页为脏页，那么需要强制执行Checkpoint，将脏页刷回磁盘。</p>
+<p>重做日志出现不可用的情况是因为当前事务数据库系统对重做日志的设计都是循环使用的，并不是无限增大的。因此为了保证重做日志正常的循环使用，需要将脏页及时刷新到磁盘。</p>
+<p>InnoDB存储引擎内部，有两种CheckPoint，分别为：Sharp Checkpoint、Fuzzy Checkpoint。</p>
+<p>Sharp Checkpoint发生在数据库关闭时将所有的脏页都刷新回磁盘，这时默认的工作方式。</p>
+<p>但是数据库运行并不会将所有的脏页同时刷新回磁盘，在InnoDB内部使用Fuzzy Checkpoint进行页的刷新，即只刷新一部分脏页，而不是刷新所有的脏页回磁盘。</p>
+<p>以下几种情况会发生Fuzzy Checkpoint：</p>
+<ul>
+<li>Master Thread Checkpoint<br>每秒或者每十秒从缓冲池的脏页列表中刷新一定比例的页回磁盘。这个过程是异步的，即此时InnoDB存储引擎可以进行其他的操作，用户查询线程不会阻塞。</li>
+<li>FLUSH_LRU_LIST Checkpoint<br>倘若LRU列表中没有100个空闲页可用，引擎会将LRU列表尾端的页移除。如果这些页中有脏页，那么需要进行Checkpoint。MySQL5.6版本后，这个检查放在了一个单独的Page Cleaner线程中，并且用户可以通过参数innodb_lru_scan_depth控制列表中可用页的数量。</li>
+<li>Async/Synv Flush Checkpoing<br>重做日志文件不可用的情况下，这时需要强制将一些页刷新回磁盘。MySQL5.6版本后，这部分刷新操作同样放入到单独的Page Cleaner Thread，故不会阻塞用户查询进程。</li>
+<li>Dirty Page too much Checkpoint<br>脏页的数量太多，导致InnoDB存储引擎强制进行Checkpoint，可以通过参数innodb_max_dirty_pages_pct控制。</li>
+</ul>
+<h2 id="Master-Thread工作方式"><a href="#Master-Thread工作方式" class="headerlink" title="Master Thread工作方式"></a>Master Thread工作方式</h2><p>InnoDB 1.0版本之前，Master Thread具有最高的线程优先级别。其内部由多个循环组成：主循环、后台循环、刷新循环、暂停循环。Master Thread会根据数据库运行的状态在其中进行切换。</p>
+<p>主循环大概每秒一次或每10秒一次，每次的操作包括：</p>
+<ul>
+<li>日志缓冲刷新到磁盘，即使这个事务还没有提交（总是）；</li>
+<li>合并插入缓冲（可能）；</li>
+<li>至多刷新100个InnoDB的缓冲池中的脏页到磁盘（可能）；</li>
+<li>如果当前没有用户活动，切换到backgroud loop（可能）。</li>
+</ul>
+<p>当前没有用户活动或者数据库关闭时，会切换到后台循环。后台循环会执行以下操作：</p>
+<ul>
+<li>删除无用的Undo页（总是）；</li>
+<li>合并20个插入缓冲（总是）；</li>
+<li>跳回到主循环（总是）；</li>
+<li>不断刷新100个页直到符合条件（可能）。</li>
+</ul>
+<p>若刷新循环中也没什么事情可以做了，InnoDB存储引擎会切换到暂停循环，将Master Thread挂起。</p>
+<h3 id="InnoDB-1-2-x之前版本的Master-Thread"><a href="#InnoDB-1-2-x之前版本的Master-Thread" class="headerlink" title="InnoDB 1.2.x之前版本的Master Thread"></a>InnoDB 1.2.x之前版本的Master Thread</h3><p>在了解了1.0.x版本之前的Master Thread的具体实现过程后，细心的读者会发现InnoDB存储引擎对于IO其实是有限制的，在缓冲池向磁盘刷新时其实都做了一定的硬编码（hard coding）。在磁盘技术飞速发展的今天，当固态磁盘（SSD）出现时，这种规定在很大程度上限制了InnoDB存储引擎对磁盘IO的性能，尤其是写入性能。</p>
+<p>从前面的伪代码来看，无论何时，InnoDB存储引擎最大只会刷新100个脏页到磁盘，合并20个插入缓冲。如果是在写入密集的应用程序中，每秒可能会产生大于100个的脏页，如果是产生大于20个插入缓冲的情况，Master Thread似乎会“忙不过来”，或者说它总是做得很慢。即使磁盘能在1秒内处理多于100个页的写入和20个插入缓冲的合并，但是由于hard coding，Master Thread也只会选择刷新100个脏页和合并20个插入缓冲。同时，当发生宕机需要恢复时，由于很多数据还没有刷新回磁盘，会导致恢复的时间可能需要很久，尤其是对于insert buffer来说。</p>
+<p>InnoDB Plugin（从InnoDB1.0.x版本开始）提供了参数innodb_io_capacity，用来表示磁盘IO的吞吐量，默认值为200。对于刷新到磁盘页的数量，会按照innodb_io_capacity的百分比来进行控制。规则如下：</p>
+<ul>
+<li>在合并插入缓冲时，合并插入缓冲的数量为innodb_io_capacity值的5%；</li>
+<li>在从缓冲区刷新脏页时，刷新脏页的数量为innodb_io_capacity。</li>
+</ul>
+<p>若用户使用了SSD类的磁盘，或者将几块磁盘做了RAID，当存储设备拥有更高的IO速度时，完全可以将innodb_io_capacity的值调得再高点，直到符合磁盘IO的吞吐量为止。</p>
+<p>另一个问题是，参数innodb_max_dirty_pages_pct默认值的问题，在InnoDB 1.0.x版本之前，该值的默认为90，意味着脏页占缓冲池的90%。但是该值“太大”了，因为InnoDB存储引擎在每秒刷新缓冲池和flush loop时会判断这个值，如果该值大于innodb_max_dirty_pages_pct，才刷新100个脏页，如果有很大的内存，或者服务器的压力很大，这时刷新脏页的速度反而会降低。同样，在恢复阶段可能需要更多的时间。</p>
+<p>InnoDB 1.0.x版本带来的另一个参数是innodb_adaptive_flushing（自适应地刷新），该值影响每秒刷新脏页的数量。原来的刷新规则是：脏页在缓冲池所占的比例小于innodb_max_dirty_pages_pct时，不刷新脏页；大于innodb_max_dirty_pages_pct时，刷新100个脏页。随着innodb_adaptive_flushing参数的引入，InnoDB存储引擎会通过一个名为buf_flush_get_desired_flush_rate的函数来判断需要刷新脏页最合适的数量。粗略地翻阅源代码后发现buf_flush_get_desired_flush_rate通过判断产生重做日志（redo log）的速度来决定最合适的刷新脏页数量。因此，当脏页的比例小于innodb_max_dirty_pages_pct时，也会刷新一定量的脏页。</p>
+<h3 id="InnoDB-1-2-x版本的Master-Thread"><a href="#InnoDB-1-2-x版本的Master-Thread" class="headerlink" title="InnoDB 1.2.x版本的Master Thread"></a>InnoDB 1.2.x版本的Master Thread</h3><p>在InnoDB 1.2.x版本中再次对Master Thread进行了优化，由此也可以看出Master Thread对性能所起到的关键作用。在InnoDB 1.2.x版本中，Master Thread的伪代码如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">if InnoDB is idle</span><br><span class="line"></span><br><span class="line">srv_master_do_idle_tasks();</span><br><span class="line"></span><br><span class="line">else</span><br><span class="line"></span><br><span class="line">srv_master_do_active_tasks();</span><br></pre></td></tr></table></figure></p>
+<p>其中srv_master_do_idle_tasks()就是之前版本中每10秒的操作，srv_master_do_active_tasks()处理的是之前每秒中的操作。同时对于刷新脏页的操作，从Master Thread线程分离到一个单独的Page Cleaner Thread，从而减轻了Master Thread的工作，同时进一步提高了系统的并发性。</p>
+<h2 id="InnoDB关键特性"><a href="#InnoDB关键特性" class="headerlink" title="InnoDB关键特性"></a>InnoDB关键特性</h2><ul>
+<li>插入缓冲（Insert Buffer）</li>
+<li>两次写（Double Write）</li>
+<li>自适应哈希索引（Adaptive Hash Index）</li>
+<li>异步IO（Async IO）</li>
+<li>刷新邻接页（Flush Neighbor Page）</li>
+</ul>
+<p>上述这些特性为InnoDB存储引擎带来更好的性能以及更高的可靠性。</p>
+<h3 id="插入缓冲"><a href="#插入缓冲" class="headerlink" title="插入缓冲"></a>插入缓冲</h3><h4 id="Insert-Buffer"><a href="#Insert-Buffer" class="headerlink" title="Insert Buffer"></a>Insert Buffer</h4><p>这个名字可能会让人认为插入缓冲是缓冲池中的一个组成部分。其实不然，InnoDB缓冲池中有Insert Buffer信息固然不错，但是Insert Buffer和数据页一样，也是物理页的一个组成部分。</p>
+<p>在InnoDB存储引擎中，主键是行唯一的标识符。通常应用程序中行记录的插入顺序是按照主键递增的顺序进行插入的。因此，插入聚集索引（Primary Key）一般是顺序的，不需要磁盘的随机读取。比如按下列SQL定义表：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t (</span><br><span class="line">a <span class="built_in">INT</span> AUTO_INCREMENT,</span><br><span class="line">b <span class="built_in">VARCHAR</span>(<span class="number">30</span>),</span><br><span class="line">PRIMARY <span class="keyword">KEY</span>(a));</span><br></pre></td></tr></table></figure></p>
+<p>其中a列是自增长的，若对a列插入NULL值，则由于其具有AUTO_INCREMENT属性，其值会自动增长。同时页中的行记录按a的值进行顺序存放。在一般情况下，不需要随机读取另一个页中的记录。因此，对于这类情况下的插入操作，速度是非常快的。</p>
+<blockquote>
+<p><strong>注意</strong>：  并不是所有的主键插入都是顺序的。若主键类是UUID这样的类，那么插入和辅助索引一样，同样是随机的。即使主键是自增类型，但是插入的是指定的值，而不是NULL值，那么同样可能导致插入并非连续的情况。</p>
+</blockquote>
+<p>但是不可能每张表上只有一个聚集索引，更多情况下，一张表上有多个非聚集的辅助索引（secondary index）。比如，用户需要按照b这个字段进行查找，并且b这个字段不是唯一的。</p>
+<p>在这样的情况下产生了一个非聚集的且不是唯一的索引。在进行插入操作时，数据页的存放还是按主键a进行顺序存放的，但是对于非聚集索引叶子节点的插入不再是顺序的了，这时就需要离散地访问非聚集索引页，由于随机读取的存在而导致了插入操作性能下降。当然这并不是这个b字段上索引的错误，而是因为B+树的特性决定了非聚集索引插入的离散性。</p>
+<p>需要注意的是，在某些情况下，辅助索引的插入依然是顺序的，或者说是比较顺序的，比如用户购买表中的时间字段。在通常情况下，用户购买时间是一个辅助索引，用来根据时间条件进行查询。但是在插入时却是根据时间的递增而插入的，因此插入也是“较为”顺序的。</p>
+<p>InnoDB存储引擎开创性地设计了Insert Buffer，对于非聚集索引的插入或更新操作，不是每一次直接插入到索引页中，而是先判断插入的非聚集索引页是否在缓冲池中，若在，则直接插入；若不在，则先放入到一个Insert Buffer对象中。看似非聚集的索引已经插到叶子节点，而实际并没有，只是存放在另一个位置。然后再以一定的频率和情况进行Insert Buffer和辅助索引页子节点的merge（合并）操作，这时通常能将多个插入合并到一个操作中（因为在一个索引页中），这就大大提高了对于非聚集索引插入的性能。</p>
+<p>然而Insert Buffer的使用需要同时满足以下两个条件：</p>
+<ul>
+<li>索引是辅助索引（secondary index）；</li>
+<li>索引不是唯一（unique）的。</li>
+</ul>
+<p>当满足以上两个条件时，InnoDB存储引擎会使用Insert Buffer，这样就能提高插入操作的性能了。不过考虑这样一种情况：应用程序进行大量的插入操作，这些都涉及了不唯一的非聚集索引，也就是使用了Insert Buffer。若此时MySQL发生了宕机，这时势必有大量的Insert Buffer并没有合并到实际的非聚集索引中去。因此这时恢复可能需要很长的时间，在极端情况下甚至需要几个小时。</p>
+<p>辅助索引不能是唯一的，因为在插入缓冲时，数据库并不去查找索引页来判断插入的记录的唯一性。如果去查找肯定又会有离散读取的情况发生，从而导致Insert Buffer失去了意义。</p>
+<p>用户可以通过命令SHOW ENGINE INNODB STATUS来查看插入缓冲的信息。</p>
+<p>正如前面所说的，目前Insert Buffer存在一个问题是：在写密集的情况下，插入缓冲会占用过多的缓冲池内存（innodb_buffer_pool），默认最大可以占用到1/2的缓冲池内存。</p>
+<p>这对于其他的操作可能会带来一定的影响，修改IBUF_POOL_SIZE_PER_MAX_SIZE就可以对插入缓冲的大小进行控制。比如将IBUF_POOL_SIZE_PER_MAX_SIZE改为3，则最大只能使用1/3的缓冲池内存。</p>
+<h4 id="Change-Buffer"><a href="#Change-Buffer" class="headerlink" title="Change Buffer"></a>Change Buffer</h4><p>InnoDB从1.0.x版本开始引入了Change Buffer，可将其视为Insert Buffer的升级。从这个版本开始，InnoDB存储引擎可以对DML操作——INSERT、DELETE、UPDATE都进行缓冲，他们分别是：Insert Buffer、Delete Buffer、Purge buffer。</p>
+<p>当然和之前Insert Buffer一样，Change Buffer适用的对象依然是非唯一的辅助索引。</p>
+<p>对一条记录进行UPDATE操作可能分为两个过程：</p>
+<ul>
+<li>将记录标记为已删除；</li>
+<li>真正将记录删除。</li>
+</ul>
+<p>因此Delete Buffer对应UPDATE操作的第一个过程，即将记录标记为删除。Purge Buffer对应UPDATE操作的第二个过程，即将记录真正的删除。同时，InnoDB存储引擎提供了参数innodb_change_buffering，用来开启各种Buffer的选项。该参数可选的值为：inserts、deletes、purges、changes、all、none。inserts、deletes、purges就是前面讨论过的三种情况。changes表示启用inserts和deletes，all表示启用所有，none表示都不启用。该参数默认值为all。</p>
+<p>从InnoDB 1.2.x版本开始，可以通过参数innodb_change_buffer_max_size来控制Change Buffer最大使用内存的数量。</p>
+<h3 id="doublewrite-两次写"><a href="#doublewrite-两次写" class="headerlink" title="doublewrite 两次写"></a>doublewrite 两次写</h3><p>如果说Insert Buffer带给InnoDB存储引擎的是性能上的提升，那么doublewrite（两次写）带给InnoDB存储引擎的是数据页的可靠性。</p>
+<p>当发生数据库宕机时，可能InnoDB存储引擎正在写入某个页到表中，而这个页只写了一部分，比如16KB的页，只写了前4KB，之后就发生了宕机，这种情况被称为部分写失效（partial page write）。在InnoDB存储引擎未使用doublewrite技术前，曾经出现过因为部分写失效而导致数据丢失的情况。</p>
+<p>有经验的DBA也许会想，如果发生写失效，可以通过重做日志进行恢复。这是一个办法。但是必须清楚地认识到，重做日志中记录的是对页的物理操作，如偏移量800，写’aaaa’记录。如果这个页本身已经发生了损坏，再对其进行重做是没有意义的。这就是说，在应用（apply）重做日志前，用户需要一个页的副本，当写入失效发生时，先通过页的副本来还原该页，再进行重做，这就是doublewrite。在InnoDB存储引擎中doublewrite的体系架构如下图所示。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8fi9jwjipj20ft09ugll.jpg" alt=""></p>
+<p>doublewrite由两部分组成，一部分是内存中的doublewrite buffer，大小为2MB，另一部分是物理磁盘上共享表空间中连续的128个页，即2个区（extent），大小同样为2MB。在对缓冲池的脏页进行刷新时，并不直接写磁盘，而是会通过memcpy函数将脏页先复制到内存中的doublewrite buffer，之后通过doublewrite buffer再分两次，每次1MB顺序地写入共享表空间的物理磁盘上，然后马上调用fsync函数，同步磁盘，避免缓冲写带来的问题。在这个过程中，因为doublewrite页是连续的，因此这个过程是顺序写的，开销并不是很大。在完成doublewrite页的写入后，再将doublewrite buffer中的页写入各个表空间文件中，此时的写入则是离散的。</p>
+<p>若查看MySQL官方手册，会发现在命令SHOW GLOBAL STATUS中Innodb_buffer_pool_pages_flushed变量表示当前从缓冲池中刷新到磁盘页的数量。根据之前的介绍，用户应该了解到，在默认情况下所有页的刷新首先都需要放入到doublewrite中，因此该变量应该和Innodb_dblwr_pages_written一致。然而在MySQL 5.5.24版本之前，Innodb_buffer_pool_pages_flushed总是为Innodb_dblwr_pages_written的2倍，而此Bug直到MySQL5.5.24才被修复。因此用户若需要统计数据库在生产环境中写入的量，最安全的方法还是根据Innodb_dblwr_pages_written来进行统计，这在所有版本的MySQL数据库中都是正确的。</p>
+<p>参数skip_innodb_doublewrite可以禁止使用doublewrite功能，这时可能会发生前面提及的写失效问题。不过如果用户有多个从服务器（slave server），需要提供较快的性能（如在slaves erver上做的是RAID0），也许启用这个参数是一个办法。不过对于需要提供数据高可靠性的主服务器（master server），任何时候用户都应确保开启doublewrite功能。</p>
+<h3 id="自适应哈希索引"><a href="#自适应哈希索引" class="headerlink" title="自适应哈希索引"></a>自适应哈希索引</h3><p>哈希（hash）是一种非常快的查找方法，在一般情况下这种查找的时间复杂度为O(1)，即一般仅需要一次查找就能定位数据。而B+树的查找次数，取决于B+树的高度，在生产环境中，B+树的高度一般为3～4层，故需要3～4次的查询。</p>
+<p>InnoDB存储引擎会监控对表上各索引页的查询。如果观察到建立哈希索引可以带来速度提升，则建立哈希索引，称之为自适应哈希索引（Adaptive Hash Index，AHI）。AHI是通过缓冲池的B+树页构造而来，因此建立的速度很快，而且不需要对整张表构建哈希索引。InnoDB存储引擎会自动根据访问的频率和模式来自动地为某些热点页建立哈希索引。</p>
+<p>AHI有一个要求，即对这个页的连续访问模式必须是一样的。例如对于（a，b）这样的联合索引页，其访问模式可以是以下情况<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">WHERE a=xxx</span><br><span class="line"></span><br><span class="line">WHERE a=xxx and b=xxx</span><br></pre></td></tr></table></figure></p>
+<p>访问模式一样指的是查询的条件一样，若交替进行上述两种查询，那么InonDB存储引擎不会对该页构造AHI。此外AHI还有如下的要求：</p>
+<ul>
+<li>以该模式访问了100次</li>
+<li>页通过该模式访问了N次，其中N=页中记录*1/16</li>
+</ul>
+<p>根据InnoDB存储引擎官方的文档显示，启用AHI后，读取和写入速度可以提高2倍，辅助索引的连接操作性能可以提高5倍。毫无疑问，AHI是非常好的优化模式，其设计思想是数据库自优化的（self-tuning），即无需DBA对数据库进行人为调整。</p>
+<p>值得注意的是，哈希索引只能用来搜索等值的查询，如SELECT*FROM table WHERE index_col=’xxx’。而对于其他查找类型，如范围查找，是不能使用哈希索引的。</p>
+<p>由于AHI是由InnoDB存储引擎控制的，因此这里的信息只供用户参考。不过用户可以通过观察SHOW ENGINE INNODB STATUS的结果及参数innodb_adaptive_hash_index来考虑是禁用或启动此特性，默认AHI为开启状态。</p>
+<h3 id="异步IO"><a href="#异步IO" class="headerlink" title="异步IO"></a>异步IO</h3><p>为了提高磁盘操作性能，当前的数据库系统都采用异步IO（Asynchronous IO，AIO）的方式来处理磁盘操作。InnoDB存储引擎亦是如此。</p>
+<p>与AIO对应的是Sync IO，即每进行一次IO操作，需要等待此次操作结束才能继续接下来的操作。但是如果用户发出的是一条索引扫描的查询，那么这条SQL查询语句可能需要扫描多个索引页，也就是需要进行多次的IO操作。在每扫描一个页并等待其完成后再进行下一次的扫描，这是没有必要的。用户可以在发出一个IO请求后立即再发出另一个IO请求，当全部IO请求发送完毕后，等待所有IO操作的完成，这就是AIO。</p>
+<p>AIO的另一个优势是可以进行IO Merge操作，也就是将多个IO合并为1个IO，这样可以提高IOPS的性能。例如用户需要访问页的（space，page_no）为：</p>
+<p>（8，6）、（8，7），（8，8）</p>
+<p>每个页的大小为16KB，那么同步IO需要进行3次IO操作。而AIO会判断到这三个页是连续的，因此AIO底层会发送一个IO请求，从（8，6）开始，读取48KB的页。</p>
+<p>在InnoDB1.1.x之前，AIO的实现通过InnoDB存储引擎中的代码来模拟实现。而从InnoDB 1.1.x开始（InnoDB Plugin不支持），提供了内核级别AIO的支持，称为Native AIO。因此在编译或者运行该版本MySQL时，需要libaio库的支持。</p>
+<p>需要注意的是，Native AIO需要操作系统提供支持。Windows系统和Linux系统都提供Native AIO支持，而Mac OSX系统则未提供。因此在这些系统下，依旧只能使用原模拟的方式。</p>
+<p>参数innodb_use_native_aio用来控制是否启用Native AIO，在Linux操作系统下，默认值为ON：</p>
+<p>用户可以通过开启和关闭Native AIO功能来比较InnoDB性能的提升。官方的测试显示，启用Native AIO，恢复速度可以提高75%。</p>
+<p>在InnoDB存储引擎中，read ahead方式的读取都是通过AIO完成，脏页的刷新，即磁盘的写入操作则全部由AIO完成。</p>
+<h3 id="刷新邻接页"><a href="#刷新邻接页" class="headerlink" title="刷新邻接页"></a>刷新邻接页</h3><p>InnoDB存储引擎还提供了Flush Neighbor Page（刷新邻接页）的特性。其工作原理为：当刷新一个脏页时，InnoDB存储引擎会检测该页所在区（extent）的所有页，如果是脏页，那么一起进行刷新。这样做的好处显而易见，通过AIO可以将多个IO写入操作合并为一个IO操作，故该工作机制在传统机械磁盘下有着显著的优势。但是需要考虑到下面两个问题：</p>
+<ul>
+<li>是不是可能将不怎么脏的页进行了写入，而该页之后又会很快变成脏页？</li>
+<li>固态硬盘有着较高的IOPS，是否还需要这个特性？</li>
+</ul>
+<p>为此，InnoDB存储引擎从1.2.x版本开始提供了参数innodb_flush_neighbors，用来控制是否启用该特性。对于传统机械硬盘建议启用该特性，而对于固态硬盘有着超高IOPS性能的磁盘，则建议将该参数设置为0，即关闭此特性。</p>
+<h2 id="启动、关闭与恢复"><a href="#启动、关闭与恢复" class="headerlink" title="启动、关闭与恢复"></a>启动、关闭与恢复</h2><p>InnoDB是MySQL的存储引擎之一，因此InnoDB存储引擎的启动和关闭，更准确的是指在MySQL实例的启动过程中对InnoDB存储引擎的处理过程。</p>
+<p>在关闭时，参数innodb_fast_shutdown影响着表的存储引擎为InnoDB的行为。该参数可取值为0、1、2，默认值为1。</p>
+<ul>
+<li>0<br>表示在MySQL数据库关闭时，InnoDB需要完成所有的full purge和merge insert buffer，并且将所有的脏页刷新回磁盘。这需要一些时间，有时甚至需要几个小时来完成。如果在进行InnoDB升级时，必须将这个参数调为0，然后再关闭数据库。</li>
+<li>1<br>是参数innodb_fast_shutdown的默认值，表示不需要完成上述的full purge和merge insert buffer操作，但是在缓冲池中的一些数据脏页还是会刷新回磁盘。</li>
+<li>2<br>表示不完成full purge和merge insert buffer操作，也不将缓冲池中的数据脏页写回磁盘，而是将日志都写入日志文件。这样不会有任何事务的丢失，但是下次MySQL数据库启动时，会进行恢复操作（recovery）。</li>
+</ul>
+<p>当正常关闭MySQL数据库时，下次的启动应该会非常“正常”。但是如果没有正常地关闭数据库，如用kill命令关闭数据库，在MySQL数据库运行中重启了服务器，或者在关闭数据库时，将参数innodb_fast_shutdown设为了2时，下次MySQL数据库启动时都会对InnoDB存储引擎的表进行恢复操作。</p>
+<p>参数innodb_force_recovery影响了整个InnoDB存储引擎恢复的状况。该参数值默认为0，代表当发生需要恢复时，进行所有的恢复操作，当不能进行有效恢复时，如数据页发生了corruption，MySQL数据库可能发生宕机（crash），并把错误写入错误日志中去。</p>
+<p>但是，在某些情况下，可能并不需要进行完整的恢复操作，因为用户自己知道怎么进行恢复。比如在对一个表进行alter table操作时发生意外了，数据库重启时会对InnoDB表进行回滚操作，对于一个大表来说这需要很长时间，可能是几个小时。这时用户可以自行进行恢复，如可以把表删除，从备份中重新导入数据到表，可能这些操作的速度要远远快于回滚操作。</p>
+<p>参数innodb_force_recovery还可以设置为6个非零值：1～6。大的数字表示包含了前面所有小数字表示的影响。具体情况如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">1(SRV_FORCE_IGNORE_CORRUPT)：忽略检查到的corrupt页。</span><br><span class="line"></span><br><span class="line">2(SRV_FORCE_NO_BACKGROUND)：阻止Master Thread线程的运行，如Master Thread线程需要进行full purge操作，而这会导致crash。</span><br><span class="line"></span><br><span class="line">3(SRV_FORCE_NO_TRX_UNDO)：不进行事务的回滚操作。</span><br><span class="line"></span><br><span class="line">4(SRV_FORCE_NO_IBUF_MERGE)：不进行插入缓冲的合并操作。</span><br><span class="line"></span><br><span class="line">5(SRV_FORCE_NO_UNDO_LOG_SCAN)：不查看撤销日志（Undo Log），InnoDB存储引擎会将未提交的事务视为已提交。</span><br><span class="line"></span><br><span class="line">6(SRV_FORCE_NO_LOG_REDO)：不进行前滚的操作。</span><br></pre></td></tr></table></figure></p>
+<p>需要注意的是，在设置了参数innodb_force_recovery大于0后，用户可以对表进行select、create和drop操作，但insert、update和delete这类DML操作是不允许的。</p>
+<h2 id="InnoDB表"><a href="#InnoDB表" class="headerlink" title="InnoDB表"></a>InnoDB表</h2><h3 id="索引组织表"><a href="#索引组织表" class="headerlink" title="索引组织表"></a>索引组织表</h3><p>在InnoDB存储引擎中，表都是根据主键顺序组织存放的，这种存储方式的表称为索引组织表。每个表都有主键，如果在创建表时没有显示定义主键，则会按照如下方式选择或者创建主键：</p>
+<ul>
+<li>a.判定是否有非空的唯一索引，如果有则该列即为主键。若果有多个，则选择建表是第一个定义的非空位于索引为主键。注意:主键的选择根据的是定义索引的顺序，而不是建表时的列的顺序。</li>
+<li>b.如果不存在唯一索引，InnoDB存储引擎字段创建一个6字节大小的指针。</li>
+</ul>
+<h2 id="InnoDB逻辑存储结构"><a href="#InnoDB逻辑存储结构" class="headerlink" title="InnoDB逻辑存储结构"></a>InnoDB逻辑存储结构</h2><p>从InnoDB存储引擎的逻辑存储结构看，所有数据都被逻辑地存放在一个空间中，称为表空间。表空间又由段（segment）、区（extent）、页（page）组成。页在一些文档中有时也称为块（block），InnoDB存储引擎的逻辑存储结构大致如图：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8fiefhuxbj20jl0d7wey.jpg" alt=""></p>
+<h3 id="表空间"><a href="#表空间" class="headerlink" title="表空间"></a>表空间</h3><p>表空间可以看做时InnoDB存储引擎逻辑结构的最高层，所有的数据都存放在表空间中。默认情况下InnoDB只有一个共享表空间ibdata1，即所有的数据都存放在这个表空间中。如果用户启用了innodb_file_per_table，则每张表内的数据可以单独放到一个表空间内。</p>
+<p>需要注意的是，启用了innodb_file_per_table参数，每张表的表空间内存放的只是数据、索引和插入缓冲Bitmap页，其他类的数据，如回滚信息，插入缓冲索引页、系统事务信息，二次写缓冲等还是存放在原来的共享表空间内。</p>
+<h3 id="段"><a href="#段" class="headerlink" title="段"></a>段</h3><p>表空间是由各个段组成的，常见的段有数据段、索引段、回滚段等。因为InnoDB引擎表是索引组织的，因此数据即索引，索引即数据。那么数据段即为B+树的叶子结点，索引段即为B+树的非叶子结点。回滚段较为特殊，后面进行介绍。</p>
+<h3 id="区"><a href="#区" class="headerlink" title="区"></a>区</h3><p>区是由连续页组成的空间，在任何情况下每个区的大小都为1MB。为了保证区中页的连续性，InnoDB一次从磁盘申请4-5个区。在默认情况下，InnoDB存储引擎页的大小为16KB，即一个区中一共有64个连续的页。</p>
+<p>InnoDB 1.0版本开始引入压缩页，每个页的大小可以设置为2K、4K、8K。</p>
+<p>InnoDB 1.2版本新增参数innodb_page_size，可将默认页的大小设置为4K、8K。</p>
+<h3 id="页"><a href="#页" class="headerlink" title="页"></a>页</h3><p>页是InnoDB磁盘管理的最小单位，在InnoDB存储引擎中，默认每个页的大小为16KB。</p>
+<p>在InnoDB存储引擎中，常见的页类型有：</p>
+<ul>
+<li>数据页</li>
+<li>undo页</li>
+<li>系统页</li>
+<li>事务数据页</li>
+<li>插入缓冲位图页</li>
+<li>插入缓冲空闲列表页</li>
+<li>未压缩的二进制大对象页</li>
+<li>压缩的二进制大对象页</li>
+</ul>
+<h3 id="行"><a href="#行" class="headerlink" title="行"></a>行</h3><p>InnoDB数据是按照行进行存放的。每个页存放的行记录也是有硬性定义的，最多允许存放16KB/ 2 - 200行的记录，即7992行记录。</p>
+<h2 id="InnoDB行记录格式"><a href="#InnoDB行记录格式" class="headerlink" title="InnoDB行记录格式"></a>InnoDB行记录格式</h2><p>InnoDB存储引擎记录是以行的形式存储的。这意味着页中保存着表中一行行的数据。</p>
+<p><strong>Compact行记录格式</strong></p>
+<p>compact行记录是由MySQL5.0引入的，其设计目标是高效地存储数据。简单来说一个页中存放的行数据越多，其性能就越高。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8figp9vwxj20nu02xjrb.jpg" alt=""></p>
+<p>compact行记录格式的首部是一个非Null变长字段长度列表，并且其是按照列的顺序逆序放置的，其长度为：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">若列的长度小于255，用一字节表示；</span><br><span class="line"></span><br><span class="line">若大于255字节，用2字节表示。</span><br></pre></td></tr></table></figure></p>
+<p>所以VARCHAR类型的最大长度限制为65535。</p>
+<p>之后的第二个部分是NULL标志位，该位指示了该行数据中是否有NULL值，有则用1表示，占用1字节。</p>
+<p>接下来的部分是记录头信息，固定5字节，具体含义见图：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8fihiz4w9j20ot09bdg5.jpg" alt=""></p>
+<p>最后的部分就是实际存储每个列的数据。需要注意的是，NULL不占该部分任何空间，即NULL除了占有NULL标志位，实际存储不占有任何空间。另外有一点需要注意的是，每行数据除了用户定义的列外，还有两个隐藏列，事务ID列和回滚指针列，分别为6字节和7字节的大小。若InnoDB表没有定义主键，每行还会增加一个6字节的rowid列。</p>
+<h3 id="行溢出数据"><a href="#行溢出数据" class="headerlink" title="行溢出数据"></a>行溢出数据</h3><p>InnoDB存储引擎可以将一条记录中的某些数据存储在真正的数据页面之外。一般默认BLOB、LOB这类的大对象列类型就会存放在数据页面之外。但他们也可以不将数据放在溢出页面，即便是VARCHAR列数据类型，依然有可能被存放在行溢出数据。</p>
+<p>在一般情况下，InnoDB存储引擎的数据都是存放在页类型为B-tree node中。但是当发生行溢出时，数据存放在页类型为Uncompress BLOB页中。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8fii1ved3j20f00400sj.jpg" alt=""></p>
+<p>InnoDB表是索引组织的，即B+Tree的结构，这样每个页中至少有两条行记录。因此，如果页中只能存放下一条记录，那么InnoDB存储引擎会自动将行数据存放到溢出页中。</p>
+<h2 id="InnoDB数据页结构"><a href="#InnoDB数据页结构" class="headerlink" title="InnoDB数据页结构"></a>InnoDB数据页结构</h2><p>InnoDB数据页由以下七个部分组成，如图所示：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">File Header（文件头）</span><br><span class="line"></span><br><span class="line">Page Header（页头）</span><br><span class="line"></span><br><span class="line">Infimun + Supremum Records</span><br><span class="line"></span><br><span class="line">User Records（用户记录）</span><br><span class="line"></span><br><span class="line">Free Space（空闲空间）</span><br><span class="line"></span><br><span class="line">Page Directory（页目录）</span><br><span class="line"></span><br><span class="line">File Trailer（文件结尾信息）</span><br></pre></td></tr></table></figure></p>
+<p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8fiiq7fs1j20cs0eb746.jpg" alt=""></p>
+<p>File Header、Page Header、File Trailer的大小是固定的，用来标示该页的一些信息。其余部分为实际的行存储空间，因此大小是动态的。</p>
+<p><strong>Infimun + Supremum Records</strong></p>
+<p>Infimun Supremum Records用来限定记录的边界，Infimun记录是比该页中任何主键值都小的值，Supremum记录是比该页中任何主键值都大的值。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8fijf9forj20iv0akmx3.jpg" alt=""></p>
+<p>File Trailer</p>
+<p>为了保证页能够完整地写入磁盘（如写入过程中遇到宕机、磁盘损坏等原因），InnoDB存储引擎的页中设置了File Trailer部分。</p>
+<h2 id="约束"><a href="#约束" class="headerlink" title="约束"></a>约束</h2><p>数据完整性</p>
+<p>关系型数据库和文件系统的一个不同点是，关系数据库本身能保证存储数据的完整性，不需要应用程序的控制，而文件系统一般需要在程序端进行控制。几乎所有的关系型数据库都提供约束机制，约束提供了一条强大而简易的途径来保证数据库中的数据完整性，数据完整性有三种形式：</p>
+<p>实体完整性：保证表中有一个主键。在InnoDB中，我们可以通过定义Primary Key或者Unique Key约束来保证实体的完整性。</p>
+<p>域完整性：保证数据的值满足特定的条件。在InnoDB引擎中，域完整性通过以下几种途径来保证：选择合适的数据类型可以确保一个数据值满足特定条件，外键约束，编写触发器，还可以考虑DEFAULT约束作为强制域完整性的一个方面。</p>
+<p>参照完整性：保证两张表之间的关系。InnoDB引擎支持外键允许用户定义外键以强制参照完整性。</p>
+<p>对于InnoDB存储引擎，提供了以下几种约束：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Primary Key</span><br><span class="line"></span><br><span class="line">Unique Key</span><br><span class="line"></span><br><span class="line">Foreign Key</span><br><span class="line"></span><br><span class="line">Default</span><br><span class="line"></span><br><span class="line">NOT NULL</span><br></pre></td></tr></table></figure></p>
+<p>约束可以在表建立时就进行定义，也可以在之后使用ALTER TABLE命令来进行创建。</p>
+<p>约束和索引的概念有所不同，约束更是一个逻辑的概念，用来保证数据的完整性，而索引是一个数据结构，有逻辑上的概念，在数据库中更是一个物理存储的方式。</p>
+<p>默认情况下，MySQL数据库允许非法或者不正确的数据插入或更新，或者内部将其转化为一个合法的值，如NOT NULL字段插入一个NULL值，会将其更改为0再进行插入，因此本身没有对数据的正确性进行约束。</p>
+<p>MySQL不支持传统的CHECK约束，但是通过ENUM和SET类型可以解决部分这样的约束需求</p>
+<h3 id="触发器与约束"><a href="#触发器与约束" class="headerlink" title="触发器与约束"></a>触发器与约束</h3><p>前面小结介绍了，完整性约束通常也可以使用触发器来实现。</p>
+<p>触发器的作用是在INSERT、DELETE、和UPDATE命令之前或之后自动调用SQL命令或者存储过程。</p>
+<p>创建触发器的命令是CREATE TRIGGER，只有具备Super权限的MySQL用户才可以执行这条命令。</p>
+<p>最多可以为一个表建立6个触发器，即分别为INSERT、UPDATE、DELETE的BEFORE和AFTER各定义一个。</p>
+<h3 id="外键"><a href="#外键" class="headerlink" title="外键"></a>外键</h3><p>外键用来保证参照完整性，MySQL的MyISAM引擎本身不支持外键，对于外键的定义只是起到一个注释的作用。InnoDB引擎则支持外键约束。</p>
+<p>我们可以在建表时就添加外键，也可以在之后通过ALTER TABLE命令添加。</p>
+<h2 id="视图"><a href="#视图" class="headerlink" title="视图"></a>视图</h2><p>视图是一个命名的虚表，它由一个查询来定义，可以当做表使用。与持久表不同的是，视图中的数据没有物理表现的形式。</p>
+<p>视图的主要用途之一是被用做一个抽象装置，特别是对于一些应用程序，程序本身不需要关系基表的结构，只需要按照视图定义来获取数据或者更新数据。</p>
+<p>虽然视图是基于基表的一个虚拟表，但是我们可以对某些视图进行更新操作，其实就是通过视图的定义来更新基本表。</p>
+<h2 id="分区表"><a href="#分区表" class="headerlink" title="分区表"></a>分区表</h2><p>分区功能并不是在存储引擎层完成的，因此不只有InnoDB存储引擎支持分区，常见的存储引擎MyISAM、NDB等都支持。但也并不是所有的存储引擎都支持。</p>
+<p>MySQL在5.1版本时添加了对于分区的支持这个过程是将一个表或者索引物分解为多个更小、更可管理的部分。就访问数据库的应用而言，从逻辑上讲，只有一个表或者一个索引，但是在物理上这个表或者索引可能由数十个物理分区组成。每个分区都是独立的对象，可以独自处理，也可以作为一个更大的对象的一部分进行处理。</p>
+<p>MySQL数据库支持的分区类型为水平，并不支持垂直分区。此外，MySQL数据库的分区是局部分区索引，一个分区中既存放了数据有存放了索引。</p>
+<p>分区对于某些SQL语句性能可能会带来提高，但是分区主要用于高可用性，利于数据库的管理。</p>
+<p>当前MySQL数据库支持以下几种类型的分区：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">RANGE分区：行数据基于属于一个给定连续区间的列值放入分区。</span><br><span class="line"></span><br><span class="line">LIST分区：和RANGE分区类似，只是LIST分区面向的是离散的值。</span><br><span class="line"></span><br><span class="line">HASH分区：根据用户自定义的表达式的返回值来进行分区，返回值不能为负数。</span><br><span class="line"></span><br><span class="line">KEY分区：根据MySQL数据库提供的哈希函数来进行分区。</span><br></pre></td></tr></table></figure></p>
+<p>不论创建何种类型的分区，如果表中存在主键或者是唯一索引时，分区列必须是唯一索引的一个组成部分。</p>
+<h3 id="Columns分区"><a href="#Columns分区" class="headerlink" title="Columns分区"></a>Columns分区</h3><p>前面介绍的几种分区中，分区的条件必须是整形。MySQL 5.5版本开始支持Columns分区，可以视为RANGE和LIST分区的一种进化。</p>
+<p>Columns分区支持以下的数据类型：</p>
+<p>所有整形类型</p>
+<p>日期类型，如DATE和DATETIME</p>
+<p>字符串类型，如CHAR、VARCHAR、BINARY和VARBINARY。BLOB和TEXT类型不予支持。</p>
+<h3 id="子分区"><a href="#子分区" class="headerlink" title="子分区"></a>子分区</h3><p>子分区是在分区的基础上再进行分区，有时也称这种分区为符合分区。MySQL允许RANGE和LIST的分区上再进行HASH或者是KEY的子分区。</p>
+<h3 id="分区性能"><a href="#分区性能" class="headerlink" title="分区性能"></a>分区性能</h3><p>数据库的应用分为两类：一类是OLTP（在线事务处理），如博客、电子商务、网络游戏等；另一类是OLAP（在线分析处理），如数据仓库、数据集市。</p>
+<p>对于OLAP的应用，分区的确可以很好地提高查询的性能，因为OLAP应用的大多数查询需要频繁地扫描一张很大的表。假设有一张1亿行的表，其中有一个时间戳属性列。你的查询需要从这张表中获取一年的数据。如果按时间戳进行分区，则只需要扫描相应的分区即可。</p>
+<p>对于OLTP的应用，分区应该非常小心。在这种应用下，不可能会获取一张大表中10%的数据，大部分都是通过索引返回一条记录即可。可根据B+树索引的原理可知，对于一张大表，一般的B+树需要2-3次磁盘IO。因此B+树可以很好的完成操作，不需要分区的帮助。</p>
+<p>参考：<br><a href="https://zhuanlan.zhihu.com/p/54665280" target="_blank" rel="noopener">mysql索引底层原理</a><br><a href="https://www.jianshu.com/p/39d86acac8dd" target="_blank" rel="noopener">InnoDB逻辑存储结构</a><br>《MySQL技术内幕》-机械工业出版社-作者: 姜承尧</p>
 
     
   </div>
