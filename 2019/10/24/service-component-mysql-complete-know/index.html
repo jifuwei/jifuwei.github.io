@@ -45,7 +45,7 @@ sql语句查询慢的原因？（一直慢 OR 忽然慢）
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fii1ved3j20f00400sj.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fiiq7fs1j20cs0eb746.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fijf9forj20iv0akmx3.jpg">
-<meta property="og:updated_time" content="2019-10-29T16:04:21.690Z">
+<meta property="og:updated_time" content="2019-10-30T01:48:46.211Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="【精分】MySQL最全最详细分析汇总">
 <meta name="twitter:description" content="问题mysql相关（这边指用InnoDB引擎）  索引为何用B+？红黑树可以么？什么样的数据接口适合mysql索引？ 一条sql语句的生命周期？ sql语句查询慢的原因？（一直慢 OR 忽然慢） 服务运行会产生哪些日志？都什么功能？何时产生？ 索引字段应如何选择？（为何不建议过长的字段作为主键？） 为何索引字段推荐自增字段？（随机字段会导致什么问题？） 为何建议字段设置NOT NULL？（NULL">
@@ -577,7 +577,7 @@ sql语句查询慢的原因？（一直慢 OR 忽然慢）
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 13.33px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 13.33px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 10px;">Concurrent</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.33px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16.67px;">MQ</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Redis/" style="font-size: 13.33px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16.67px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 13.33px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 13.33px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 13.33px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.67px;">zookeeper</a> <a href="/tags/原/" style="font-size: 13.33px;">原</a> <a href="/tags/精分/" style="font-size: 15px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 13.33px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 13.33px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 10px;">Concurrent</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.33px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/MQ/" style="font-size: 16.67px;">MQ</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 13.33px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16.67px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 13.33px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 13.33px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 13.33px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.67px;">zookeeper</a> <a href="/tags/原/" style="font-size: 13.33px;">原</a> <a href="/tags/精分/" style="font-size: 15px;">精分</a>
   </div>
 </div>
 
@@ -586,6 +586,10 @@ sql语句查询慢的原因？（一直慢 OR 忽然慢）
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/10/30/os-complete-know/">【精分】操作系统最全最详细分析汇总</a>
+      </li>
     
       <li>
         <a href="/2019/10/24/service-component-mysql-complete-know/">【精分】MySQL最全最详细分析汇总</a>
@@ -601,10 +605,6 @@ sql语句查询慢的原因？（一直慢 OR 忽然慢）
     
       <li>
         <a href="/2019/10/22/java-concurrent-complete-know/">【精分】Java并发最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/18/java-collection-complete-know/">【精分】Java集合最全最详细分析汇总</a>
       </li>
     
   </ul>

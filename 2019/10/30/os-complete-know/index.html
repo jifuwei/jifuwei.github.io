@@ -1,0 +1,323 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>【精分】操作系统最全最详细分析汇总 | 无知是天堂</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="jifuwei">
+  
+  
+    <meta name="description" content="Linux文件系统概览Linux文件系统简介在Linux操作系统中，所有被操作系统管理的资源，例如网络接口卡、磁盘驱动器、打印机、输入输出设备、普通文件或是目录都被看作是一个文件。
+也就是说在LINUX系统中有一个重要的概念：一切都是文件。其实这是UNIX哲学的一个体现，而Linux是重写UNIX而来，所以这个概念也就传承了下来。在UNIX系统中，把一切资源都看作是文件，包括硬件设备。UNIX系统">
+  
+  <meta name="description" content="Linux文件系统概览Linux文件系统简介在Linux操作系统中，所有被操作系统管理的资源，例如网络接口卡、磁盘驱动器、打印机、输入输出设备、普通文件或是目录都被看作是一个文件。 也就是说在LINUX系统中有一个重要的概念：一切都是文件。其实这是UNIX哲学的一个体现，而Linux是重写UNIX而来，所以这个概念也就传承了下来。在UNIX系统中，把一切资源都看作是文件，包括硬件设备。UNIX系统">
+<meta name="keywords" content="Linux,OS,精分">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【精分】操作系统最全最详细分析汇总">
+<meta property="og:url" content="http://yoursite.com/2019/10/30/os-complete-know/index.html">
+<meta property="og:site_name" content="无知是天堂">
+<meta property="og:description" content="Linux文件系统概览Linux文件系统简介在Linux操作系统中，所有被操作系统管理的资源，例如网络接口卡、磁盘驱动器、打印机、输入输出设备、普通文件或是目录都被看作是一个文件。 也就是说在LINUX系统中有一个重要的概念：一切都是文件。其实这是UNIX哲学的一个体现，而Linux是重写UNIX而来，所以这个概念也就传承了下来。在UNIX系统中，把一切资源都看作是文件，包括硬件设备。UNIX系统">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8g05a6b1kj20p10f7wg6.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8g05pwm9uj20mv08rt8u.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8g0l06hzzj20gd06cwen.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8g0lhg1h3j20dl05tt9i.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8g0o93wpnj20i00mqgqq.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8g0qnfz3dj20el06u0ss.jpg">
+<meta property="og:updated_time" content="2019-10-30T13:26:08.646Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="【精分】操作系统最全最详细分析汇总">
+<meta name="twitter:description" content="Linux文件系统概览Linux文件系统简介在Linux操作系统中，所有被操作系统管理的资源，例如网络接口卡、磁盘驱动器、打印机、输入输出设备、普通文件或是目录都被看作是一个文件。 也就是说在LINUX系统中有一个重要的概念：一切都是文件。其实这是UNIX哲学的一个体现，而Linux是重写UNIX而来，所以这个概念也就传承了下来。在UNIX系统中，把一切资源都看作是文件，包括硬件设备。UNIX系统">
+<meta name="twitter:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8g05a6b1kj20p10f7wg6.jpg">
+  
+  
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  <!--[if lt IE 9]><script src="//cdn.bootcss.com/html5shiv/3.7.0/html5shiv.min.js"></script><![endif]-->
+  
+  
+</head>
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">无知是天堂</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2019/10/30/os-complete-know/">
+  <time datetime="2019-10-30T02:06:18.000Z">
+    2019-10-30
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">【精分】操作系统最全最详细分析汇总</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h2 id="Linux文件系统概览"><a href="#Linux文件系统概览" class="headerlink" title="Linux文件系统概览"></a>Linux文件系统概览</h2><h3 id="Linux文件系统简介"><a href="#Linux文件系统简介" class="headerlink" title="Linux文件系统简介"></a>Linux文件系统简介</h3><p>在Linux操作系统中，所有被操作系统管理的资源，例如网络接口卡、磁盘驱动器、打印机、输入输出设备、普通文件或是目录都被看作是一个文件。</p>
+<p>也就是说在LINUX系统中有一个重要的概念：一切都是文件。其实这是UNIX哲学的一个体现，而Linux是重写UNIX而来，所以这个概念也就传承了下来。在UNIX系统中，把一切资源都看作是文件，包括硬件设备。UNIX系统把每个硬件都看成是一个文件，通常称为设备文件，这样用户就可以用读写文件的方式实现对硬件的访问。</p>
+<h3 id="文件类型与目录结构"><a href="#文件类型与目录结构" class="headerlink" title="文件类型与目录结构"></a>文件类型与目录结构</h3><p>Linux支持5种文件类型 ：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8g05a6b1kj20p10f7wg6.jpg" alt=""></p>
+<p>Linux的目录结构如下：</p>
+<p>Linux文件系统的结构层次鲜明，就像一棵倒立的树，最顶层是其根目录：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8g05pwm9uj20mv08rt8u.jpg" alt=""></p>
+<p>常见目录说明：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">/bin： 存放二进制可执行文件(ls、cat、mkdir等)，常用命令一般都在这里；</span><br><span class="line">/etc： 存放系统管理和配置文件；</span><br><span class="line">/home： 存放所有用户文件的根目录，是用户主目录的基点，比如用户user的主目录就是/home/user，可以用~user表示；</span><br><span class="line">/usr ： 用于存放系统应用程序；</span><br><span class="line">/opt： 额外安装的可选应用程序包所放置的位置。一般情况下，我们可以把tomcat等都安装到这里；</span><br><span class="line">/proc： 虚拟文件系统目录，是系统内存的映射。可直接访问这个目录来获取系统信息；</span><br><span class="line">/root： 超级用户（系统管理员）的主目录（特权阶级^o^）；</span><br><span class="line">/sbin: 存放二进制可执行文件，只有root才能访问。这里存放的是系统管理员使用的系统级别的管理命令和程序。如ifconfig等；</span><br><span class="line">/dev： 用于存放设备文件；</span><br><span class="line">/mnt： 系统管理员安装临时文件系统的安装点，系统提供这个目录是让用户临时挂载其他的文件系统；</span><br><span class="line">/boot： 存放用于系统引导时使用的各种文件；</span><br><span class="line">/lib ： 存放着和系统运行相关的库文件 ；</span><br><span class="line">/tmp： 用于存放各种临时文件，是公用的临时文件存储点；</span><br><span class="line">/var： 用于存放运行时需要改变数据的文件，也是某些大文件的溢出区，比方说各种服务的日志文件（系统启动日志等。）等；</span><br><span class="line">/lost+found： 这个目录平时是空的，系统非正常关机而留下“无家可归”的文件（windows下叫什么.chk）就在这里。</span><br></pre></td></tr></table></figure></p>
+<h2 id="Linux基本命令"><a href="#Linux基本命令" class="headerlink" title="Linux基本命令"></a>Linux基本命令</h2><h3 id="目录切换命令"><a href="#目录切换命令" class="headerlink" title="目录切换命令"></a>目录切换命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd usr： 切换到该目录下usr目录</span><br><span class="line">cd ..（或cd../）： 切换到上一层目录</span><br><span class="line">cd /： 切换到系统根目录</span><br><span class="line">cd ~： 切换到用户主目录</span><br><span class="line">cd -： 切换到上一个操作所在目录</span><br></pre></td></tr></table></figure>
+<h3 id="目录的操作命令-增删改查"><a href="#目录的操作命令-增删改查" class="headerlink" title="目录的操作命令(增删改查)"></a>目录的操作命令(增删改查)</h3><p><strong>mkdir 目录名称</strong>： 增加目录</p>
+<p><strong>ls或者ll（ll是ls -l的别名，ll命令可以看到该目录下的所有目录和文件的详细信息）</strong>：查看目录信息</p>
+<p><strong>find 目录 参数</strong>： 寻找目录（查）</p>
+<ul>
+<li>列出当前目录及子目录下所有文件和文件夹: find .</li>
+<li>在/home目录下查找以.txt结尾的文件名:find /home -name “*.txt”</li>
+<li>同上，但忽略大小写: find /home -iname “*.txt”</li>
+<li>当前目录及子目录下查找所有以.txt和.pdf结尾的文件:find . ( -name “<em>.txt” -o -name “</em>.pdf” )或find . -name “<em>.txt” -o -name “</em>.pdf”</li>
+</ul>
+<p><strong>mv 目录名称 新目录名称</strong>： 修改目录的名称（改）</p>
+<p>注意：mv的语法不仅可以对目录进行重命名而且也可以对各种文件，压缩包等进行 重命名的操作。mv命令用来对文件或目录重新命名，或者将文件从一个目录移到另一个目录中。后面会介绍到mv命令的另一个用法。</p>
+<p><strong>mv 目录名称 目录的新位置</strong>： 移动目录的位置—剪切（改）</p>
+<p>注意：mv语法不仅可以对目录进行剪切操作，对文件和压缩包等都可执行剪切操作。另外mv与cp的结果不同，mv好像文件“搬家”，文件个数并未增加。而cp对文件进行复制，文件个数增加了。</p>
+<p><strong>cp -r 目录名称 目录拷贝的目标位置</strong>： 拷贝目录（改），-r代表递归拷贝</p>
+<p>注意：cp命令不仅可以拷贝目录还可以拷贝文件，压缩包等，拷贝文件和压缩包时不 用写-r递归</p>
+<p><strong>rm [-rf] 目录</strong>: 删除目录（删）</p>
+<p>注意：rm不仅可以删除目录，也可以删除其他文件或压缩包，为了增强大家的记忆， 无论删除任何目录或文件，都直接使用rm -rf 目录/文件/压缩包</p>
+<h3 id="文件的操作命令-增删改查"><a href="#文件的操作命令-增删改查" class="headerlink" title="文件的操作命令(增删改查)"></a>文件的操作命令(增删改查)</h3><p><strong>touch 文件名称</strong>: 文件的创建（增）</p>
+<p><strong>cat/more/less/tail 文件名称</strong>: 文件的查看（查）</p>
+<ul>
+<li>cat： 查看显示文件内容</li>
+<li>more： 可以显示百分比，回车可以向下一行， 空格可以向下一页，q可以退出查看</li>
+<li>less： 可以使用键盘上的PgUp和PgDn向上 和向下翻页，q结束查看</li>
+<li>tail-10 ： 查看文件的后10行，Ctrl+C结束</li>
+</ul>
+<p>注意：命令 tail -f 文件 可以对某个文件进行动态监控，例如tomcat的日志文件， 会随着程序的运行，日志会变化，可以使用tail -f catalina-2016-11-11.log 监控 文 件的变化</p>
+<p><strong>vim 文件</strong>： 修改文件的内容（改）</p>
+<p>vim编辑器是Linux中的强大组件，是vi编辑器的加强版，vim编辑器的命令和快捷方式有很多，但此处不一一阐述，大家也无需研究的很透彻，使用vim编辑修改文件的方式基本会使用就可以了。</p>
+<p><strong>rm -rf 文件</strong>： 删除文件（删）</p>
+<h3 id="压缩文件的操作命令"><a href="#压缩文件的操作命令" class="headerlink" title="压缩文件的操作命令"></a>压缩文件的操作命令</h3><p><strong>打包并压缩文件：</strong></p>
+<p>Linux中的打包文件一般是以.tar结尾的，压缩的命令一般是以.gz结尾的。</p>
+<p>而一般情况下打包和压缩是一起进行的，打包并压缩后的文件的后缀名一般.tar.gz。 命令：tar -zcvf 打包压缩后的文件名 要打包压缩的文件 其中：</p>
+<p>z：调用gzip压缩命令进行压缩</p>
+<p>c：打包文件</p>
+<p>v：显示运行过程</p>
+<p>f：指定文件名</p>
+<p>比如：假如test目录下有三个文件分别是：aaa.txt bbb.txt ccc.txt，如果我们要打包test目录并指定压缩后的压缩包名称为test.tar.gz可以使用命令：tar -zcvf test.tar.gz aaa.txt bbb.txt ccc.txt或：tar -zcvf test.tar.gz /test/</p>
+<p><strong>解压压缩包：</strong><br>命令：tar [-xvf] 压缩文件</p>
+<p>其中：x：代表解压</p>
+<p>示例：</p>
+<p>1 将/test下的test.tar.gz解压到当前目录下可以使用命令：tar -xvf test.tar.gz</p>
+<p>2 将/test下的test.tar.gz解压到根目录/usr下:tar -xvf test.tar.gz -C /usr（- C代表指定解压的位置）</p>
+<h3 id="Linux的权限命令"><a href="#Linux的权限命令" class="headerlink" title="Linux的权限命令"></a>Linux的权限命令</h3><p>操作系统中每个文件都拥有特定的权限、所属用户和所属组。权限是操作系统用来限制资源访问的机制，在Linux中权限一般分为读(readable)、写(writable)和执行(excutable)，分为三组。分别对应文件的属主(owner)，属组(group)和其他用户(other)，通过这样的机制来限制哪些用户、哪些组可以对特定的文件进行什么样的操作。通过 ls -l 命令我们可以 查看某个目录下的文件或目录的权限</p>
+<p>示例：在随意某个目录下ls -l<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8g0l06hzzj20gd06cwen.jpg" alt=""></p>
+<p>第一列的内容的信息解释如下：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8g0lhg1h3j20dl05tt9i.jpg" alt=""></p>
+<p>文件的类型：</p>
+<ul>
+<li>d： 代表目录</li>
+<li>-： 代表文件</li>
+<li>l： 代表软链接（可以认为是window中的快捷方式）</li>
+</ul>
+<p>Linux中权限分为以下几种：</p>
+<ul>
+<li>r：代表权限是可读，r也可以用数字4表示</li>
+<li>w：代表权限是可写，w也可以用数字2表示</li>
+<li>x：代表权限是可执行，x也可以用数字1表示</li>
+</ul>
+<p>文件和目录权限的区别：</p>
+<p>对文件和目录而言，读写执行表示不同的意义。</p>
+<p>对于文件：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8g0o93wpnj20i00mqgqq.jpg" alt=""></p>
+<p><strong>需要注意的是超级用户可以无视普通用户的权限，即使文件目录权限是000，依旧可以访问。 在linux中的每个用户必须属于一个组，不能独立于组外。在linux中每个文件有所有者、所在组、其它组的概念。</strong></p>
+<ul>
+<li>所有者<br>一般为文件的创建者，谁创建了该文件，就天然的成为该文件的所有者，用ls ‐ahl命令可以看到文件的所有者 也可以使用chown 用户名 文件名来修改文件的所有者 。</li>
+<li>文件所在组<br>当某个用户创建了一个文件后，这个文件的所在组就是该用户所在的组 用ls ‐ahl命令可以看到文件的所有组 也可以使用chgrp 组名 文件名来修改文件所在的组。</li>
+<li>其它组<br>除开文件的所有者和所在组的用户外，系统的其它用户都是文件的其它组</li>
+</ul>
+<p>修改文件/目录的权限的命令：chmod</p>
+<p>示例：修改/test下的aaa.txt的权限为属主有全部权限，属主所在的组有读写权限， 其他用户只有读的权限</p>
+<p>chmod u=rwx,g=rw,o=r aaa.txt<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8g0qnfz3dj20el06u0ss.jpg" alt=""></p>
+<p>上述示例还可以使用数字表示：</p>
+<p>chmod 764 aaa.txt</p>
+<p>补充一个比较常用的东西:</p>
+<p>假如我们装了一个zookeeper，我们每次开机到要求其自动启动该怎么办？</p>
+<ul>
+<li>新建一个脚本zookeeper</li>
+<li>为新建的脚本zookeeper添加可执行权限，命令是:chmod +x zookeeper</li>
+<li>把zookeeper这个脚本添加到开机启动项里面，命令是： chkconfig –add zookeeper</li>
+<li>如果想看看是否添加成功，命令是：chkconfig –list</li>
+</ul>
+<h3 id="Linux-用户管理"><a href="#Linux-用户管理" class="headerlink" title="Linux 用户管理"></a>Linux 用户管理</h3><p>Linux系统是一个多用户多任务的分时操作系统，任何一个要使用系统资源的用户，都必须首先向系统管理员申请一个账号，然后以这个账号的身份进入系统。</p>
+<p>用户的账号一方面可以帮助系统管理员对使用系统的用户进行跟踪，并控制他们对系统资源的访问；另一方面也可以帮助用户组织文件，并为用户提供安全性保护。</p>
+<p>Linux用户管理相关命令:</p>
+<ul>
+<li>useradd 选项 用户名:添加用户账号</li>
+<li>userdel 选项 用户名:删除用户帐号</li>
+<li>usermod 选项 用户名:修改帐号</li>
+<li>passwd 用户名:更改或创建用户的密码</li>
+<li>passwd -S 用户名 :显示用户账号密码信息</li>
+<li>passwd -d 用户名: 清除用户密码</li>
+</ul>
+<p>useradd命令用于Linux中创建的新的系统用户。useradd可用来建立用户帐号。帐号建好之后，再用passwd设定帐号的密码．而可用userdel删除帐号。使用useradd指令所建立的帐号，实际上是保存在/etc/passwd文本文件中。</p>
+<p>passwd命令用于设置用户的认证信息，包括用户密码、密码过期时间等。系统管理者则能用它管理系统用户的密码。只有管理者可以指定用户名称，一般用户只能变更自己的密码。</p>
+<h3 id="Linux系统用户组的管理"><a href="#Linux系统用户组的管理" class="headerlink" title="Linux系统用户组的管理"></a>Linux系统用户组的管理</h3><p>每个用户都有一个用户组，系统可以对一个用户组中的所有用户进行集中管理。不同Linux 系统对用户组的规定有所不同，如Linux下的用户属于与它同名的用户组，这个用户组在创建用户时同时创建。</p>
+<p>用户组的管理涉及用户组的添加、删除和修改。组的增加、删除和修改实际上就是对/etc/group文件的更新。</p>
+<p>Linux系统用户组的管理相关命令:</p>
+<ul>
+<li>groupadd 选项 用户组 :增加一个新的用户组</li>
+<li>groupdel 用户组:要删除一个已有的用户组</li>
+<li>groupmod 选项 用户组 : 修改用户组的属性</li>
+</ul>
+<h3 id="其他常用命令"><a href="#其他常用命令" class="headerlink" title="其他常用命令"></a>其他常用命令</h3><p>pwd： 显示当前所在位置</p>
+<p>grep 要搜索的字符串 要搜索的文件 –color： 搜索命令，–color代表高亮显示</p>
+<p>ps -ef/ps -aux： 这两个命令都是查看当前系统正在运行进程，两者的区别是展示格式不同。如果想要查看特定的进程可以使用这样的格式：ps aux|grep redis （查看包括redis字符串的进程），也可使用 pgrep redis -a。</p>
+<p>注意：如果直接用ps（（Process Status））命令，会显示所有进程的状态，通常结合grep命令查看某进程的状态。</p>
+<p>kill -9 进程的pid： 杀死进程（-9 表示强制终止。）</p>
+<p>先用ps查找进程，然后用kill杀掉</p>
+<p>网络通信命令：</p>
+<ul>
+<li>查看当前系统的网卡信息：ifconfig</li>
+<li>查看与某台机器的连接情况：ping</li>
+<li>查看当前系统的端口使用：netstat -an</li>
+</ul>
+<p>net-tools 和 iproute2 ： net-tools起源于BSD的TCP/IP工具箱，后来成为老版本Linux内核中配置网络功能的工具。但自2001年起，Linux社区已经对其停止维护。同时，一些Linux发行版比如Arch Linux和CentOS/RHEL 7则已经完全抛弃了net-tools，只支持iproute2。linux ip命令类似于ifconfig，但功能更强大，旨在替代它。更多详情请阅读如何在Linux中使用IP命令和示例</p>
+<p>shutdown： shutdown -h now： 指定现在立即关机；shutdown +5 “System will shutdown after 5 minutes”：指定5分钟后关机，同时送出警告信息给登入用户。</p>
+<p>reboot： reboot： 重开机。reboot -w： 做个重开机的模拟（只有纪录并不会真的重开机）。</p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/Linux/">Linux</a>, <a class="tags-link" href="/tags/OS/">OS</a>, <a class="tags-link" href="/tags/精分/">精分</a>
+  </div>
+
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  
+  <div id="sidebar" class="widgets-right">
+  
+
+  
+<div class="widget tagcloud">
+  <h3 class="title">tagcloud</h3>
+  <div class="entry">
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 13.33px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 13.33px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 10px;">Concurrent</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.33px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/MQ/" style="font-size: 16.67px;">MQ</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 13.33px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16.67px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 13.33px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 13.33px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 13.33px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.67px;">zookeeper</a> <a href="/tags/原/" style="font-size: 13.33px;">原</a> <a href="/tags/精分/" style="font-size: 15px;">精分</a>
+  </div>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">recent_posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2019/10/30/os-complete-know/">【精分】操作系统最全最详细分析汇总</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/24/service-component-mysql-complete-know/">【精分】MySQL最全最详细分析汇总</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/24/java-io-complete-know/">【精分】Java IO最全最详细分析汇总</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/23/java-jvm-complete-know/">【精分】Java JVM最全最详细分析汇总</a>
+      </li>
+    
+      <li>
+        <a href="/2019/10/22/java-concurrent-complete-know/">【精分】Java并发最全最详细分析汇总</a>
+      </li>
+    
+  </ul>
+</div>
+
+</div>
+  
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2019 <a href="/">jifuwei</a>
+  
+</div>
+<!-- 
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://blog.dafengning.com/" target="_blank">Chong Zi</a>
+</div>
+-->
+<div class="clearfix"></div>
+</footer>
+  <script src="//lib.sinaapp.com/js/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+<div id="rightfix" style="display:none;">
+
+
+<a href="javascript:void(0)" id="gotop" class="fix_btn" onclick="gotop();" title="回到顶部"><i></i></a>
+<script>
+  function gotop(){
+    $('html,body').animate({
+        scrollTop : '0px'
+      }, 800);
+  }
+  $(function(){
+    _rightfix = $('#rightfix');
+    $(window).scroll(function(){
+      $sollTop = document.documentElement.scrollTop + document.body.scrollTop;
+      if($sollTop > 350){
+        _rightfix.show();
+      }else{
+        _rightfix.hide();
+      }
+    });
+  });
+</script>
+
+</div>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

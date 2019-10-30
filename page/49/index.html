@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2018/09/30/travel-to-xn/">
-  <time datetime="2018-09-30T06:10:19.000Z">
-    2018-09-30
+      <a href="/2018/10/20/redis-common/">
+  <time datetime="2018-10-20T01:52:06.000Z">
+    2018-10-20
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2018/09/30/travel-to-xn/">十一游青海</a></h1>
+    <h1 class="title"><a href="/2018/10/20/redis-common/">Redis日常操作整理</a></h1>
   
 
   </header>
@@ -77,40 +77,29 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><ul>
-<li>防晒，高原紫外线很毒</li>
-<li>唇膏，好像会开裂 真恶心啊~</li>
-<li>衣服准备好，10月份西宁气温3~14℃，感觉得带个羽绒服或者棉衣，稳</li>
-<li>围巾 老年人必备系列</li>
-<li>现金，不知西宁那边在线支付啥情况，以防万一</li>
-<li>寺庙或者僧侣避免拍照片，被打了怎么办，小命要紧</li>
-<li>高原反应，我觉得应该没啥问题T_T</li>
+<h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><p>昨天运维监控线上某服务<code>redis</code>打到100%，业务日志瞬间<code>connect refused</code>，差不多半个小时清理后，缓存服务恢复正常</p>
+<p>运维提供了一大批没有设置过期时间的<code>key</code>前来告状，其中有个‘key’半个月，存储了8G的内容，且没有过期时间，真乃神人也，我所在的业务模块，也被拔出好几个<code>key</code>存在问题</p>
+<p>现总结如下</p>
+<h2 id="如何实现某段时间的限流"><a href="#如何实现某段时间的限流" class="headerlink" title="如何实现某段时间的限流"></a>如何实现某段时间的限流</h2><p>这次排查下来，有基础代码很有问题，最有意思的是限流操作部分代码，很多场景需要用到<code>Redis</code>，如ip限制，短信当天发送限制，某个接口一段时间调用限制</p>
+<p>看程序实现，伪代码如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">int lockKeyNum = redis.get(lockKey) == null ? 0 : Integer.parse(redis.get(lockKey));</span><br><span class="line">if (lockKeyNum &lt;= 0) &#123;</span><br><span class="line">    // 初始化</span><br><span class="line">    redis.set(lockKey, 1);</span><br><span class="line">    redis.expire(lockey, 1, TimeUnit.DAYS);</span><br><span class="line">&#125; eles &#123;</span><br><span class="line">    long expireTime = redis.ttl(lockKey);</span><br><span class="line">    redis.set(lockKey, lockKeyNum + 1);</span><br><span class="line">    redis.expire(lockKey, expireTime, TimeUnit.SECONDS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这段代码看着没啥问题，如果细细揣摩，还是隐藏很多的问题的，如下列出</p>
+<ul>
+<li><p><code>Redis</code>从某个版本（具体我也忘了。。）支持set后直接设置过期时间，属于一个原子操作</p>
+</li>
+<li><p>累加器操作，自己实现完全没有意义，且多线程、进程，很容易出问题，此处初识<code>Redis</code>的人估计会疑惑，如果存在key就直接set值好了，为何还要先获取过期时间，如果直接set的话，会覆盖当前key的过期时间，这算一个初学者的坑，大家都会经历的。在这如果高并发，同时存在多个线程操作lockKey，因为redis是单线程，同时get或者set肯定会出现幻读或者脏写等操作，此处应使用<code>increment</code>命令，redis自己的累加器，且只是对值的累加，过期时间仍会保留，完美！</p>
+</li>
 </ul>
-<h2 id="交通"><a href="#交通" class="headerlink" title="交通"></a>交通</h2><h3 id="1-机场去市区"><a href="#1-机场去市区" class="headerlink" title="1.机场去市区"></a>1.机场去市区</h3><ul>
-<li>打车，30~40分钟，价格100+<br><img src="/images/taxi.jpeg" alt=""></li>
-<li>公交，首推机场大巴 差不多1个小时 价格21元<br><img src="/images/gj.jpeg" alt=""><br><img src="/images/gj-xx.jpeg" alt=""></li>
-</ul>
-<h2 id="游玩路线"><a href="#游玩路线" class="headerlink" title="游玩路线"></a>游玩路线</h2><h3 id="10月1日晚-神旺酒店附近"><a href="#10月1日晚-神旺酒店附近" class="headerlink" title="10月1日晚 神旺酒店附近"></a>10月1日晚 神旺酒店附近</h3><p>打开大众点评随便找点排行高的当地小吃，回来再更新</p>
-<h3 id="10月2日-西宁市区"><a href="#10月2日-西宁市区" class="headerlink" title="10月2日 西宁市区"></a>10月2日 西宁市区</h3><h4 id="0-塔尔寺-（70元门票-人）"><a href="#0-塔尔寺-（70元门票-人）" class="headerlink" title="0.塔尔寺 （70元门票/人）"></a>0.塔尔寺 （70元门票/人）</h4><ul>
-<li>简介<br>塔尔寺位于西宁湟中县，已有400多年历史，是藏传佛教格鲁派（黄教）最重要的寺院之一，还是黄教创始人宗喀巴大师的诞生地。寺院建筑恢宏、珍宝丰富，又能感受到浓郁的宗教氛围，是西宁最受欢迎的旅游目的地之一。<br><img src="/images/xn_tes.jpg" alt=""></li>
-<li>注意事项<br>寺内，转塔、转经筒都是顺时针的<br>塔尔寺内，只要是在经院内、大殿内，都不许拍照</li>
-<li>路线 （神旺酒店出发 -&gt; 塔尔寺）<br>打车 （30~40分钟）<br><img src="/images/s2t_taxi.jpeg" alt=""><br>公交车 （1个小时多一点儿）<br><img src="/images/s2t_gj.jpeg" alt=""><br><img src="/images/s2t_gj_xx.jpeg" alt=""></li>
-</ul>
-<h4 id="1-青海省博物馆（免费，需身份证换票）-这个作为备选，感觉很无聊"><a href="#1-青海省博物馆（免费，需身份证换票）-这个作为备选，感觉很无聊" class="headerlink" title="1.青海省博物馆（免费，需身份证换票）(这个作为备选，感觉很无聊~)"></a>1.青海省博物馆（免费，需身份证换票）(这个作为备选，感觉很无聊~)</h4><p>青海文化的代表作，分别是藏传佛教、青海现代科技发展和（新时代核心价值观下）民族团结、非遗文化、历代文物。唐卡记录了游牧民族的生活信仰。总之挺有青海省特色的，不要尝试和别的省博物馆做比较。</p>
-<h4 id="2-美食之旅"><a href="#2-美食之旅" class="headerlink" title="2.美食之旅"></a>2.美食之旅</h4><p>这一天剩下的行程就是去找吃的 哈哈哈！<br>吃什么详见最下面的美食区罗列</p>
-<h3 id="10月3日-未知结束日期-真景区游玩"><a href="#10月3日-未知结束日期-真景区游玩" class="headerlink" title="10月3日~未知结束日期 真景区游玩"></a>10月3日~未知结束日期 真景区游玩</h3><p>暂时还未想好是包车跟团还是自由行，看状态啦<br>先罗列出几个觉得可取的地点</p>
-<h4 id="0-青海湖"><a href="#0-青海湖" class="headerlink" title="0.青海湖"></a>0.青海湖</h4><p><img src="/images/xn_qhh.png" alt=""><br>青海湖去骑行就好了 交通不是很便利</p>
-<h4 id="1-茶卡盐湖"><a href="#1-茶卡盐湖" class="headerlink" title="1.茶卡盐湖"></a>1.茶卡盐湖</h4><p><img src="/images/xn_ckyh.jpeg" alt=""></p>
-<h4 id="2-祁连"><a href="#2-祁连" class="headerlink" title="2.祁连"></a>2.祁连</h4><p><img src="/images/xn_ql.jpeg" alt=""></p>
-<h4 id="3-张掖七彩丹霞"><a href="#3-张掖七彩丹霞" class="headerlink" title="3.张掖七彩丹霞"></a>3.张掖七彩丹霞</h4><p><img src="/images/xn_qcdx.jpeg" alt=""><br>这个地方感觉是经典</p>
-<h2 id="美食"><a href="#美食" class="headerlink" title="美食"></a>美食</h2><p>我一直觉得旅游不应该玩，应先吃，吃为主，玩为辅，稳得很~~</p>
-<h3 id="1-羊肉"><a href="#1-羊肉" class="headerlink" title="1.羊肉"></a>1.羊肉</h3><p>青海的羊肉名气不如新疆、内蒙，但味道是可以比肩他们甚至是超越的<br>地点：<br>1.白玉巷的“肉香不怕巷子深”（不是烤羊肉，而是手抓羊肉 味道五颗星！！！）<br>2.益鑫手抓羊肉<br><img src="/images/xn_yr.jpg" alt=""></p>
-<h3 id="2-酿皮"><a href="#2-酿皮" class="headerlink" title="2.酿皮"></a>2.酿皮</h3><p>和凉皮很像<br>地点：生莲酿皮（全市很多家店，百度吧）<br><img src="/images/xn_np.jpeg" alt=""></p>
-<h3 id="3-羊肠面（早餐）"><a href="#3-羊肠面（早餐）" class="headerlink" title="3.羊肠面（早餐）"></a>3.羊肠面（早餐）</h3><p>只有早上才营业<br>地点：尕晋娃（五星推荐），虎台店或者小桥店<br><img src="/images/xn_ycm.jpg" alt=""></p>
-<h3 id="4-羊、牛杂碎（早餐）"><a href="#4-羊、牛杂碎（早餐）" class="headerlink" title="4.羊、牛杂碎（早餐）"></a>4.羊、牛杂碎（早餐）</h3><p>只有早上营业，不同于南方的牛杂清汤，这里的做法放了胡椒面等，别具风格<br>地点：<br>1.脂肪街的马而沙牛杂<br>2.南川西路砖厂路口，六一继业羊杂碎</p>
-<h3 id="5-炕羊排"><a href="#5-炕羊排" class="headerlink" title="5.炕羊排"></a>5.炕羊排</h3><p>青海西宁，羊肉当然是最好的选择，现在市面的羊肉摊良莠不齐，味道差异之大如同天壤<br>地点：交通巷北口眼镜炕羊排（交通巷北口往里50米，街道东侧）<br><img src="/images/xn_kyp.jpg" alt=""></p>
-<h3 id="6-酸奶"><a href="#6-酸奶" class="headerlink" title="6.酸奶"></a>6.酸奶</h3><p>外地人都很喜欢喝<br>地点：德禄<br><img src="/images/xn_sn.jpg" alt=""></p>
-<h3 id="7-甜醅"><a href="#7-甜醅" class="headerlink" title="7.甜醅"></a>7.甜醅</h3><p>青海特色！！！很好喝，一定要喝的<br>地点：德禄</p>
+<p>完善代码：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">String lockKey = redis.get(lockKey);</span><br><span class="line">if (StringUtils.isEmpty(lockKey)) &#123;</span><br><span class="line">    // 初始化</span><br><span class="line">    redis.set(lockKey, 1, 1, TimeUnit.DAYS);</span><br><span class="line">&#125; eles &#123;</span><br><span class="line">    redis.increment(lockKey, 1);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="ValueOperations常用命令"><a href="#ValueOperations常用命令" class="headerlink" title="ValueOperations常用命令"></a>ValueOperations常用命令</h2><p>org.springframework.data.redis.core.ValueOperations</p>
+<h3 id="setIfAbsent"><a href="#setIfAbsent" class="headerlink" title="setIfAbsent"></a>setIfAbsent</h3><p>如果键不存在则新增,存在则不改变已经有的值。</p>
+<h3 id="multiSet"><a href="#multiSet" class="headerlink" title="multiSet"></a>multiSet</h3><p>多个值同事设置</p>
+<h3 id="multiSetIfAbsent"><a href="#multiSetIfAbsent" class="headerlink" title="multiSetIfAbsent"></a>multiSetIfAbsent</h3><p>如果对应的map集合名称不存在，则添加，如果存在则不做修改。</p>
+<h3 id="getAndSet"><a href="#getAndSet" class="headerlink" title="getAndSet"></a>getAndSet</h3><p>获取原来key键对应的值并重新赋新值。</p>
+<h3 id="multiGet"><a href="#multiGet" class="headerlink" title="multiGet"></a>multiGet</h3><p>根据集合取出对应的value值。</p>
+<h3 id="increment"><a href="#increment" class="headerlink" title="increment"></a>increment</h3><p>以增量的方式将long值存储在变量中。</p>
+<h3 id="append"><a href="#append" class="headerlink" title="append"></a>append</h3><p>在原有的值基础上新增字符串到末尾。</p>
+<h3 id="size"><a href="#size" class="headerlink" title="size"></a>size</h3><p>获取指定字符串的长度。</p>
+<h3 id="setBit"><a href="#setBit" class="headerlink" title="setBit"></a>setBit</h3><p>key键对应的值value对应的ascii码,在offset的位置(从左向右数)变为value。</p>
 
     
   </div>
@@ -146,7 +135,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 13.33px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 13.33px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 10px;">Concurrent</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.33px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/MQ/" style="font-size: 16.67px;">MQ</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Redis/" style="font-size: 13.33px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16.67px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 13.33px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 13.33px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 13.33px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.67px;">zookeeper</a> <a href="/tags/原/" style="font-size: 13.33px;">原</a> <a href="/tags/精分/" style="font-size: 15px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 13.33px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 13.33px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 10px;">Concurrent</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.33px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/MQ/" style="font-size: 16.67px;">MQ</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 13.33px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 16.67px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 13.33px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 13.33px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 13.33px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.67px;">zookeeper</a> <a href="/tags/原/" style="font-size: 13.33px;">原</a> <a href="/tags/精分/" style="font-size: 15px;">精分</a>
   </div>
 </div>
 
@@ -155,6 +144,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/10/30/os-complete-know/">【精分】操作系统最全最详细分析汇总</a>
+      </li>
     
       <li>
         <a href="/2019/10/24/service-component-mysql-complete-know/">【精分】MySQL最全最详细分析汇总</a>
@@ -170,10 +163,6 @@
     
       <li>
         <a href="/2019/10/22/java-concurrent-complete-know/">【精分】Java并发最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/18/java-collection-complete-know/">【精分】Java集合最全最详细分析汇总</a>
       </li>
     
   </ul>
