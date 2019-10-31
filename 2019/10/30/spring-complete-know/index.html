@@ -4,22 +4,46 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>无知是天堂</title>
+  <title>【精分】Spring 最全最详细分析汇总 | 无知是天堂</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="jifuwei">
   
   
-  <meta name="description" content="JAVA Blog">
-<meta property="og:type" content="website">
-<meta property="og:title" content="无知是天堂">
-<meta property="og:url" content="http://yoursite.com/index.html">
+    <meta name="description" content="问题
+bean生命周期
+实现InitializingBean和指定init-method比较？
+
+bean生命周期
+实现InitializingBean和指定init-method比较？
+spring为bean提供了两种初始化bean的方式，实现InitializingBean接口，实现afterPropertiesSet方法，或者在配置文件中同过init-method指定，两种方式可以同时使用">
+  
+  <meta name="description" content="问题 bean生命周期 实现InitializingBean和指定init-method比较？  bean生命周期 实现InitializingBean和指定init-method比较？ spring为bean提供了两种初始化bean的方式，实现InitializingBean接口，实现afterPropertiesSet方法，或者在配置文件中同过init-method指定，两种方式可以同时使用">
+<meta name="keywords" content="精分,Spring">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【精分】Spring 最全最详细分析汇总">
+<meta property="og:url" content="http://yoursite.com/2019/10/30/spring-complete-know/index.html">
 <meta property="og:site_name" content="无知是天堂">
-<meta property="og:description" content="JAVA Blog">
+<meta property="og:description" content="问题 bean生命周期 实现InitializingBean和指定init-method比较？  bean生命周期 实现InitializingBean和指定init-method比较？ spring为bean提供了两种初始化bean的方式，实现InitializingBean接口，实现afterPropertiesSet方法，或者在配置文件中同过init-method指定，两种方式可以同时使用">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8gjtvw0p3j20ko0e275x.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdeul227j20my0eyjsw.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdf6wzaxj20za0m07cl.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdhvdb60j21c408wdi6.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdmniq86j21b60fi14k.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdn2nalsj21h00w87ou.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdo8bb8uj20zi0c80uy.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdp2qotij21ao0cegwv.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdptyuejj20yu0de0vf.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdqnv7exj21fk0ywh99.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdrpcx0cj21680kkdti.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hezyc1j0j20xc0ejt95.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8hf1tiv5kj20ck0a6jrb.jpg">
+<meta property="og:updated_time" content="2019-10-31T09:55:52.832Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="无知是天堂">
-<meta name="twitter:description" content="JAVA Blog">
+<meta name="twitter:title" content="【精分】Spring 最全最详细分析汇总">
+<meta name="twitter:description" content="问题 bean生命周期 实现InitializingBean和指定init-method比较？  bean生命周期 实现InitializingBean和指定init-method比较？ spring为bean提供了两种初始化bean的方式，实现InitializingBean接口，实现afterPropertiesSet方法，或者在配置文件中同过init-method指定，两种方式可以同时使用">
+<meta name="twitter:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8gjtvw0p3j20ko0e275x.jpg">
   
   
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -49,13 +73,7 @@
   </nav>
   <div class="clearfix"></div>
 </header>
-    <div class="content">
-
-
-
-
-  
-    <article class="post">
+    <div class="content"><article class="post">
   <header>
     
       <div class="icon"></div>
@@ -67,7 +85,7 @@
     
     
   
-    <h1 class="title"><a href="/2019/10/30/spring-complete-know/">【精分】Spring 最全最详细分析汇总</a></h1>
+    <h1 class="title">【精分】Spring 最全最详细分析汇总</h1>
   
 
   </header>
@@ -263,25 +281,19 @@
 
     
   </div>
-  <footer class="end-sep">
+  <footer>
     
       
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/Spring/">Spring</a>, <a class="tags-link" href="/tags/精分/">精分</a>
+  </div>
+
       
     
     <div class="clearfix"></div>
   </footer>
 </article>
-
-
-  
-
-  <nav id="pagination">
-  
-  
-    <a href="/page/2/" class="next">Next</a>
-  
-  <div class="clearfix"></div>
-</nav>
 
 </div>
   </div>
