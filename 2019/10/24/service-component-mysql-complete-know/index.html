@@ -34,6 +34,7 @@ sql语句查询慢的原因？（一直慢 OR 忽然慢）
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g89p0bko4dj20ns0acq5o.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g89pi6n9n6j20qe07rdg9.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g89pkzgjyhj20j607jjrq.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8inx7gj5rj20fp09b77w.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8ebscdrk2j20ct05b746.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8ebsnv4w9j206t055a9v.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fhvxc977j20hn0adq2x.jpg">
@@ -45,7 +46,7 @@ sql语句查询慢的原因？（一直慢 OR 忽然慢）
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fii1ved3j20f00400sj.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fiiq7fs1j20cs0eb746.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8fijf9forj20iv0akmx3.jpg">
-<meta property="og:updated_time" content="2019-10-30T01:48:46.211Z">
+<meta property="og:updated_time" content="2019-11-01T09:24:04.567Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="【精分】MySQL最全最详细分析汇总">
 <meta name="twitter:description" content="问题mysql相关（这边指用InnoDB引擎）  索引为何用B+？红黑树可以么？什么样的数据接口适合mysql索引？ 一条sql语句的生命周期？ sql语句查询慢的原因？（一直慢 OR 忽然慢） 服务运行会产生哪些日志？都什么功能？何时产生？ 索引字段应如何选择？（为何不建议过长的字段作为主键？） 为何索引字段推荐自增字段？（随机字段会导致什么问题？） 为何建议字段设置NOT NULL？（NULL">
@@ -210,7 +211,8 @@ sql语句查询慢的原因？（一直慢 OR 忽然慢）
 <li>Twitter的snowflake算法 ：<br>Github 地址：<a href="https://github.com/twitter-archive/snowflake。" target="_blank" rel="noopener">https://github.com/twitter-archive/snowflake。</a></li>
 <li>美团的Leaf分布式ID生成系统 ：<br>Leaf 是美团开源的分布式ID生成器，能保证全局唯一性、趋势递增、单调递增、信息安全，里面也提到了几种分布式方案的对比，但也需要依赖关系数据库、Zookeeper等中间件。感觉还不错。美团技术团队的一篇文章：<a href="https://tech.meituan.com/2017/04/21/mt-leaf.html" target="_blank" rel="noopener">https://tech.meituan.com/2017/04/21/mt-leaf.html</a> </li>
 </ul>
-<h2 id="一条SQL语句在MySQL中如何执行的"><a href="#一条SQL语句在MySQL中如何执行的" class="headerlink" title="一条SQL语句在MySQL中如何执行的"></a>一条SQL语句在MySQL中如何执行的</h2><h3 id="MySQL-基本架构概览"><a href="#MySQL-基本架构概览" class="headerlink" title="MySQL 基本架构概览"></a>MySQL 基本架构概览</h3><ul>
+<h2 id="一条SQL语句在MySQL中如何执行的"><a href="#一条SQL语句在MySQL中如何执行的" class="headerlink" title="一条SQL语句在MySQL中如何执行的"></a>一条SQL语句在MySQL中如何执行的</h2><p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8inx7gj5rj20fp09b77w.jpg" alt=""></p>
+<h3 id="MySQL-基本架构概览"><a href="#MySQL-基本架构概览" class="headerlink" title="MySQL 基本架构概览"></a>MySQL 基本架构概览</h3><ul>
 <li>连接器： 身份认证和权限相关(登录 MySQL 的时候)。</li>
 <li>查询缓存:  执行查询语句的时候，会先查询缓存（MySQL 8.0 版本后移除，因为这个功能不太实用）。</li>
 <li>分析器:  没有命中缓存的话，SQL 语句就会经过分析器，分析器说白了就是要先看你的 SQL 语句要干嘛，再检查你的 SQL 语句语法是否正确。</li>
@@ -549,6 +551,7 @@ sql语句查询慢的原因？（一直慢 OR 忽然慢）
 <h3 id="分区性能"><a href="#分区性能" class="headerlink" title="分区性能"></a>分区性能</h3><p>数据库的应用分为两类：一类是OLTP（在线事务处理），如博客、电子商务、网络游戏等；另一类是OLAP（在线分析处理），如数据仓库、数据集市。</p>
 <p>对于OLAP的应用，分区的确可以很好地提高查询的性能，因为OLAP应用的大多数查询需要频繁地扫描一张很大的表。假设有一张1亿行的表，其中有一个时间戳属性列。你的查询需要从这张表中获取一年的数据。如果按时间戳进行分区，则只需要扫描相应的分区即可。</p>
 <p>对于OLTP的应用，分区应该非常小心。在这种应用下，不可能会获取一张大表中10%的数据，大部分都是通过索引返回一条记录即可。可根据B+树索引的原理可知，对于一张大表，一般的B+树需要2-3次磁盘IO。因此B+树可以很好的完成操作，不需要分区的帮助。</p>
+<h2 id="InnoDB-中的锁和-MVCC"><a href="#InnoDB-中的锁和-MVCC" class="headerlink" title="InnoDB 中的锁和 MVCC"></a>InnoDB 中的锁和 MVCC</h2><p><a href="http://huzb.me/2019/01/27/InnoDB%E4%B8%AD%E7%9A%84%E9%94%81%E5%92%8CMVCC/" target="_blank" rel="noopener">InnoDB 中的锁和 MVCC</a></p>
 <p>参考：<br><a href="https://zhuanlan.zhihu.com/p/54665280" target="_blank" rel="noopener">mysql索引底层原理</a><br><a href="https://www.jianshu.com/p/39d86acac8dd" target="_blank" rel="noopener">InnoDB逻辑存储结构</a><br>《MySQL技术内幕》-机械工业出版社-作者: 姜承尧</p>
 
     
