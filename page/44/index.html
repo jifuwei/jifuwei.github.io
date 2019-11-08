@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/01/22/jvm-bytecode-engine/">
-  <time datetime="2019-01-22T12:14:33.000Z">
-    2019-01-22
+      <a href="/2019/01/26/spring-cloud-init/">
+  <time datetime="2019-01-26T13:27:30.000Z">
+    2019-01-26
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/01/22/jvm-bytecode-engine/">JVM——虚拟机字节码执行引擎</a></h1>
+    <h1 class="title"><a href="/2019/01/26/spring-cloud-init/">Spring Cloud——纵览</a></h1>
   
 
   </header>
@@ -77,25 +77,47 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<h2 id="1-运行时栈帧结构"><a href="#1-运行时栈帧结构" class="headerlink" title="1.运行时栈帧结构"></a>1.运行时栈帧结构</h2><p><strong>栈帧（Stack Frame</strong>是用于支持方法调用和方法执行的数据结构。它是虚拟机运行时数据区中的虚拟机栈的栈元素，存储了方法的局部变量表、操作数栈、动态链接和方法返回地址等信息。每一个方法从调用开始到执行完成的过程，就对应着一个栈帧在虚拟机栈里面从入栈道出栈的过程。<br><img src="https://cdn.nlark.com/yuque/0/2018/jpeg/155206/1541065156986-952228bd-7316-49d0-b33b-8f344f4c20f1.jpeg" alt=""></p>
-<h2 id="局部变量表"><a href="#局部变量表" class="headerlink" title="局部变量表"></a>局部变量表</h2><p>局部变量表是一组变量值存储空间，用于存放方法的参数和方法类定义的局部变量。</p>
-<p>它是以变量槽（Variable Slot）为最小单位，每一个Slot（32位）都应该能放一个 boolean 、byte 、char 、float 、 reference 、 short 、 int 或 returnAddress 类型数据。而至于 long 、double 两种数据则被规定为是64位数据（连续两个32位）。<br>reference类型数据可能食32位，也可能是64位数据</p>
-<h2 id="操作数栈"><a href="#操作数栈" class="headerlink" title="操作数栈"></a>操作数栈</h2><p>也被称之为操作栈，是一个先进先出（FIFO）的栈。</p>
-<p>操作数栈的最大深度也在编译的时候就被写入到code属性的 max_stacks 数据项之中。</p>
-<p>在概念模型中，两个栈帧相互之间是完全独立的，但是大多数虚拟机会做一些优化处理，令两个栈帧出现一部分重叠，这样在方法调用时就可以公用一部分数据，无须进行额外的参数复制传递的操作。如下图示：<br><img src="https://cdn.nlark.com/yuque/0/2018/png/155206/1541065183366-ff0089fd-789d-4355-8e74-12f94bf2acad.png" alt=""></p>
-<h2 id="动态连接"><a href="#动态连接" class="headerlink" title="动态连接"></a>动态连接</h2><p>每个栈帧都包含一个运行时常量池中指向该栈帧所属方法的引用，这是为了支持方法调用过程中的动态连接。</p>
-<h2 id="方法返回地址"><a href="#方法返回地址" class="headerlink" title="方法返回地址"></a>方法返回地址</h2><p>当一个方法被执行时，有两种方式推出这个方法：</p>
-<ul>
-<li>正常完成出口（Normal Method Invocation Completion）</li>
-<li>异常完成出口（Abrupt Method Invocation Completion）</li>
+<h2 id="什么是微服务架构"><a href="#什么是微服务架构" class="headerlink" title="什么是微服务架构"></a>什么是微服务架构</h2><p>简单地说， 微服务是系统架构上的一种设计风格， 它的主旨是将一个原本独立的系统 拆分成多个小型服务，这些小型服务都在各自独立的进程中运行，服务之间通过基于HTTP 的RESTful API进行通信协作。 被拆分成的每一个小型服务都围绕着系统中的某一项或一 些耦合度较高的业务功能进行构建， 并且每个服务都维护着自身的数据存储、 业务开发、 自动化测试案例以及独立部署机制</p>
+<h2 id="如何实施微服务"><a href="#如何实施微服务" class="headerlink" title="如何实施微服务"></a>如何实施微服务</h2><ul>
+<li>服务组件化</li>
+<li>按业务组织团队</li>
+<li>做“产品” 的态度，每个小团队都应该以做产品的方式， 对其产品的整个生 命周期负责。 而不是以项目的模式，以完成开发与交付并将成果交接给维护者为最终目标。</li>
+<li>智能端点与哑管道，在微服务架构中， 通常会使用以下两种服务调用方式:<ul>
+<li>使用HTTP的RESTfulAPI或轻量级的消息发送协议， 实现信息传递与服 务调用的触发。</li>
+<li>通过在轻量级消息总线上传递消息， 类似 RabbitMQ 等 一 些提供可靠异步 交换的中间件。</li>
 </ul>
-<h2 id="附加信息"><a href="#附加信息" class="headerlink" title="附加信息"></a>附加信息</h2><p>虚拟机规范允许具体的虚拟机实现增加一些规范里没有描述的信息到栈帧之中。</p>
-<h2 id="2-方法调用"><a href="#2-方法调用" class="headerlink" title="2.方法调用"></a>2.方法调用</h2><p>确定被调用方法的版本（即调用哪一个方法）。</p>
-<h2 id="方法解析"><a href="#方法解析" class="headerlink" title="方法解析"></a>方法解析</h2><p>调用目标在程序写好、编译器进行编译时就确定下来，这种方法的调用称之为解析（Resolution）。<br>简单总结就是：编译器可知，运行期不可变。<br>在Java中符合这种要求的方法主要有：静态方法和私有方法</p>
-<h2 id="分派"><a href="#分派" class="headerlink" title="分派"></a>分派</h2><h3 id="静态分派"><a href="#静态分派" class="headerlink" title="静态分派"></a>静态分派</h3><p><code>Human man = new Man();</code><br>静态类型：<code>Human</code><br>实际类型：<code>Man</code><br>在编译阶段，Javac编译器就根据参数的静态类型决定使用哪个重载版本。</p>
-<h3 id="动态分派"><a href="#动态分派" class="headerlink" title="动态分派"></a>动态分派</h3><p>在运行期间根据实际类型确定方法执行版本的分配过程称为动态分派。</p>
-<h3 id="单分派与多分派"><a href="#单分派与多分派" class="headerlink" title="单分派与多分派"></a>单分派与多分派</h3><p>单分派是根据一个宗量对目标方法进行选择。</p>
-<p>多分派则是根据多于一个的宗量对目标方法进行选择。</p>
+</li>
+<li>去中心化治理</li>
+<li>去中心化管理数据</li>
+<li>基础设施自动化</li>
+<li>容错设计</li>
+</ul>
+<h2 id="为什么选择Spring-Cloud"><a href="#为什么选择Spring-Cloud" class="headerlink" title="为什么选择Spring Cloud"></a>为什么选择Spring Cloud</h2><p>SpringCloud的出现，可以说是对微服务架构的巨大 支持和强有力的技术后盾。它不像<br>我们之前所列举的框架那样， 只是解决微服务中的某一个问题， 而是一个解决微服务架构 实施的综合性解决框架， 它整合了诸多被广泛实践和证明过的框架作为实施的基础部件，<br>又在该体系基础上创建了一些 非常优秀的边缘组件。</p>
+<p>SpringCloud也许对很多已经实施微服务并自成体系的团队不具备足够的吸引力，但是<br>对于还未实施微服务或是未成体系的团队，这必将是一个 非常有吸引力的框架选择。不论 其项目的发展目标，还是 Spring的强大背景，亦或其极高的社区活跃度，都是未来企业架 构师必须了解和接触的重要框架， 有 一 天成为微服务架构的标准解决方案也并非不可能。</p>
+<h2 id="Spring-Cloud简介"><a href="#Spring-Cloud简介" class="headerlink" title="Spring Cloud简介"></a>Spring Cloud简介</h2><ul>
+<li>SpringCloudConfig: 配置管理工具， 支持使用Git存储 配置内容， 可以使用它实现 应用配置的外部化存储， 并支持客户端配置信息刷新、 加密/解密配置内容 等。</li>
+<li>SpringCloudNetflix: 核心 组件， 对多个Netflix OSS开源套件进行整合<ul>
+<li>Eureka: 服务治理组件， 包含服务注册中心、 服务注册与发现机制的实现</li>
+<li>Hystrix: 容错管理组件，实现断路器模式， 帮助服务依赖中出现的延迟和为故障提供强大 的容错能力</li>
+<li>Ribbon: 客户端负载均衡的服务调用组件。</li>
+<li>Feign: 基于Ribbon 和 Hystrix 的声明式服务调用组件</li>
+<li>Zuul: 网关组件， 提供智能路由、 访问过滤等功能</li>
+<li>Archaius: 外部化配置组件</li>
+</ul>
+</li>
+<li>Spring Cloud Bus: 事件、 消息总线， 用于传播集群中的状态变化或事件， 以触发后续的处理， 比如用来动态刷新配置等</li>
+<li>Spring Cloud Cluster: 针对 ZooKeeper、 Redis、 Hazelcast、 Consul 的选举算法和通用状态模式的实现</li>
+<li>Spring Cloud Cloudfoundry: 与 Pivotal Cloudfoundry 的整合支持</li>
+<li>Spring Cloud Consul: 服务发现与配置管理工具</li>
+<li>Spring Cloud Stream: 通过 Redis、 Rabbit 或者 Kafka 实现的消费微服务， 可以通过 简单的声明式模型来发送和接收消息</li>
+<li>SpringCloudAWS: 用千简化整合AmazonWebService的组件</li>
+<li>Spring Cloud Security: 安全工具包， 提供在 Zuul 代理中对 0Auth2 客户端请求的中继器</li>
+<li>Spring Cloud Sleuth: Spring Cloud 应用的分布式跟踪实现， 可以完美整合 Zipkin</li>
+<li>SpringCloudZooKeeper: 基于ZooKeeper的服务发现与配置管理组件</li>
+<li>Spring Cloud Starters: Spring Cloud 的基础组件， 它是基于 Spring Boot 风格项目的基础依赖模块</li>
+<li>Spring Cloud CLI: 用于在 Groovy 中快速创建 Spring Cloud 应用的 Spring Boot CLI插件</li>
+</ul>
+<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>由于Brixton 版本包含了大部分的Spring Cloud 子项目， 并且均为Release版本， 所以 本文所有示例以及讲解内容的编写均采用 Brixton.SR5版本， 基千Spring Boot 1.3.7版本。</p>
 
     
   </div>
@@ -131,7 +153,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 10px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -142,23 +164,23 @@
   <ul class="entry">
     
       <li>
+        <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
+      </li>
+    
+      <li>
         <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
       </li>
     
       <li>
         <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/30/spring-complete-know/">【精分】Spring 最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/30/os-complete-know/">【精分】操作系统最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/24/service-component-mysql-complete-know/">【精分】MySQL最全最详细分析汇总</a>
       </li>
     
   </ul>

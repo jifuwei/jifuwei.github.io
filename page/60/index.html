@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2018/08/20/HashMap/">
-  <time datetime="2018-08-20T08:33:32.000Z">
-    2018-08-20
+      <a href="/2018/08/23/distribut-lock/">
+  <time datetime="2018-08-23T08:47:59.000Z">
+    2018-08-23
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2018/08/20/HashMap/">HashMap剖析</a></h1>
+    <h1 class="title"><a href="/2018/08/23/distribut-lock/">分布式锁</a></h1>
   
 
   </header>
@@ -77,23 +77,72 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<h2 id="大纲"><a href="#大纲" class="headerlink" title="大纲"></a>大纲</h2><p>1.HashMap的实现原理<br>2.HashMap是如何解决hash冲突的问题</p>
-<h2 id="1-HashMap的实现原理"><a href="#1-HashMap的实现原理" class="headerlink" title="1.HashMap的实现原理"></a>1.HashMap的实现原理</h2><h3 id="1-1-哈希"><a href="#1-1-哈希" class="headerlink" title="1.1.哈希"></a>1.1.哈希</h3><p>Hash，一般翻译做“散列”，也有直接音译为“哈希”的，就是把任意长度的输入，通过散列算法，变换成固定长度的输出，该输出就是散列值。 这种转换是一种压缩映射，也就是，散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，所以不可能从散列值来唯一的确定输入值。简单的说就是一种将任意长度的消息压缩到某一固定长度的消息摘要的函数。</p>
-<h3 id="1-2-HashMap的数据结构"><a href="#1-2-HashMap的数据结构" class="headerlink" title="1.2.HashMap的数据结构"></a>1.2.HashMap的数据结构</h3><p>在Java中，保存数据有两种比较简单的数据结构：数组和链表。</p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>在高并发场景中，我们需要对资源上锁。比如在秒杀商品时，大量请求过来，不上锁可能导致超卖等现象的发生。<br>分布式系统由独立的服务器通过网络松散耦合组成。在这个系统中每个服务器都是一台独立的主机，服务器之间通过内部网络连接。分布式系统有以下几个特点：</p>
 <ul>
-<li>数组的特点是：寻址容易，插入和删除困难；</li>
-<li>而链表的特点是：寻址困难，插入和删除容易。<br>上面我们提到过，常用的哈希函数的冲突解决办法中有一种方法叫做链地址法，其实就是将数组和链表组合在一起，发挥了两者的优势，我们可以将其理解为链表的数组。</li>
+<li>可扩展性：可通过横向水平扩展提高系统的性能和吞吐量。</li>
+<li>高可靠性：高容错，即使系统中一台或几台故障，系统仍可提供服务。</li>
+<li>高并发性：各机器并行独立处理和计算。</li>
+<li>廉价高效：多台小型机而非单台高性能机。</li>
 </ul>
-<h2 id="2-HashMap是如何解决hash冲突的问题"><a href="#2-HashMap是如何解决hash冲突的问题" class="headerlink" title="2.HashMap是如何解决hash冲突的问题"></a>2.HashMap是如何解决hash冲突的问题</h2><h3 id="2-1-hash方法"><a href="#2-1-hash方法" class="headerlink" title="2.1.hash方法"></a>2.1.hash方法</h3><p>在同一个版本的Jdk中，HashMap、HashTable以及ConcurrentHashMap里面的hash方法的实现是不同的<br>调用Object对象的hashCode()方法，该方法会返回一个整数，然后用这个数对HashMap或者HashTable的容量进行取模就行了。没错，其实基本原理就是这个，只不过，在具体实现上，由两个方法int hash(Object k)和int indexFor(int h, int length)来实现。但是考虑到效率等问题，HashMap的实现会稍微复杂一点<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">int</span> <span class="title">hash</span><span class="params">(Object k)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> h = hashSeed;</span><br><span class="line">    <span class="keyword">if</span> (<span class="number">0</span> != h &amp;&amp; k <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">        <span class="keyword">return</span> sun.misc.Hashing.stringHash32((String) k);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    h ^= k.hashCode();</span><br><span class="line">    h ^= (h &gt;&gt;&gt; <span class="number">20</span>) ^ (h &gt;&gt;&gt; <span class="number">12</span>);</span><br><span class="line">    <span class="keyword">return</span> h ^ (h &gt;&gt;&gt; <span class="number">7</span>) ^ (h &gt;&gt;&gt; <span class="number">4</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">indexFor</span><span class="params">(<span class="keyword">int</span> h, <span class="keyword">int</span> length)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> h &amp; (length-<span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>indexFor方法其实主要是将hash生成的整型转换成链表数组中的下标。那么return h &amp; (length-1);是什么意思呢？其实，他就是取模。Java之所有使用位运算(&amp;)来代替取模运算(%)，最主要的考虑就是效率。位运算(&amp;)效率要比代替取模运算(%)高很多，主要原因是位运算直接对内存数据进行操作，不需要转成十进制，因此处理速度非常快。</p>
-<p>那么，为什么可以使用位运算(&amp;)来实现取模运算(%)呢？这实现的原理如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">X % <span class="number">2</span>^n = X &amp; (<span class="number">2</span>^n - <span class="number">1</span>)</span><br><span class="line"><span class="number">2</span>^n表示<span class="number">2</span>的n次方，也就是说，一个数对<span class="number">2</span>^n取模 == 一个数和(<span class="number">2</span>^n - <span class="number">1</span>)做按位与运算 。</span><br><span class="line">假设n为<span class="number">3</span>，则<span class="number">2</span>^<span class="number">3</span> = <span class="number">8</span>，表示成<span class="number">2</span>进制就是<span class="number">1000</span>。<span class="number">2</span>^<span class="number">3</span> = <span class="number">7</span> ，即<span class="number">0111</span>。</span><br><span class="line">此时X &amp; (<span class="number">2</span>^<span class="number">3</span> - <span class="number">1</span>) 就相当于取X的<span class="number">2</span>进制的最后三位数。</span><br><span class="line">从<span class="number">2</span>进制角度来看，X / <span class="number">8</span>相当于 X &gt;&gt; <span class="number">3</span>，即把X右移<span class="number">3</span>位，此时得到了X / <span class="number">8</span>的商，而被移掉的部分(后三位)，则是X % <span class="number">8</span>，也就是余数。</span><br></pre></td></tr></table></figure></p>
-<p>举例说明：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">6</span> % <span class="number">8</span> = <span class="number">6</span> ，<span class="number">6</span> &amp; (<span class="number">8</span> - <span class="number">1</span>) = <span class="number">6</span></span><br><span class="line"></span><br><span class="line"><span class="number">10</span> % <span class="number">8</span> = <span class="number">2</span> ，<span class="number">10</span> &amp; (<span class="number">8</span> - <span class="number">1</span>) = <span class="number">2</span></span><br></pre></td></tr></table></figure></p>
-<p>所以，return h &amp; (length-1);只要保证length的长度是2^n的话，就可以实现取模运算了。而HashMap中的length也确实是2的倍数，初始值是16，之后每次扩充为原来的2倍。</p>
-<p>但是，由于HashMap使用位运算代替了取模运算，这就带来了另外一个问题，那就是有可能发生冲突。<br>两个不同的键值，在对数组长度进行按位与运算后得到的结果相同，这不就发生了冲突吗。那么如何解决这种冲突呢，来看下Java是如何做的。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">h ^= k.hashCode();</span><br><span class="line">h ^= (h &gt;&gt;&gt; <span class="number">20</span>) ^ (h &gt;&gt;&gt; <span class="number">12</span>);</span><br><span class="line"><span class="keyword">return</span> h ^ (h &gt;&gt;&gt; <span class="number">7</span>) ^ (h &gt;&gt;&gt; <span class="number">4</span>);</span><br></pre></td></tr></table></figure></p>
-<p>这段代码是为了对key的hashCode进行扰动计算，防止不同hashCode的高位不同但低位相同导致的hash冲突。简单点说，就是为了把高位的特征和低位的特征组合起来，降低哈希冲突的概率，也就是说，尽量做到任何一位的变化都能对最终得到的结果产生影响。</p>
-<p>举个例子来说，我们现在想向一个HashMap中put一个K-V对，Key的值为“hollischuang”，经过简单的获取hashcode后，得到的值为“1011000110101110011111010011011”，如果当前HashTable的大小为16，即在不进行扰动计算的情况下，他最终得到的index结果值为11。由于16的二进制扩展到32位为“00000000000000000000000000001111”，所以，一个数字在和他进行按位与操作的时候，前28位无论是什么，计算结果都一样（因为0和任何数做与，结果都为0）。</p>
-<h3 id="2-2-HashMap-In-Java-8"><a href="#2-2-HashMap-In-Java-8" class="headerlink" title="2.2.HashMap In Java 8"></a>2.2.HashMap In Java 8</h3><p>在Java 8 之前，HashMap和其他基于map的类都是通过链地址法解决冲突，它们使用单向链表来存储相同索引值的元素。在最坏的情况下，这种方式会将HashMap的get方法的性能从O(1)降低到O(n)。为了解决在频繁冲突时hashmap性能降低的问题，Java 8中使用平衡树来替代链表存储冲突的元素。这意味着我们可以将最坏情况下的性能从O(n)提高到O(logn)。</p>
-<p>如果恶意程序知道我们用的是Hash算法，则在纯链表情况下，它能够发送大量请求导致哈希碰撞，然后不停访问这些key导致HashMap忙于进行线性查找，最终陷入瘫痪，即形成了拒绝服务攻击（DoS）。</p>
+<p>基于分布式系统的这些特征，有两种问题逐渐成为了分布式环境中需要重点关注和解决的典型问题：</p>
+<ul>
+<li>互斥性问题（资源竞争）</li>
+<li>幂等性问题（结果一致）</li>
+</ul>
+<h2 id="多线程环境解决方案及原理"><a href="#多线程环境解决方案及原理" class="headerlink" title="多线程环境解决方案及原理"></a>多线程环境解决方案及原理</h2><h3 id="1-ReentrantLock"><a href="#1-ReentrantLock" class="headerlink" title="1.ReentrantLock"></a>1.ReentrantLock</h3><p>ReentrantLock主要利用CAS+CLH队列来实现。它支持公平锁和非公平锁，两者的实现类似。</p>
+<ul>
+<li>CAS：Compare and Swap，比较并交换。CAS有3个操作数：内存值V、预期值A、要修改的新值B。当且仅当预期值A和内存值V相同时，将内存值V修改为B，否则什么都不做。该操作是一个原子操作，被广泛的应用在Java的底层实现中。在Java中，CAS主要是由sun.misc.Unsafe这个类通过JNI调用CPU底层指令实现。</li>
+<li>CLH队列：带头结点的双向非循环链表</li>
+</ul>
+<p>ReentrantLock的基本实现可以概括为：先通过CAS尝试获取锁。如果此时已经有线程占据了锁，那就加入CLH队列并且被挂起。当锁被释放之后，排在CLH队列队首的线程会被唤醒，然后CAS再次尝试获取锁。在这个时候，如果：</p>
+<ul>
+<li>非公平锁：如果同时还有另一个线程进来尝试获取，那么有可能会让这个线程抢先获取；</li>
+<li>公平锁：如果同时还有另一个线程进来尝试获取，当它发现自己不是在队首的话，就会排到队尾，由队首的线程获取到锁。</li>
+</ul>
+<h3 id="2-synchronized"><a href="#2-synchronized" class="headerlink" title="2.synchronized"></a>2.synchronized</h3><p>在Java语言中存在两种内建的synchronized语法：synchronized语句、synchronized方法</p>
+<ul>
+<li>synchronized语句：当源代码被编译成字节码的时候，会在同步块的入口位置和退出位置分别插入monitorenter和monitorexit字节码指令;</li>
+<li>synchronized方法：在Class文件的方法表中将该方法的access_flags字段中的synchronized标志位置1。这个在specification中没有明确说明。</li>
+</ul>
+<h2 id="分布式环境下的解决方案——分布式锁"><a href="#分布式环境下的解决方案——分布式锁" class="headerlink" title="分布式环境下的解决方案——分布式锁"></a>分布式环境下的解决方案——分布式锁</h2><h3 id="分布式锁基本条件"><a href="#分布式锁基本条件" class="headerlink" title="分布式锁基本条件"></a>分布式锁基本条件</h3><p>锁的实现有很多共通之处，它们都需要满足一些最基本的条件</p>
+<ul>
+<li>需要有存储锁的空间，并且锁的空间是可以访问到的。</li>
+<li>锁需要被唯一标识。</li>
+<li>锁要有至少两种状态</li>
+</ul>
+<h3 id="分布式锁进阶条件"><a href="#分布式锁进阶条件" class="headerlink" title="分布式锁进阶条件"></a>分布式锁进阶条件</h3><p>如果分布式锁的实现，还能再解决上面的三个问题，那么就可以算是一个相对完整的分布式锁了。然而，在实际的系统环境中，还会对分布式锁有更高级的要求。</p>
+<ul>
+<li>可重入：线程中的可重入，指的是外层函数获得锁之后，内层也可以获得锁，ReentrantLock和synchronized都是可重入锁；衍生到分布式环境中，一般仍然指的是线程的可重入，在绝大多数分布式环境中，都要求分布式锁是可重入的。</li>
+<li>惊群效应（Herd Effect）：在分布式锁中，惊群效应指的是，在有多个请求等待获取锁的时候，一旦占有锁的线程释放之后，如果所有等待的方都同时被唤醒，尝试抢占锁。但是这样的情况会造成比较大的开销，那么在实现分布式锁的时候，应该尽量避免惊群效应的产生。</li>
+<li>公平锁和非公平锁：不同的需求，可能需要不同的分布式锁。非公平锁普遍比公平锁开销小。但是业务需求如果必须要锁的竞争者按顺序获得锁，那么就需要实现公平锁。</li>
+<li>阻塞锁和自旋锁：针对不同的使用场景，阻塞锁和自旋锁的效率也会有所不同。阻塞锁会有上下文切换，如果并发量比较高且临界区的操作耗时比较短，那么造成的性能开销就比较大了。但是如果临界区操作耗时比较长，一直保持自旋，也会对CPU造成更大的负荷。</li>
+</ul>
+<h3 id="实现方案"><a href="#实现方案" class="headerlink" title="实现方案"></a>实现方案</h3><h4 id="1-乐观锁"><a href="#1-乐观锁" class="headerlink" title="1.乐观锁"></a>1.乐观锁</h4><p>大多数是基于数据版本(version)的记录机制实现的。一般是通过为数据库表添加一个 “version”字段来实现读取出数据时，将此版本号一同读出，之后更新时，对此版本号加1。在更新过程中，会对版本号进行比较，如果是一致的，没有发生改变，则会成功执行本次操作；如果版本号不一致，则会更新失败。<br>缺点：</p>
+<ul>
+<li>这种操作方式，使原本一次的update操作，必须变为2次操作: select版本号一次；update一次。增加了数据库操作的次数。</li>
+<li>如果业务场景中的一次业务流程中，多个资源都需要用保证数据一致性，那么如果全部使用基于数据库资源表的乐观锁，就要让每个资源都有一张资源表，这个在实际使用场景中肯定是无法满足的。而且这些都基于数据库操作，在高并发的要求下，对数据库连接的开销一定是无法忍受的。</li>
+<li>乐观锁机制往往基于系统中的数据存储逻辑，因此可能会造成脏数据被更新到数据库中。在系统设计阶段，我们应该充分考虑到这些情况出现的可能性，并进行相应调整，如将乐观锁策略在数据库存储过程中实现，对外只开放基于此存储过程的数据更新途径，而不是将数据库表直接对外公开。 </li>
+</ul>
+<h4 id="2-悲观锁"><a href="#2-悲观锁" class="headerlink" title="2.悲观锁"></a>2.悲观锁</h4><p>总是假设最坏的情况，每次取数据时都认为其他线程会修改，所以都会加锁（读锁、写锁、行锁等），当其他线程想要访问数据时，都需要阻塞挂起。可以依靠数据库实现，如行锁、读锁和写锁等，都是在操作之前加锁，在Java中，synchronized的思想也是悲观锁<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">status</span> <span class="keyword">from</span> t_goods <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">1</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure></p>
+<p>优点与不足<br>悲观并发控制实际上是“先取锁再访问”的保守策略，为数据处理的安全提供了保证。但是在效率方面，处理加锁的机制会让数据库产生额外的开销，还有增加产生死锁的机会；另外，在只读型事务处理中由于不会产生冲突，也没必要使用锁，这样做只能增加系统负载；还有会降低了并行性，一个事务如果锁定了某行数据，其他事务就必须等待该事务处理完才可以处理那行数</p>
+<h4 id="3-Redis的实现"><a href="#3-Redis的实现" class="headerlink" title="3.Redis的实现"></a>3.Redis的实现</h4><p>Redis的分布式缓存特性使其成为了分布式锁的一种基础实现。通过Redis中是否存在某个锁ID，则可以判断是否上锁。为了保证判断锁是否存在的原子性，保证只有一个线程获取同一把锁，Redis有SETNX（即SET if Not<br>eXists）和GETSET（先写新值，返回旧值，原子性操作，可以用于分辨是不是首次操作）操作。<br>为了防止主机宕机或网络断开之后的死锁，Redis没有ZK那种天然的实现方式，只能依赖设置超时时间来规避。</p>
+<p>以下是一种比较普遍但不太完善的Redis分布式锁的实现步骤</p>
+<ul>
+<li>线程A发送SETNX lock.orderid 尝试获得锁，如果锁不存在，则set并获得锁。</li>
+<li>如果锁存在，则再判断锁的值（时间戳）是否大于当前时间，如果没有超时，则等待一下再重试。</li>
+<li>如果已经超时了，在用GETSET lock.{orderid} 来尝试获取锁，如果这时候拿到的时间戳仍旧超时，则说明已经获得锁了。</li>
+<li>如果在此之前，另一个线程C快一步执行了上面的操作，那么A拿到的时间戳是个未超时的值，这时A没有如期获得锁，需要再次等待或重试。</li>
+</ul>
+<h4 id="4-ZooKeeper的实现"><a href="#4-ZooKeeper的实现" class="headerlink" title="4.ZooKeeper的实现"></a>4.ZooKeeper的实现</h4><p>ZooKeeper（以下简称“ZK”）中有一种节点叫做顺序节点，假如我们在/lock/目录下创建3个节点，ZK集群会按照发起创建的顺序来创建节点，节点分别为/lock/0000000001、/lock/0000000002、/lock/0000000003。</p>
+<p>ZK中还有一种名为临时节点的节点，临时节点由某个客户端创建，当客户端与ZK集群断开连接，则该节点自动被删除。EPHEMERAL_SEQUENTIAL为临时顺序节点。</p>
+<p>根据ZK中节点是否存在，可以作为分布式锁的锁状态，以此来实现一个分布式锁，下面是分布式锁的基本逻辑：</p>
+<ul>
+<li>客户端调用create()方法创建名为“/dlm-locks/lockname/lock-”的临时顺序节点。</li>
+<li>客户端调用getChildren(“lockname”)方法来获取所有已经创建的子节点。</li>
+<li>客户端获取到所有子节点path之后，如果发现自己在步骤1中创建的节点是所有节点中序号最小的，那么就认为这个客户端获得了锁。</li>
+<li>如果创建的节点不是所有节点中需要最小的，那么则监视比自己创建节点的序列号小的最大的节点，进入等待。直到下次监视的子节点变更的时候，再进行子节点的获取，判断是否获取锁。</li>
+</ul>
+<p>参考：<br><a href="https://tech.meituan.com/distributed_system_mutually_exclusive_idempotence_cerberus_gtis.html" target="_blank" rel="noopener">分布式系统互斥性与幂等性问题的分析与解决</a><br><a href="https://www.jianshu.com/p/535efcab356d" target="_blank" rel="noopener">Java分布式锁三种实现方案</a></p>
 
     
   </div>
@@ -129,7 +178,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 10px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -140,23 +189,23 @@
   <ul class="entry">
     
       <li>
+        <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
+      </li>
+    
+      <li>
         <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
       </li>
     
       <li>
         <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/30/spring-complete-know/">【精分】Spring 最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/30/os-complete-know/">【精分】操作系统最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/24/service-component-mysql-complete-know/">【精分】MySQL最全最详细分析汇总</a>
       </li>
     
   </ul>

@@ -1,0 +1,220 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>Synchronize &amp; ReentrantLock 区别 | 无知是天堂</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="jifuwei">
+  
+  
+    <meta name="description" content="相似点加锁方式同步，而且都是阻塞式的同步
+如果一个线程获得了对象锁，进入了同步块，其他访问该同步块的线程都必须阻塞在同步块外面等待，而进行线程阻塞和唤醒的代价是比较高的（操作系统需要在用户态与内核态之间来回切换，代价很高，不过可以通过对锁优化进行改善）
+区别API层面对于Synchronized来说，它是java语言的关键字，是原生语法层面的互斥，需要jvm实现。而ReentrantLock它是J">
+  
+  <meta name="description" content="相似点加锁方式同步，而且都是阻塞式的同步 如果一个线程获得了对象锁，进入了同步块，其他访问该同步块的线程都必须阻塞在同步块外面等待，而进行线程阻塞和唤醒的代价是比较高的（操作系统需要在用户态与内核态之间来回切换，代价很高，不过可以通过对锁优化进行改善） 区别API层面对于Synchronized来说，它是java语言的关键字，是原生语法层面的互斥，需要jvm实现。而ReentrantLock它是J">
+<meta name="keywords" content="Concurrent,Lock">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Synchronize &amp; ReentrantLock 区别">
+<meta property="og:url" content="http://yoursite.com/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/index.html">
+<meta property="og:site_name" content="无知是天堂">
+<meta property="og:description" content="相似点加锁方式同步，而且都是阻塞式的同步 如果一个线程获得了对象锁，进入了同步块，其他访问该同步块的线程都必须阻塞在同步块外面等待，而进行线程阻塞和唤醒的代价是比较高的（操作系统需要在用户态与内核态之间来回切换，代价很高，不过可以通过对锁优化进行改善） 区别API层面对于Synchronized来说，它是java语言的关键字，是原生语法层面的互斥，需要jvm实现。而ReentrantLock它是J">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-07T15:08:57.172Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Synchronize &amp; ReentrantLock 区别">
+<meta name="twitter:description" content="相似点加锁方式同步，而且都是阻塞式的同步 如果一个线程获得了对象锁，进入了同步块，其他访问该同步块的线程都必须阻塞在同步块外面等待，而进行线程阻塞和唤醒的代价是比较高的（操作系统需要在用户态与内核态之间来回切换，代价很高，不过可以通过对锁优化进行改善） 区别API层面对于Synchronized来说，它是java语言的关键字，是原生语法层面的互斥，需要jvm实现。而ReentrantLock它是J">
+  
+  
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  <!--[if lt IE 9]><script src="//cdn.bootcss.com/html5shiv/3.7.0/html5shiv.min.js"></script><![endif]-->
+  
+  
+</head>
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">无知是天堂</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">
+  <time datetime="2019-11-07T13:32:34.000Z">
+    2019-11-07
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">Synchronize &amp; ReentrantLock 区别</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h2 id="相似点"><a href="#相似点" class="headerlink" title="相似点"></a>相似点</h2><p>加锁方式同步，而且都是阻塞式的同步</p>
+<p>如果一个线程获得了对象锁，进入了同步块，其他访问该同步块的线程都必须阻塞在同步块外面等待，而进行线程阻塞和唤醒的代价是比较高的（操作系统需要在用户态与内核态之间来回切换，代价很高，不过可以通过对锁优化进行改善）</p>
+<h2 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h2><h3 id="API层面"><a href="#API层面" class="headerlink" title="API层面"></a>API层面</h3><p>对于Synchronized来说，它是java语言的关键字，是原生语法层面的互斥，需要jvm实现。而ReentrantLock它是JDK 1.5之后提供的API层面的互斥锁，需要lock()和unlock()方法配合try/finally语句块来完成。</p>
+<p>synchronized既可以修饰方法，也可以修饰代码块<br>ReentrantLock只能在代码块中使用，无法修饰方法。</p>
+<h3 id="等待可中断"><a href="#等待可中断" class="headerlink" title="等待可中断"></a>等待可中断</h3><p>等待可中断是指当持有锁的线程长期不释放锁的时候，正在等待的线程可以选择放弃等待，改为处理其他事情。可等待特性对处理执行时间非常长的同步快很有帮助。<br>具体来说，假如业务代码中有两个线程，Thread1 Thread2。假设 Thread1 获取了对象object的锁，Thread2将等待Thread1释放object的锁。</p>
+<p>使用synchronized。如果Thread1不释放，Thread2将一直等待，不能被中断。synchronized也可以说是Java提供的原子性内置锁机制。内部锁扮演了互斥锁（mutual exclusion lock ，mutex）的角色，一个线程引用锁的时候，别的线程阻塞等待。<br>使用ReentrantLock。如果Thread1不释放，Thread2等待了很长时间以后，可以中断等待，转而去做别的事情</p>
+<h3 id="公平锁"><a href="#公平锁" class="headerlink" title="公平锁"></a>公平锁</h3><ul>
+<li>公平锁是指多个线程在等待同一个锁时，必须按照申请的时间顺序来依次获得锁；而非公平锁则不能保证这一点。非公平锁在锁被释放时，任何一个等待锁的线程都有机会获得锁。</li>
+<li>synchronized的锁是非公平锁，ReentrantLock默认情况下也是非公平锁，但可以通过带布尔值的构造函数要求使用公平锁。</li>
+</ul>
+<p>ReentrantLock 构造器的一个参数是boolean值，它允许您选择想要一个公平（fair）锁，还是一个不公平（unfair）锁。公平锁：使线程按照请求锁的顺序依次获得锁, 但是有成本;不公平锁：则允许讨价还价</p>
+<h3 id="锁绑定多个条件"><a href="#锁绑定多个条件" class="headerlink" title="锁绑定多个条件"></a>锁绑定多个条件</h3><ul>
+<li>ReentrantLock可以同时绑定多个Condition对象，只需多次调用newCondition方法即可。</li>
+<li>synchronized中，锁对象的wait()和notify()或notifyAll()方法可以实现一个隐含的条件。但如果要和多于一个的条件关联的时候，就不得不额外添加一个锁</li>
+</ul>
+<h2 id="什么是线程安全问题"><a href="#什么是线程安全问题" class="headerlink" title="什么是线程安全问题"></a>什么是线程安全问题</h2><p>如果你的代码所在的进程中有多个线程在同时运行，而这些线程可能会同时运行这段代码。如果每次运行结果和单线程运行的结果是一样的，而且其他的变量的值也和预期的是一样的，就是线程安全的，或者说:一个类或者程序所提供的接口对于线程来说是原子操作或者多个线程之间的切换不会导致该接口的执行结果存在二义性,也就是说我们不用考虑同步的问题 。</p>
+<h2 id="Synchronize在编译时如何实现锁机制"><a href="#Synchronize在编译时如何实现锁机制" class="headerlink" title="Synchronize在编译时如何实现锁机制"></a>Synchronize在编译时如何实现锁机制</h2><p>Synchronized进过编译，会在同步块的前后分别形成monitorenter和monitorexit这个两个字节码指令。在执行monitorenter指令时，首先要尝试获取对象锁。如果这个对象没被锁定，或者当前线程已经拥有了那个对象锁，把锁的计算器加1，相应的，在执行monitorexit指令时会将锁计算器就减1，当计算器为0时，锁就被释放了。如果获取对象锁失败，那当前线程就要阻塞，直到对象锁被另一个线程释放为止。</p>
+<h2 id="ReentrantLock使用方法"><a href="#ReentrantLock使用方法" class="headerlink" title="ReentrantLock使用方法"></a>ReentrantLock使用方法</h2><p>ReentrantLock是java.util.concurrent包下提供的一套互斥锁，相比Synchronized，ReentrantLock类提供了一些高级功能，主要有以下3项：</p>
+<ul>
+<li>等待可中断，持有锁的线程长期不释放的时候，正在等待的线程可以选择放弃等待，这相当于Synchronized来说可以避免出现死锁的情况。</li>
+<li>公平锁，多个线程等待同一个锁时，必须按照申请锁的时间顺序获得锁，Synchronized锁非公平锁，ReentrantLock默认的构造函数是创建的非公平锁，可以通过参数true设为公平锁，但公平锁表现的性能不是很好。</li>
+<li>锁绑定多个条件，一个ReentrantLock对象可以同时绑定对个对象。</li>
+</ul>
+<h2 id="什么时候选择用ReentrantLock"><a href="#什么时候选择用ReentrantLock" class="headerlink" title="什么时候选择用ReentrantLock"></a>什么时候选择用ReentrantLock</h2><p>适用场景：时间锁等候、可中断锁等候、无块结构锁、多个条件变量或者锁投票</p>
+<p>在确实需要一些 synchronized所没有的特性的时候，比如时间锁等候、可中断锁等候、无块结构锁、多个条件变量或者锁投票。 ReentrantLock 还具有可伸缩性的好处，应当在高度争用的情况下使用它，但是请记住，大多数 synchronized 块几乎从来没有出现过争用，所以可以把高度争用放在一边。我建议用 synchronized 开发，直到确实证明 synchronized 不合适，而不要仅仅是假设如果使用 ReentrantLock “性能会更好”。请记住，这些是供高级用户使用的高级工具。（而且，真正的高级用户喜欢选择能够找到的最简单工具，直到他们认为简单的工具不适用为止。）。一如既往，首先要把事情做好，然后再考虑是不是有必要做得更快。</p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/Concurrent/">Concurrent</a>, <a class="tags-link" href="/tags/Lock/">Lock</a>
+  </div>
+
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  
+  <div id="sidebar" class="widgets-right">
+  
+
+  
+<div class="widget tagcloud">
+  <h3 class="title">tagcloud</h3>
+  <div class="entry">
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+  </div>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">recent_posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
+      </li>
+    
+  </ul>
+</div>
+
+</div>
+  
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2019 <a href="/">jifuwei</a>
+  
+</div>
+<!-- 
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://blog.dafengning.com/" target="_blank">Chong Zi</a>
+</div>
+-->
+<div class="clearfix"></div>
+</footer>
+  <script src="//lib.sinaapp.com/js/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+<div id="rightfix" style="display:none;">
+
+
+<a href="javascript:void(0)" id="gotop" class="fix_btn" onclick="gotop();" title="回到顶部"><i></i></a>
+<script>
+  function gotop(){
+    $('html,body').animate({
+        scrollTop : '0px'
+      }, 800);
+  }
+  $(function(){
+    _rightfix = $('#rightfix');
+    $(window).scroll(function(){
+      $sollTop = document.documentElement.scrollTop + document.body.scrollTop;
+      if($sollTop > 350){
+        _rightfix.show();
+      }else{
+        _rightfix.hide();
+      }
+    });
+  });
+</script>
+
+</div>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

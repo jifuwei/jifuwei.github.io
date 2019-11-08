@@ -59,158 +59,83 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/07/31/travel-zhangjiajie/">
-  <time datetime="2019-07-31T08:53:39.000Z">
-    2019-07-31
+      <a href="/2019/09/16/distribut-lock-new/">
+  <time datetime="2019-09-16T07:08:02.000Z">
+    2019-09-16
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/07/31/travel-zhangjiajie/">旅游——张家界8月行</a></h1>
+    <h1 class="title"><a href="/2019/09/16/distribut-lock-new/">分布式锁详解</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <h2 id="必备"><a href="#必备" class="headerlink" title="必备"></a>必备</h2><p>如下列出，个人自查，旅游必备，缺一不可</p>
+      <h2 id="基于Zookeeper的分布式锁"><a href="#基于Zookeeper的分布式锁" class="headerlink" title="基于Zookeeper的分布式锁"></a>基于Zookeeper的分布式锁</h2><h3 id="什么是Zookeeper？"><a href="#什么是Zookeeper？" class="headerlink" title="什么是Zookeeper？"></a>什么是Zookeeper？</h3><p>Zookeeper（业界简称zk）是一种提供配置管理、分布式协同以及命名的中心化服务，这些提供的功能都是分布式系统中非常底层且必不可少的基本功能，但是如果自己实现这些功能而且要达到高吞吐、低延迟同时还要保持一致性和可用性，实际上非常困难。因此zookeeper提供了这些功能，开发者在zookeeper之上构建自己的各种分布式系统。</p>
+<p>虽然zookeeper的实现比较复杂，但是它提供的模型抽象却是非常简单的。Zookeeper提供一个多层级的节点命名空间（节点称为znode），每个节点都用一个以斜杠（/）分隔的路径表示，而且每个节点都有父节点（根节点除外），非常类似于文件系统。例如，/foo/doo这个表示一个znode，它的父节点为/foo，父父节点为/，而/为根节点没有父节点。与文件系统不同的是，这些节点都可以设置关联的数据，而文件系统中只有文件节点可以存放数据而目录节点不行。Zookeeper为了保证高吞吐和低延迟，在内存中维护了这个树状的目录结构，这种特性使得Zookeeper不能用于存放大量的数据，每个节点的存放数据上限为1M。</p>
+<p>而为了保证高可用，zookeeper需要以集群形态来部署，这样只要集群中大部分机器是可用的（能够容忍一定的机器故障），那么zookeeper本身仍然是可用的。客户端在使用zookeeper时，需要知道集群机器列表，通过与集群中的某一台机器建立TCP连接来使用服务，客户端使用这个TCP链接来发送请求、获取结果、获取监听事件以及发送心跳包。如果这个连接异常断开了，客户端可以连接到另外的机器上。</p>
+<p>架构简图如下所示：<br><img src="https://s2.ax1x.com/2019/09/19/nq5cdK.png" alt=""></p>
+<p>客户端的读请求可以被集群中的任意一台机器处理，如果读请求在节点上注册了监听器，这个监听器也是由所连接的zookeeper机器来处理。对于写请求，这些请求会同时发给其他zookeeper机器并且达成一致后，请求才会返回成功。因此，随着zookeeper的集群机器增多，读请求的吞吐会提高但是写请求的吞吐会下降。</p>
+<p>有序性是zookeeper中非常重要的一个特性，所有的更新都是全局有序的，每个更新都有一个唯一的时间戳，这个时间戳称为zxid（Zookeeper Transaction Id）。而读请求只会相对于更新有序，也就是读请求的返回结果中会带有这个zookeeper最新的zxid。</p>
+<h3 id="如何使用zookeeper实现分布式锁？"><a href="#如何使用zookeeper实现分布式锁？" class="headerlink" title="如何使用zookeeper实现分布式锁？"></a>如何使用zookeeper实现分布式锁？</h3><p>在描述算法流程之前，先看下zookeeper中几个关于节点的有趣的性质：</p>
 <ul>
-<li>证件：身份证、学生证</li>
-<li>个人洗漱：换洗衣服，牙刷毛巾建议自备（酒店怕是不卫生），防晒 @黄黄</li>
-<li>药品：驱蚊、其它随意，如创口贴之类</li>
-<li>生活：雨伞，带一把 看了最近天气，有备无患</li>
-<li>充电线、充电宝！！！！！！！这个重要了</li>
+<li>有序节点：假如当前有一个父节点为/lock，我们可以在这个父节点下面创建子节点；zookeeper提供了一个可选的有序特性，例如我们可以创建子节点“/lock/node-”并且指明有序，那么zookeeper在生成子节点时会根据当前的子节点数量自动添加整数序号，也就是说如果是第一个创建的子节点，那么生成的子节点为/lock/node-0000000000，下一个节点则为/lock/node-0000000001，依次类推。</li>
+<li>临时节点：客户端可以建立一个临时节点，在会话结束或者会话超时后，zookeeper会自动删除该节点。</li>
+<li>事件监听：在读取数据时，我们可以同时对节点设置事件监听，当节点数据或结构变化时，zookeeper会通知客户端。当前zookeeper有如下四种事件：1）节点创建；2）节点删除；3）节点数据修改；4）子节点变更。</li>
 </ul>
-<h2 id="保险"><a href="#保险" class="headerlink" title="保险"></a>保险</h2><p>出行意外保险必备，为大家准备的如下保险，也希望养成买保险的意识~</p>
-<table>
-<thead>
-<tr>
-<th>品牌</th>
-<th>被保人</th>
-<th>额度</th>
-<th>备注</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>齐乐游-计划F</td>
-<td>**伟</td>
-<td>60w</td>
-<td>保额到顶，<a href="https://cps.xiebao18.com/wj1000090/product/detail-100371-100719.html" target="_blank" rel="noopener">详情</a></td>
-</tr>
-<tr>
-<td>齐乐游-计划F</td>
-<td>**蕾</td>
-<td>60w</td>
-<td>保额到顶，<a href="https://cps.xiebao18.com/wj1000090/product/detail-100371-100719.html" target="_blank" rel="noopener">详情</a></td>
-</tr>
-<tr>
-<td>齐乐游-计划E</td>
-<td>**宇</td>
-<td>50w</td>
-<td>未成年保额到顶只能50w，<a href="https://cps.xiebao18.com/wj1000090/product/detail-100371-100719.html" target="_blank" rel="noopener">详情</a></td>
-</tr>
-</tbody>
-</table>
-<h2 id="交通"><a href="#交通" class="headerlink" title="交通"></a>交通</h2><table>
-<thead>
-<tr>
-<th>日期</th>
-<th>路线</th>
-<th>航班</th>
-<th>备注</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>8月1号 20:10 ~ 22:35</td>
-<td>上海（浦东机场T2） -&gt; 张家界（荷花机场T2）</td>
-<td>春秋航空 9C8983</td>
-<td>行程预计2小时25分钟</td>
-</tr>
-<tr>
-<td>8月5号 23:20 ~ 01:20</td>
-<td>张家界（荷花机场T2） -&gt; 上海（浦东机场T2）</td>
-<td>春秋航空 9C8984</td>
-<td>行程预计2小时</td>
-</tr>
-</tbody>
-</table>
-<p><strong>8月1号晚22:35到达机场，考虑人生地不熟，出租容易被宰，决定安排接机 @黄黄 搞定</strong></p>
-<h2 id="住宿"><a href="#住宿" class="headerlink" title="住宿"></a>住宿</h2><table>
-<thead>
-<tr>
-<th>日期</th>
-<th>酒店</th>
-<th>备注</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>[8月1号 ~ 8月3号)</td>
-<td>张家界六甲酒店</td>
-<td>共2天、景观家庭亲子套房、1间房、含早、提供接机</td>
-</tr>
-<tr>
-<td>(8月3号 ~ 8月5号)</td>
-<td>张家界华天酒店</td>
-<td>共2天、家庭套餐、1间房、不含早、提供接机</td>
-</tr>
-</tbody>
-</table>
-<h2 id="天气"><a href="#天气" class="headerlink" title="天气"></a>天气</h2><p>一周基本在下阵雨，温度维持在24~35左右，感觉还行<br><img src="https://s2.ax1x.com/2019/07/31/eN95RK.jpg" alt=""></p>
-<h2 id="行程"><a href="#行程" class="headerlink" title="行程"></a>行程</h2><p><strong>8月2号</strong><br>天门山国家森林公园</p>
+<p>下面描述使用zookeeper实现分布式锁的算法流程，假设锁空间的根节点为/lock：</p>
 <ul>
-<li>简介<ul>
-<li>很大，景点很多，<strong>门票是可以进出四天的</strong>，</li>
-<li>景点主要分为山上跟山下，山上跟山下的环保车不是互通的。</li>
-<li>黄石寨是一个单独的景区，可以选择步行或者坐缆车。</li>
-<li>张家界森林公园山上山下互通的交通工具有：三个缆车和一个百龙天梯，都是收费的，72元。缆车有天子山缆车、黄石寨缆车、杨家界缆车。</li>
+<li>客户端连接zookeeper，并在/lock下创建临时的且有序的子节点，第一个客户端对应的子节点为/lock/lock-0000000000，第二个为/lock/lock-0000000001，以此类推。</li>
+<li>客户端获取/lock下的子节点列表，判断自己创建的子节点是否为当前子节点列表中序号最小的子节点，如果是则认为获得锁，否则监听/lock的子节点变更消息，获得子节点变更通知后重复此步骤直至获得锁；</li>
+<li>执行业务代码；</li>
+<li>完成业务流程后，删除对应的子节点释放锁。</li>
 </ul>
-</li>
-<li>如何去<br>六甲酒店就在公园旁边，两条腿即可<br><img src="https://s2.ax1x.com/2019/07/31/etIHts.jpg" alt=""></li>
-<li>游玩路线<br>森林公园大门—金鞭溪—乱窜坡—袁家界—杨家界—百龙天梯—武陵源大门<br><img src="https://s2.ax1x.com/2019/07/31/etoLUH.jpg" alt=""></li>
-<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/etIzBF.jpg" alt=""><br><img src="https://s2.ax1x.com/2019/07/31/etomHe.jpg" alt=""></li>
-</ul>
-<p><strong>8月3号</strong><br><strong>早上退房</strong>，前往张家界华天大酒店，32.9公里，45分钟左右</p>
-<p>今天看情况只能在下面景点任选其一，不然行程有点挤，看大家精力和状态</p>
-<p>1.黄龙洞</p>
+<p>步骤1中创建的临时节点能够保证在故障的情况下锁也能被释放，考虑这么个场景：假如客户端a当前创建的子节点为序号最小的节点，获得锁之后客户端所在机器宕机了，客户端没有主动删除子节点；如果创建的是永久的节点，那么这个锁永远不会释放，导致死锁；由于创建的是临时节点，客户端宕机后，过了一定时间zookeeper没有收到客户端的心跳包判断会话失效，将临时节点删除从而释放锁。</p>
+<p>另外细心的朋友可能会想到，在步骤2中获取子节点列表与设置监听这两步操作的原子性问题，考虑这么个场景：客户端a对应子节点为/lock/lock-0000000000，客户端b对应子节点为/lock/lock-0000000001，客户端b获取子节点列表时发现自己不是序号最小的，但是在设置监听器前客户端a完成业务流程删除了子节点/lock/lock-0000000000，客户端b设置的监听器岂不是丢失了这个事件从而导致永远等待了？这个问题不存在的。因为zookeeper提供的API中设置监听器的操作与读操作是原子执行的，也就是说在读子节点列表时同时设置监听器，保证不会丢失事件。</p>
+<p>最后，对于这个算法有个极大的优化点：假如当前有1000个节点在等待锁，如果获得锁的客户端释放锁时，这1000个客户端都会被唤醒，这种情况称为“羊群效应”；在这种羊群效应中，zookeeper需要通知1000个客户端，这会阻塞其他的操作，最好的情况应该只唤醒新的最小节点对应的客户端。应该怎么做呢？在设置事件监听时，每个客户端应该对刚好在它之前的子节点设置事件监听，例如子节点列表为/lock/lock-0000000000、/lock/lock-0000000001、/lock/lock-0000000002，序号为1的客户端监听序号为0的子节点删除消息，序号为2的监听序号为1的子节点删除消息。</p>
+<p>所以调整后的分布式锁算法流程如下：</p>
 <ul>
-<li>简介<ul>
-<li>高阔的洞天、幽深的暗河、密集的石笋而出名</li>
-<li><strong>标志性景点</strong>是已生长了二十万年的“定海神针”，高达20米的石笋柱，最细处直径只有10厘米</li>
-<li>“水陆兼备”的游览观光线路，先步行游览一段，然后在洞中暗河边的码头上船，在水中赏沿河美景和石笋奇观</li>
+<li>客户端连接zookeeper，并在/lock下创建临时的且有序的子节点，第一个客户端对应的子节点为/lock/lock-0000000000，第二个为/lock/lock-0000000001，以此类推。</li>
+<li>客户端获取/lock下的子节点列表，判断自己创建的子节点是否为当前子节点列表中序号最小的子节点，如果是则认为获得锁，否则监听刚好在自己之前一位的子节点删除消息，获得子节点变更通知后重复此步骤直至获得锁；</li>
+<li>执行业务代码；</li>
+<li>完成业务流程后，删除对应的子节点释放锁。</li>
 </ul>
-</li>
-<li>如何去<br>距离华天酒店有点远，44.9公里，打车1小时左右<br><img src="https://s2.ax1x.com/2019/07/31/eNi326.jpg" alt=""></li>
-<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/et7pWR.jpg" alt=""></li>
-</ul>
-<p>2.大峡谷</p>
+<p>加锁工具使用 Curator</p>
+<h2 id="基于Redis的分布式锁"><a href="#基于Redis的分布式锁" class="headerlink" title="基于Redis的分布式锁"></a>基于Redis的分布式锁</h2><h3 id="获取锁"><a href="#获取锁" class="headerlink" title="获取锁"></a>获取锁</h3><h4 id="错误姿势1"><a href="#错误姿势1" class="headerlink" title="错误姿势1"></a>错误姿势1</h4><p>在介绍获取锁的正确姿势之前先来个错误姿势。大家都知道Redis的分布式锁是利用了Redis单线程的特性加上 SETNX 命令来实现的。而为什么还会加上一个 EXPIRE 命令是为了防止 SETNX 后key一直存在的问题。</p>
+<blockquote>
+<p>SETNX key value：将key设置值为value，如果key不存在，这种情况下等同SET命令。当key存在时，什么也不做。SETNX是 SET if Not Exists 的简写。<br>如果key设置成功返回1，否则返回0。<br>EXPIRE key seconds：设置 key 的过期时间，超过时间后，将会自动删除该 key 。<br>如果成功设置过期时间返回1，否则返回0。</p>
+</blockquote>
+<p>很容易的就能写出这样的代码：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(String key, <span class="keyword">int</span> timeout, TimeUnit timeUnit)</span> </span>&#123;</span><br><span class="line">    Long result = jedis.setnx(key, <span class="string">"CONSTANT_VALUE"</span>);</span><br><span class="line">    <span class="keyword">if</span> (result == <span class="number">1L</span>) &#123;</span><br><span class="line">        Long seconds = timeUnit.toSeconds(timeout);</span><br><span class="line">        <span class="keyword">return</span> jedis.expire(key, seconds.intValue()) == <span class="number">1L</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>细心的朋友很快发现了有这么几个问题：</p>
 <ul>
-<li>简介<ul>
-<li>集山、水、洞于一身，可观赏到北温带喀斯特地形的全部风景</li>
-<li>天然大氧吧</li>
-<li>目前世界最高、跨度最长的玻璃桥，据地高度400米处的谷底风光尽收眼底（放心大胆的走 保险我买了~）</li>
+<li>由于 setnx 和 expire 是分开两步进行的操作，不具有原子性。如果客户端在执行完 setnx 后崩溃了，那么就没有机会执行 expire 了，导致它一直持有该锁。</li>
+<li>setnx 的value这里写死了，到时候解锁的时候就不知道是谁设置的key了，很容易锁被其他请求误解了。</li>
 </ul>
-</li>
-<li>如何去<br>从黄龙洞出发去大峡谷，20.2公里，车程35分钟左右<br><img src="https://s2.ax1x.com/2019/07/31/etHhCj.jpg" alt=""></li>
-<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/etHx2R.jpg" alt=""></li>
-</ul>
-<p>今天的行程有点满，看情况适当往后推</p>
-<p>从大峡谷返回华天大酒店，65.5公里，行程1个半小时左右<br><img src="https://s2.ax1x.com/2019/07/31/etOrFS.jpg" alt=""></p>
-<p><strong>8月4号</strong><br>回到市区</p>
-<p>天门山玻璃栈道</p>
+<h4 id="错误姿势2"><a href="#错误姿势2" class="headerlink" title="错误姿势2"></a>错误姿势2</h4><p>很多同学知道redis中的 pipeline 可以作为一个管道批量执行命令，错误的以为它的执行是原子的，以至于用它来结合 setnx 和 expire ，这其实也是不对的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(String key, <span class="keyword">int</span> timeout, TimeUnit timeUnit)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 不存在key</span></span><br><span class="line">    <span class="keyword">if</span> (!jedis.exists(key)) &#123;</span><br><span class="line">        Long seconds = timeUnit.toSeconds(timeout);</span><br><span class="line">        List&lt;Object&gt; result = setnx(key, UUID.randomUUID().toString(), seconds.intValue());</span><br><span class="line">        <span class="keyword">return</span> Boolean.valueOf(result.get(<span class="number">0</span>).toString()) &amp;&amp;</span><br><span class="line">                Boolean.valueOf(result.get(<span class="number">1</span>).toString());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> List&lt;Object&gt; <span class="title">setnx</span><span class="params">(String key, String value, <span class="keyword">int</span> seconds)</span> </span>&#123;</span><br><span class="line">    List&lt;Object&gt; result = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Pipeline pipelined = jedis.pipelined();</span><br><span class="line">        <span class="comment">// 问题：setNX成功了后redis服务挂了 导致expire失败，一直死锁</span></span><br><span class="line">        pipelined.setnx(key.getBytes(), value.getBytes());</span><br><span class="line">        pipelined.expire(key.getBytes(), seconds);</span><br><span class="line">        result = pipelined.syncAndReturnAll();</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="错误姿势3"><a href="#错误姿势3" class="headerlink" title="错误姿势3"></a>错误姿势3</h4><p>这个用法在我第一次看见的时候觉得特别精妙，一般比较难以发现问题，而且实现也比较复杂。</p>
+<p>实现思路也是利用了 setnx 命令来设置key，不同的地方在于它没有使用 expire 命令来设置过期时间，而在 setnx 的时候把过期时间当做value设置进去，下一次获取的时候比较value和当前时间来决定是否进行覆盖。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(String key, <span class="keyword">int</span> timeout, TimeUnit timeUnit)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> timeoutSecond = timeUnit.toSeconds(timeout);</span><br><span class="line">    <span class="comment">// 过期时间</span></span><br><span class="line">    <span class="keyword">long</span> expireTime = System.currentTimeMillis() + timeoutSecond;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果当前锁不存在，返回加锁成功</span></span><br><span class="line">    <span class="keyword">if</span> (jedis.setnx(key, String.valueOf(expireTime)) == <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    String lastValue = jedis.get(key);</span><br><span class="line">    <span class="keyword">if</span> (lastValue != <span class="keyword">null</span> &amp;&amp; Long.parseLong(lastValue) &lt; System.currentTimeMillis()) &#123;</span><br><span class="line">        <span class="comment">// 锁已过期，获取上一个锁的过期时间，并设置现在锁的过期时间</span></span><br><span class="line">        String oldValue = jedis.getSet(key, String.valueOf(expireTime));</span><br><span class="line">        <span class="keyword">if</span> (oldValue != <span class="keyword">null</span> &amp;&amp; oldValue.equals(lastValue)) &#123;</span><br><span class="line">            <span class="comment">// 考虑多线程并发的情况，只有一个线程的设置值和当前值相同，它才有权利加锁</span></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>其实仔细看，这段代码还是存在很多问题的：</p>
 <ul>
-<li>简介<ul>
-<li>天门山玻璃栈道悬于天门山顶西线，是一处悬于峭壁之上的玻璃眺望台。</li>
-<li>天门山玻璃栈道给人带来的刺激震撼感，可以与美国大峡谷玻璃走廊“天空之路”媲美</li>
+<li>由于是客户端自己生成过期时间，所以需要强制要求分布式下每个客户端的时间必须同步，这一点的问题可以忽略。</li>
+<li>当锁过期的时候，如果多个客户端同时执行 jedis.getSet() 方法，那么虽然最终只有一个客户端可以加锁，但是这个客户端的锁的过期时间可能被其他客户端覆盖。</li>
+<li>锁不具备拥有者标识，即任何客户端都可以解锁。</li>
 </ul>
-</li>
-<li>如何去<br>距离入住的华天大酒店非常近，步行10分钟即可到达<br><img src="https://s2.ax1x.com/2019/07/31/eNElwD.jpg" alt=""></li>
-<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/etLcb6.jpg" alt=""></li>
+<h3 id="正确姿势"><a href="#正确姿势" class="headerlink" title="正确姿势"></a>正确姿势</h3><p>那么获取锁的正确姿势究竟是什么呢？Redis在 2.6.12 版本开始，为 SET 命令增加了一系列选项：<br><code>SET key value [EX seconds][PX milliseconds][NX|XX]</code></p>
+<ul>
+<li>EX seconds：设置指定的过期时间，单位秒。</li>
+<li>PX milliseconds：设置指定的过期时间，单位毫秒。</li>
+<li>NX：仅当key不存在时设置值。</li>
+<li>XX：仅当key存在时设置值。</li>
 </ul>
-<p><strong>8月5号</strong><br>逛吃逛吃~，品尝当地特色和采购特产，具体前一天晚上待定，大众点评掏出来选选即可</p>
+<p>可以看出来，SET 命令的天然原子性完全可以取代 SETNX 和 EXPIRE 命令。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(String key, String uniqueId, <span class="keyword">int</span> seconds)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">"OK"</span>.equals(jedis.set(key, uniqueId, <span class="string">"NX"</span>, <span class="string">"EX"</span>, seconds));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>还在使用 2.6.12 版本之前的同学只能使用另一法宝：Lua脚本来保证原子性了。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(String key, String uniqueId, <span class="keyword">int</span> seconds)</span> </span>&#123;</span><br><span class="line">    String luaScript = <span class="string">"if redis.call('setnx', KEYS[1], KEYS[2]) == 1 then "</span> +</span><br><span class="line">            <span class="string">"redis.call('expire', KEYS[1], KEYS[3]) return 1 else return 0 end"</span>;</span><br><span class="line">    List&lt;String&gt; keys = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    keys.add(key);</span><br><span class="line">    keys.add(uniqueId);</span><br><span class="line">    keys.add(String.valueOf(seconds));</span><br><span class="line">    Object result = jedis.eval(luaScript, keys, <span class="keyword">new</span> ArrayList&lt;String&gt;());</span><br><span class="line">    <span class="keyword">return</span> result.equals(<span class="number">1L</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="释放锁"><a href="#释放锁" class="headerlink" title="释放锁"></a>释放锁</h3><h4 id="错误姿势1-1"><a href="#错误姿势1-1" class="headerlink" title="错误姿势1"></a>错误姿势1</h4><p>最常见的解锁代码就是直接使用 jedis.del() 方法删除锁，这种不先判断锁的拥有者而直接解锁的方式，会导致任何客户端都可以随时进行解锁，即使这把锁不是它的。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">releaseLock</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    jedis.del(key);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h4 id="错误姿势2-1"><a href="#错误姿势2-1" class="headerlink" title="错误姿势2"></a>错误姿势2</h4><p>上面已经说过这种写法的 get 和 del 没有在一个原子操作中。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">releaseLock</span><span class="params">(String key, String uniqueId)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (uniqueId.equals(jedis.get(key))) &#123;</span><br><span class="line">        jedis.del(key);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="正确姿势-1"><a href="#正确姿势-1" class="headerlink" title="正确姿势"></a>正确姿势</h3><p>同样的，释放锁时设计到多个命令要想保持原子性必须得使用Lua脚本。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">releaseLock</span><span class="params">(String key, String uniqueId)</span> </span>&#123;</span><br><span class="line">    String luaScript = <span class="string">"if redis.call('get', KEYS[1]) == ARGV[1] then "</span> +</span><br><span class="line">            <span class="string">"return redis.call('del', KEYS[1]) else return 0 end"</span>;</span><br><span class="line">    <span class="keyword">return</span> jedis.eval(luaScript, Collections.singletonList(key), Collections.singletonList(uniqueId)).equals(<span class="number">1L</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 
     
   </div>
@@ -246,7 +171,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 10px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -257,23 +182,23 @@
   <ul class="entry">
     
       <li>
+        <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
+      </li>
+    
+      <li>
         <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
       </li>
     
       <li>
         <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/30/spring-complete-know/">【精分】Spring 最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/30/os-complete-know/">【精分】操作系统最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/24/service-component-mysql-complete-know/">【精分】MySQL最全最详细分析汇总</a>
       </li>
     
   </ul>

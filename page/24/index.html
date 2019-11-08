@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/06/03/classLoader-hotswap/">
-  <time datetime="2019-06-03T07:40:34.000Z">
-    2019-06-03
+      <a href="/2019/06/12/encode/">
+  <time datetime="2019-06-12T06:46:03.000Z">
+    2019-06-12
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/06/03/classLoader-hotswap/">JVM类热加载——基于ClassLoader方案</a></h1>
+    <h1 class="title"><a href="/2019/06/12/encode/">字符编码问题</a></h1>
   
 
   </header>
@@ -77,39 +77,75 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p>上篇介绍了JVM加载类的过程，触发了下文。</p>
-<p>过程其实是反过来的，看到tomcat热部署很羡慕 -&gt; 这牛逼功能怎么做的 -&gt; 类加载原理 -&gt; 不造轮子的程序员不是好程序员 -&gt; now</p>
-<h2 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h2><p>实现热替换，目前能用的就是自定义ClassLoader实现</p>
-<p>分析：</p>
-<p>1.在 Java 中，即使是同一个类文件，如果是由不同的类加载器实例加载的，那么它们的类型是不相同的。如果认为是同一个类，就出现ClassCastException异常，也就类转换异常。这就意味着，我们在实现热替换的时候，自定义的ClassLoader所生产的类对象，不能被赋值到原项目里的所对应的类对象。</p>
-<p>且ClassLoader对象是不允许相同classs文件重新加载的。</p>
-<p>JVM本身其实并没有提供动态修改一个已经被加载的Class的功能，之所以这么限制，是因为新增成员和方法，会对对象的内存大小、JIT带来很大很复杂的影响。</p>
-<p>2.如何让自定义ClassLoader所生产的类对象赋值给原来对应的对象变量上呢？<br>我们可以定义一个如 ICommon，实现类CommonService 实现 ICommon接口，程序面向接口编程即可。</p>
-<p>当我们对CommonService修改并热替换，由于引用的CommonService地方是通过ICommon，可以直接赋值（ICommon由父类记载其加载，实现类由子类加载器加载实现，即自定义类加载器加载）</p>
-<p>注意：为什么此方法可行，必须要求只能是实现类是自定义加载器加载，实现类内部其它类需要交由父加载器加载，即 implements ICommon ,这一步很重要！否则还是会抛ClassCastException! 这要求我们自定义的类加载器只能约束加载需要热部署的类。</p>
-<p>3.如上第二点分析设计的话 需要我们对所有类加接口，很明显不现实！<br>此时参考Tomcat ClassLoader设计原理，基本不变的类交由一个classLoader处理，项目类即经常变动的类交由另一个类加载处理，检测到项目变化，则新建一个类加载器加载项目类文件。</p>
-<p>参考spring devtools 设计，热启动设计两个类，一个classLoader加载哪些不会改变的类（第三方jar），另一个ClassLoader加载会更改的类，称为RestartClassLoader，如代码变动，则创建一个新的RestartClassLoader，原来的RestartClassLoader会被gc回收。</p>
-<p>简单粗暴的设计，也就能看出导致的问题：热部署，每次变动都重新加载一次指定类，性能问题和很多潜在的问题无法预料。</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>接口设计<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">ICommon</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>实现类：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CommonService</span> <span class="keyword">implements</span> <span class="title">ICommon</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// sout helle world!</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>自定义类加载器：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">HowswapCL</span> <span class="keyword">extends</span> <span class="title">ClassLoader</span> </span>&#123; </span><br><span class="line"> </span><br><span class="line">    <span class="keyword">private</span> String basedir; <span class="comment">// 需要该类加载器直接加载的类文件的基目录</span></span><br><span class="line">    <span class="keyword">private</span> HashSet dynaclazns; <span class="comment">// 需要由该类加载器直接加载的类名</span></span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">HowswapCL</span><span class="params">(String basedir, String[] clazns)</span> </span>&#123; </span><br><span class="line">        <span class="keyword">super</span>(<span class="keyword">null</span>); <span class="comment">// 指定父类加载器为 null </span></span><br><span class="line">        <span class="keyword">this</span>.basedir = basedir; </span><br><span class="line">        dynaclazns = <span class="keyword">new</span> HashSet(); </span><br><span class="line">        loadClassByMe(clazns); </span><br><span class="line">    &#125; </span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">loadClassByMe</span><span class="params">(String[] clazns)</span> </span>&#123; </span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; clazns.length; i++) &#123; </span><br><span class="line">            loadDirectly(clazns[i]); </span><br><span class="line">            dynaclazns.add(clazns[i]); </span><br><span class="line">        &#125; </span><br><span class="line">    &#125; </span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">private</span> Class <span class="title">loadDirectly</span><span class="params">(String name)</span> </span>&#123; </span><br><span class="line">        Class cls = <span class="keyword">null</span>; </span><br><span class="line">        StringBuffer sb = <span class="keyword">new</span> StringBuffer(basedir); </span><br><span class="line">        String classname = name.replace(<span class="string">'.'</span>, File.separatorChar) + <span class="string">".class"</span>;</span><br><span class="line">        sb.append(File.separator + classname); </span><br><span class="line">        File classF = <span class="keyword">new</span> File(sb.toString()); </span><br><span class="line">        cls = instantiateClass(name,<span class="keyword">new</span> FileInputStream(classF),</span><br><span class="line">            classF.length()); </span><br><span class="line">        <span class="keyword">return</span> cls; </span><br><span class="line">    &#125;           </span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">private</span> Class <span class="title">instantiateClass</span><span class="params">(String name,InputStream fin,<span class="keyword">long</span> len)</span></span>&#123; </span><br><span class="line">        <span class="keyword">byte</span>[] raw = <span class="keyword">new</span> <span class="keyword">byte</span>[(<span class="keyword">int</span>) len]; </span><br><span class="line">        fin.read(raw); </span><br><span class="line">        fin.close(); </span><br><span class="line">        <span class="keyword">return</span> defineClass(name,raw,<span class="number">0</span>,raw.length); </span><br><span class="line">    &#125; </span><br><span class="line">     </span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Class <span class="title">loadClass</span><span class="params">(String name, <span class="keyword">boolean</span> resolve)</span> </span></span><br><span class="line"><span class="function">            <span class="keyword">throws</span> ClassNotFoundException </span>&#123; </span><br><span class="line">        Class cls = <span class="keyword">null</span>; </span><br><span class="line">        cls = findLoadedClass(name); </span><br><span class="line">        <span class="keyword">if</span>(!<span class="keyword">this</span>.dynaclazns.contains(name) &amp;&amp; cls == <span class="keyword">null</span>) </span><br><span class="line">            cls = getSystemClassLoader().loadClass(name); </span><br><span class="line">        <span class="keyword">if</span> (cls == <span class="keyword">null</span>) </span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> ClassNotFoundException(name); </span><br><span class="line">        <span class="keyword">if</span> (resolve) </span><br><span class="line">            resolveClass(cls); </span><br><span class="line">        <span class="keyword">return</span> cls; </span><br><span class="line">    &#125; </span><br><span class="line"> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>所有指定必须由它直接加载的类都在该加载器实例化时进行了加载，当通过 loadClass 进行类的加载时，如果该类没有加载过，并且不属于必须由该类加载器加载之列都委托给系统加载器进行加载。</p>
-<p>线程监控（为了模拟，每次都是新建classLoader，好点可以监控文件修改与否）：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123; </span><br><span class="line">    <span class="keyword">try</span> &#123; </span><br><span class="line">        <span class="comment">// 每次都创建出一个新的类加载器</span></span><br><span class="line">        HowswapCL cl = <span class="keyword">new</span> HowswapCL(<span class="string">"../swap"</span>, <span class="keyword">new</span> String[]&#123;<span class="string">"Foo"</span>&#125;); </span><br><span class="line">        Class cls = cl.loadClass(<span class="string">"Foo"</span>); </span><br><span class="line">        ICommon foo = (ICommon) cls.newInstance(); </span><br><span class="line">        foo.doSomething(); </span><br><span class="line">    &#125;  <span class="keyword">catch</span>(Exception ex) &#123; </span><br><span class="line">        ex.printStackTrace(); </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>大功告成！</p>
-<h2 id="热部署案例分析"><a href="#热部署案例分析" class="headerlink" title="热部署案例分析"></a>热部署案例分析</h2><h3 id="IDE提供的HotSwap"><a href="#IDE提供的HotSwap" class="headerlink" title="IDE提供的HotSwap"></a>IDE提供的HotSwap</h3><p>使用eclipse或IntelliJ IDEA通过debug模式启动时，默认会开启一项HotSwap功能。用户可以在IDE里修改代码时，直接替换到目标程序的类里。不过这个功能只允许修改方法体，而不允许对方法进行增删改。</p>
-<p>该功能的实现与debug有关。debug其实也是通过JVMTI agent来实现的，JVITI agent会在debug连接时加载到debugee的JVM中。debuger（IDE）通过JDI（Java debug interface）与debugee（目标Java程序）通过进程通讯来设置断点、获取调试信息。除了这些debug的功能之外，JDI还有一项redefineClass的方法，可以直接修改一个类的字节码。没错，它其实就是暴露了JVMTI的bytecode instrument功能，而IDE作为debugger，也顺带实现了这种HotSwap功能。<br><img src="https://s2.ax1x.com/2019/06/04/VtYqQH.png" alt=""></p>
-<p>由于是直接使用的JVM的原生的功能，其效果当然也一样：只能修改方法体，否则会弹出警告。例如eclipse会弹出””Hot Code Replace Failed”。不过优点在于简单实用，无需安装。<br>  对了，如果你经常在生产环境debug的话，请在debug连接时不要修改本地代码，因为如果你只修改了方法体，那么你的本地代码修改能够直接被hotswap到线上去 ：）</p>
-<h3 id="Tomcat的自动reload"><a href="#Tomcat的自动reload" class="headerlink" title="Tomcat的自动reload"></a>Tomcat的自动reload</h3><p>Tomcat在配置Context（对应一个web应用，一个host下可以有多个context）时，有一个属性reloadable，当设置为true时，会监听其classpath下的类文件变动情况，当它有变动时，会自动重启所在的web应用（context）。</p>
-<p>这里的重启，会先停止掉当前的Context，然后重新解析一遍xml，重新创建Webappclassloader，重新加载类。Tomcat的类加载机制分配给每个Context一个独立的类加载器，这样一来类的重新加载就成为了可能————直接使用新的类加载器重新加载一遍，避免了同一个类加载器不能重复加载一个类的限制。</p>
-<p>把Tomcat的reload机制分类到热部署里的确有些牵强，我认为应该算作增量部署吧。不过这也算是热部署的实现思路之一，通过新的classloader重新全部加载一遍。缺陷也很明显：程序的状态可能丢失，耗时可能很长，而且如果应用只配置了一个Context那就和重启整个Tomcat没有太大差别了。</p>
-<h3 id="JRebel-spring-loaded-hotcode2等热部署工具"><a href="#JRebel-spring-loaded-hotcode2等热部署工具" class="headerlink" title="JRebel,spring-loaded,hotcode2等热部署工具"></a>JRebel,spring-loaded,hotcode2等热部署工具</h3><p>说到热部署，这些工具应该算得上最适合使用的了，这些热部署工具“突破”了只能修改方法体的JVM客观限制，实现了很多额外的功能例如增删改方法签名、增删改成员变量等等，尽最大可能让代码能够自由自在的热部署。目前了解到比较常见的有以下几种：</p>
+<h2 id="为什么需要编码？能不能不编码？"><a href="#为什么需要编码？能不能不编码？" class="headerlink" title="为什么需要编码？能不能不编码？"></a>为什么需要编码？能不能不编码？</h2><p>解释这个问题，必须要回答计算机是如何表示我们人类能够理解符号的，这些符号也就是我们人类使用的语言。由于人类的语言太多，表示这些语言的符号太多，无法用计算机的基本存储单元——字节（byte）来表示，因而必须要经过拆分或一些翻译工作，才能让计算机理解我们的语言。</p>
+<p>把计算机能够理解的语言假定为英语，其他语言要能够在计算机中使用，必须经过一次翻译，把他翻译成英语。这个翻译的过程就是编码。所以可以想象，只要是不说英语的国家，要使用计算机都必须经过编码。这看起有些霸道，但就是现状。职业和我国在大力推广汉语一样，希望其他国家都说汉语，以后其它语言就被翻译成汉语，我们可以吧计算机中存储的信息的最小单位改成汉字，这样就不存在编码的问题了。</p>
+<p>总的来说，编码存在的原因一下几条:</p>
 <ul>
-<li>JRebel：目前最常用的热部署工具，是一款收费的商业软件，因此在稳定性和兼容性上做的都比较好。</li>
-<li>Spring-Loaded：Spring旗下的子项目，也是一款开源的热部署工具。</li>
-<li>Hotcode2：阿里内部开发和使用的热部署工具，功能和上面基本一样，同时针对各种框架做了很多适配。</li>
+<li>在计算机中存储信息的最小单元是1个字节，即8 bit，所以能表示的字符范围是 0 ~ 255个</li>
+<li>人类标识的符号太多，无法用一个字节完全表示。比如最常见的汉字都有3000多个，很明显超过了一个字节的承受范围</li>
 </ul>
-<p>这类热部署工具的原理惊人的相似：首先都是通过Java agent，使用Instumentation API来修改已加载的类。既然Instumentation只能修改方法体，为什么这些工具突破了这个限制呢？实际上，<strong>这些工具在每个method call和field access的地方都做了一层代理</strong>，对于每次修改类，并不是直接retransformClasses，而是直接加载一个全新的类，由于方法调用和成员变量读写都被动态代理过，新修改的类自然能够成功“篡位”了。</p>
-<p>参考资料：<br><a href="http://fanyilun.me/2017/07/18/%E8%B0%88%E8%B0%88Java%20Intrumentation%E5%92%8C%E7%9B%B8%E5%85%B3%E5%BA%94%E7%94%A8/" target="_blank" rel="noopener">谈谈Java Intrumentation和相关应用</a></p>
+<h2 id="如何“翻译”"><a href="#如何“翻译”" class="headerlink" title="如何“翻译”"></a>如何“翻译”</h2><p>各种语言交流，经过翻译是必要的，那么如何来翻译呢？<br>在计算机中提供了多种翻译方式，常见的有ASC、ISO-8859-1、GB2312、GBK、UTF-8、UTF-16等，他们都可以被看做是字典。<br>目前编码格式很多，如GB2312、GBK、UTF-8、UTF-16都可以标表示汉字，那我们到底选择哪种格式的编码来存储汉字呢？这就要考虑到其他因素了。例如，是存储空间重要还是编码效率重要。</p>
+<h3 id="存储效率"><a href="#存储效率" class="headerlink" title="存储效率"></a>存储效率</h3><p>不同的编码占用的字节数不一样，头部常用的字符可能只占用1个字节，一些生僻的不常用或者几乎用不到的字符可能排到需要占用3个字节，如何分配内存存储这个鞋字节呢？我们可以为所有字符都分配三个字节的内存，也可以为编号小的字符分配一个字节或者两个字节的内存，而为编号大的字符分配三个字节的内存。</p>
+<p><strong>方案1：为每个字符分配固定长度的内存</strong><br>一种方案是为每个字符分配固定长度的内存，并且这块内存要足够大，可以容纳下所有的字符编号。这种方案最简单，直接将字符编号放入内存中即可，不需要任何转换，并且以后在字符串中定位字符、修改字符都非常容易。</p>
+<p>目前的 Unicode 已经收录了上百万的字符，至少需要三个字节才能容纳下所有的字符编号。假设字符串”A3中￥”的 Unicode 编码值（十六进制形式）分别是 2A、31、DA49、BB672C，那么它们在内存中的存储形式为：<br><img src="https://s2.ax1x.com/2019/06/12/VRyTC4.jpg" alt=""></p>
+<p>在几乎所有的字符集中，常用字符的编号往往比较小，罕见字符的编号往往比较大，包括 Unicode 在内。<br><code>A</code>和<code>3</code>是 ASCII 编码中的字符，Unicode 为了兼容 ASCII，在设计时刻意保留了原来 ASCII 中字符的编号，所以英文字母和阿拉伯数字在 Unicode 中的编号都非常小，用一个字节足以容纳。<code>中</code>是一个汉字，编号比较大，一般要用两个字节才能容纳。<code>￥</code>可以看做是一个极其少见，或者只有极少数地区才会使用到的字符，这样的字符编号往往比较大，有时候需要三个字节才能容纳。</p>
+<p>上图中带灰色背景的字节是没有用到的字节，它们就是被浪费掉的一部分内存空间，这就是用固定长度的内存来存储字符编号的缺点：常用字符的编号都比较小，这种方案会浪费很多内存空间，对于以英文为主的国家，比如美国、加拿大、英国等，内存利用率甚至会低于 50%。</p>
+<p><strong>方案2：为每个字符分配尽量少的内存</strong><br>既然上面的方案有缺点，那我们就来改进一下。改进的思路也很明确，就是把空闲的内存压缩掉，为每个字符分配尽量少的字节，例如，A和3分配一个字节足以，中分配两个字节足以，如下图所示：<br><img src="https://s2.ax1x.com/2019/06/12/VRyxUO.jpg" alt=""></p>
+<p>这样虽然没有了空闲字节，不浪费任何内存空间了，但是又出现新的问题了：如果我不告诉你，你怎么知道<code>2A</code>表示一个字符，而不是<code>2A31</code>或者<code>2A31DA</code>才表示一个字符呢？后面的字符也有类似的问题。</p>
+<p>对于第一种方案，每个字符占用的字节数是固定的，很容易区分各个字符；而这种方案，不同的字符占用的字节数不同，字符之间也没有特殊的标记，计算机是无法定位字符的。</p>
+<p>这种方案还需要改进，必须让不同的字符编码有不同的特征，并且字符处理程序也需要调整，要根据这些特征去识别不同的字符。</p>
+<p>要想让不同的字符编码有不同的特征，可以从两个方面下手：<br>1) 一是从字符集本身下手，在设计字符集时，刻意让不同的字符编号有不同的特征。</p>
+<p>例如，对于编号较小的、用一个字节足以容纳的字符，我们就可以规定这个字符编号的最高位（Bit）必须是 0；对于编号较大的、要用两个字节存储的字符，我们就可以规定这个字符编号的高字节的最高位必须是 1，低字节的最高位必须是 0；对于编号更大的、需要三个字节存储的字符，我们就可以规定这个字符编号的所有字节的最高位都必须是 1。</p>
+<p>程序在定位字符时，从前往后依次扫描，如果发现当前字节的最高位是 0，那么就把这一个字节作为一个字符编号。如果发现当前字节的最高位是 1，那么就继续往后扫描，如果后续字节的最高位是 0，那么就把这两个字节作为一个字符编号；如果后续字节的最高位是 1，那么就把挨着的三个字节作为一个字符编号。</p>
+<p>这种方案的缺点很明显，它会导致字符集不连续，中间留出大量空白区域，这些空白区域不能定义任何字符。</p>
+<p>2) 二是从字符编号下手，可以设计一种转换方案，字符编号在存储之前先转换为有特征的、容易定位的编号，读取时再按照相反的过程转换成字符本来的编号。</p>
+<p>那么，转换后的编号要具备什么样的特征呢？其实也可以像上面一样，根据字节的最高位是 0 还是 1 来判断字符到底占用了几个字节。</p>
+<p>相比第一种方案，这种方案有缺点也有优点：</p>
+<ul>
+<li>缺点就是多了转换过程，字符在存储和读取时要经过转换，效率低；</li>
+<li>优点就是在制定字符集时不用考虑存储的问题，可以任意排布字符。</li>
+</ul>
+<h3 id="常用字符编码"><a href="#常用字符编码" class="headerlink" title="常用字符编码"></a>常用字符编码</h3><p><strong>1.ASCII 码</strong><br>学过计算机的都知道ASCII码，总共128个，用1个字节的低7位标识，0-31是控制字符如换行、回车、删除等，32-126是打印字符，可以通过键盘输入并且能够显示出来的。</p>
+<p><strong>ISO-8859-1</strong><br>128个字符显然是不够用的，于是ISO组织ASCII码的基础上又定制了一系列标准来扩展ASCIi编码，他们是ISO-8859-1至ISO-8859-15，其中ISO-8859-1涵盖了大多西欧语言字符，所以应用的最广泛。ISO-8859-1仍然是单字节编码，他总共能表示256个字符。</p>
+<p><strong>GB2312</strong><br>GB2312全称是《信息技术 中文编码字符集》，他是双字节编码，总的编码范围是A1-F7，其中A1-A9是符号区，总共包含682个字符；B0-F7是汉字去，包含6763个汉字。</p>
+<p><strong>GBK</strong><br>GBK裙撑是《汉字内码扩展规范》，是国家技术监督局为Windows 95所定制的新的汉字内码规范，他的出现是为了扩展GB2312，并加入了更多的汉字。他的编码范围是8140~FEFE（去掉XX7F），总共有23940个码位，他能标识21003个汉字，他的编码是和GB2312兼容的，也就是说用GB2312编码的韩总也可以用GBK来解码，并且不会乱码。</p>
+<p><strong>GB18030</strong><br>GB18030全称是《信息技术 中文编码字符集》，是我国的强制标准，他可能是单字节、双字节或者四字节编码，他的编码与GB2312兼容，虽然是国家保准，但是在实际应用中使用的并不广泛。</p>
+<p><strong>UTF-16</strong><br>说到UTF必须提到Unicode，ISO师徒创建一个全新的超语言字典，世界上所有的语言都可以通过这个字典来互相翻译。可想而知这个字典是有多么复杂。关于Unicode的详细管饭可以参考相应文档。Unicode是Java和XML的基础，下面详细介绍Unicode的计算机中的存储形式。</p>
+<p>UTF-16具体定义了Unicode字符在计算机中的存储方法。UTF-16用两个字节来表示Unicode的转化格式，它采用订场的标识方法，即不论什么字符都可以用两个字节表示。两个字节是16个bit，所以叫UTF-16。UTF-16表示字符非常方便，每两个字节表示一个字符，这就大大简化了字符串操作，这也是UTF-16作为内存的字符存储格式的一个重要原因。</p>
+<p><strong>UTF-8</strong><br>UTF-16采用统一的量字节标识一个字符，虽然在标识上非常简单、方便，但是也有很大缺点，有很大部分字符用的一个字节就可以标识的现在要用两个字节表示，存储空间放大了一倍，在现在网络带宽还非常有限的情况下，这样会增大网络传输的流量，而且也没有必要。而UTF-8采用的一种变长的技术，每个编码区域有不同的字码长度。不同类型的字符可以由1-6个字节组成。</p>
+<ul>
+<li>如果是一个字节，最高位（第八位）为0，则表示这个是一个ACII字符（00~7F），所以是兼容ASCII的</li>
+<li>如果是一个字节，以11开头，则连续的1的个数暗示这个字符的字节数，例如：110××××× 代表的是双字节UTF-8字符的首字节</li>
+<li>如果是1个字节，以10开始，标识他不是首字节，则需要向前查找才能得到当前字符的首字节</li>
+</ul>
+<h2 id="在Java中需要用到编码的场景"><a href="#在Java中需要用到编码的场景" class="headerlink" title="在Java中需要用到编码的场景"></a>在Java中需要用到编码的场景</h2><h3 id="I-O操作中存在的编码"><a href="#I-O操作中存在的编码" class="headerlink" title="I/O操作中存在的编码"></a>I/O操作中存在的编码</h3><p>涉及到编码的地方一般都在从字符转字节或者字节转字符，而需要这种转换场景的主要是I/O，这个I/O包括磁盘I/O和网络I/O<br><img src="https://s2.ax1x.com/2019/06/12/VRc5p4.jpg" alt=""></p>
+<p>Reader 类是在Java的I/O中肚子福的父类，而InputStream类是读字节的父类，InputStreamReader类就是关联字节到字符的桥梁，他负责在I/过程中处理读取的字节到字符之间的转换，而对具体字节到字符的解码实现，他又委托StreamDecoder去做，在StreamDecider解码过程中必须由用户指定Charset编码格式。如果未指定Charset，则将使用本地的默认字符集，如果在中文环境中将使用GNK编码。</p>
+<p>写的情况类似。</p>
+<p>实例如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">String file = <span class="string">"~/tmp/tmp.txt"</span>;</span><br><span class="line">String charset = <span class="string">"UTF-8"</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// write</span></span><br><span class="line">FileOutputStream outputStream = <span class="keyword">new</span> FileOutputStream(file);</span><br><span class="line"><span class="keyword">try</span> (OutputStreamWriter writer = <span class="keyword">new</span> OutputStreamWriter(outputStream, charset)) &#123;</span><br><span class="line">    writer.write(<span class="string">"这个是测试的文本"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// read</span></span><br><span class="line">FileInputStream inputStream = <span class="keyword">new</span> FileInputStream(file);</span><br><span class="line"><span class="keyword">try</span> (InputStreamReader reader = <span class="keyword">new</span> InputStreamReader(inputStream, charset)) &#123;</span><br><span class="line">    <span class="keyword">char</span>[] buf = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="number">64</span>];</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    StringBuffer buffer = <span class="keyword">new</span> StringBuffer();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ((count = reader.read(buf)) != -<span class="number">1</span>) &#123;</span><br><span class="line">        buffer.append(buffer, <span class="number">0</span>, count);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="内存操作中存在的编码"><a href="#内存操作中存在的编码" class="headerlink" title="内存操作中存在的编码"></a>内存操作中存在的编码</h3><p>除了I/O外，最常用的应该是内崔总进行从字符转字节的数据类型转换了，在Java中用到的String表示字符串，所以String提供了转换到字节的方法，也支持将字节转换为字符的构造函数，代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">String s = <span class="string">"这是测试文字"</span>;</span><br><span class="line"><span class="keyword">byte</span>[] b = s.getBytes(<span class="string">"UTF-8"</span>);</span><br><span class="line">String n = <span class="keyword">new</span> String(b, <span class="string">"UTF-8"</span>);</span><br></pre></td></tr></table></figure></p>
+<h3 id="在Java中如何编解码"><a href="#在Java中如何编解码" class="headerlink" title="在Java中如何编解码"></a>在Java中如何编解码</h3><p>实例如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">String name = <span class="string">"I am 君山"</span>;</span><br><span class="line">toHex(name);</span><br><span class="line"><span class="keyword">byte</span>[] iso8859 = name.getBytes(StandardCharsets.ISO_8859_1);</span><br><span class="line">toHex(iso8859);</span><br><span class="line"><span class="keyword">byte</span>[] GB2312 = name.getBytes(<span class="string">"GB2312"</span>);</span><br><span class="line">toHex(GB2312);</span><br><span class="line"><span class="keyword">byte</span>[] gbk = name.getBytes(<span class="string">"GBK"</span>);</span><br><span class="line">toHex(gbk);</span><br><span class="line"><span class="keyword">byte</span>[] utf16 = name.getBytes(<span class="string">"UTF-16"</span>);</span><br><span class="line">toHex(utf16);</span><br><span class="line"><span class="keyword">byte</span>[] utf8 = name.getBytes(<span class="string">"UTF-8"</span>);</span><br><span class="line">toHex(utf8);</span><br></pre></td></tr></table></figure></p>
+<p>字符串“I am 君山”的char数组为49 20 61 6d 20 541b 5c71，下面把它按照不同的编码格式转换成相应的字节</p>
+<p><strong>按照ISO-8859-1</strong><br><img src="https://s2.ax1x.com/2019/06/12/VRf5Lj.md.jpg" alt=""></p>
+<p>可以看到，7个char字符经过ISO-8859-1编码转变成7个byte数组，ISO-8859-1是单字节编码，中文“君山”被转化成值是3f的byte，3f也就是“？”字符，所以经常会出现中文编程“？”，很可能就是错误的使用了ISO-8859-1的这个编码导致的。</p>
+<p><strong>2.按照GB2312编码</strong><br><img src="https://s2.ax1x.com/2019/06/12/VRfqYV.md.jpg" alt=""></p>
+<p>可以看出，前5个字符经过编码仍然是5个字节，而汉字责备编码成了双字节，GB231只支持6763个汉字，所以不是所有的汉字都能使用GB2312编码。</p>
+<p><strong>3.按照GBK编码</strong><br><img src="https://s2.ax1x.com/2019/06/12/VRhr1U.md.jpg" alt=""></p>
+<p>GBK与GB2312的编码结果是一样的，有次得出GBK编码是兼容GB2312编码的，他们 的拜纳姆算法也是一样的。不同的是，他们的码表长度不一样，GBK包含的汉字字符更多。所以只要是经过GB2312编码的汉字都是可以用GBK进行解码的，反之则不然。</p>
+<p><strong>4.按照UTF-16编码</strong><br><img src="https://s2.ax1x.com/2019/06/12/VR4PBj.md.jpg" alt=""></p>
+<p>用UTF-16编码将char数组放大了1倍，单字节范围内的字符在高位补0变成两个字节，中文字符也变成了两个字节。从UTF-16编码规则来看，仅仅是将字符的高位和低位进行拆分变成两个字节，特点是编码效率非常高，规则很简单。</p>
+<p><strong>5.按照UTF-8编码</strong><br><img src="https://s2.ax1x.com/2019/06/12/VR5RW6.md.jpg" alt=""></p>
+<p>UTF-8单字节范围的字符仍然用的是1个字节标识，对汉字采用3个字节表示。</p>
+<h3 id="对几种编码方式比较"><a href="#对几种编码方式比较" class="headerlink" title="对几种编码方式比较"></a>对几种编码方式比较</h3><p>对中文字符串，上述几种编码方式都能处理</p>
+<ul>
+<li>GB2312与GBK贵吗规则类似，但是GBK范围更大，他能处理所有的汉字字符，所以这两个比较的话应选择GBK</li>
+<li>UTF-16与UTF-8都是处理Unicode编码，他们的编码规则不同。相对来说，UTF-16的编码效率较高，从字符到字节的相互转换简单，进行字符串操作也更好。它使用在本地磁盘和内存直接使用，可以进行字符和字节直接快速切换，如Java的内存编码就是采用UTF-16编码。但是他不适合网络之间传输，因为网络传输容易损坏字节流，一旦字节流损坏很难恢复，所以相对比较而言UTF-8更适合网络传输。</li>
+<li>UTF-8对ASCII字符采用单字节存储，另外单个字符损坏也不会影响后续字符，在编码效率上结余GBK和UTF-16之间，所以UTF-8在编码效率和安全性上做了平衡，是理想的中文编码方式。</li>
+</ul>
+<p>参考：</p>
+<ul>
+<li>《深入分析JAVA Web技术内幕》</li>
+<li><a href="http://c.biancheng.net/cpp/html/3420.html" target="_blank" rel="noopener">大话字符编码，UTF-8、UTF-16、UTF-32都是什么鬼</a></li>
+</ul>
 
     
   </div>
@@ -145,7 +181,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 10px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -156,23 +192,23 @@
   <ul class="entry">
     
       <li>
+        <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
+      </li>
+    
+      <li>
         <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
       </li>
     
       <li>
         <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/30/spring-complete-know/">【精分】Spring 最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/30/os-complete-know/">【精分】操作系统最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/24/service-component-mysql-complete-know/">【精分】MySQL最全最详细分析汇总</a>
       </li>
     
   </ul>

@@ -1,0 +1,199 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>JVM内存泄露场景及解决 | 无知是天堂</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="jifuwei">
+  
+  
+    <meta name="description" content="什么是内存泄露，为什么会出现内存泄露内存泄露是指不再使用的对象由于仍然被其他对象引用导致垃圾收集器不能及时释放这些对象占用的内存从而造成内存空间浪费的现象。从内存泄露的概念我们知道了之所以产生内存内漏，是因为长生命周期的对象持有短生命周期对象的引用，尽管短生命周期对象已经不再需要，但是因为长生命周期对象持有它的引用，会导致短生命周期对象不能被回收，举个例子更详细的说明一下。
+Java中内存泄露场景">
+  
+  <meta name="description" content="什么是内存泄露，为什么会出现内存泄露内存泄露是指不再使用的对象由于仍然被其他对象引用导致垃圾收集器不能及时释放这些对象占用的内存从而造成内存空间浪费的现象。从内存泄露的概念我们知道了之所以产生内存内漏，是因为长生命周期的对象持有短生命周期对象的引用，尽管短生命周期对象已经不再需要，但是因为长生命周期对象持有它的引用，会导致短生命周期对象不能被回收，举个例子更详细的说明一下。 Java中内存泄露场景">
+<meta name="keywords" content="Java,JVM,Mermery Leak">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM内存泄露场景及解决">
+<meta property="og:url" content="http://yoursite.com/2019/11/08/jvm-memery-leak-complete-know/index.html">
+<meta property="og:site_name" content="无知是天堂">
+<meta property="og:description" content="什么是内存泄露，为什么会出现内存泄露内存泄露是指不再使用的对象由于仍然被其他对象引用导致垃圾收集器不能及时释放这些对象占用的内存从而造成内存空间浪费的现象。从内存泄露的概念我们知道了之所以产生内存内漏，是因为长生命周期的对象持有短生命周期对象的引用，尽管短生命周期对象已经不再需要，但是因为长生命周期对象持有它的引用，会导致短生命周期对象不能被回收，举个例子更详细的说明一下。 Java中内存泄露场景">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T09:20:52.722Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JVM内存泄露场景及解决">
+<meta name="twitter:description" content="什么是内存泄露，为什么会出现内存泄露内存泄露是指不再使用的对象由于仍然被其他对象引用导致垃圾收集器不能及时释放这些对象占用的内存从而造成内存空间浪费的现象。从内存泄露的概念我们知道了之所以产生内存内漏，是因为长生命周期的对象持有短生命周期对象的引用，尽管短生命周期对象已经不再需要，但是因为长生命周期对象持有它的引用，会导致短生命周期对象不能被回收，举个例子更详细的说明一下。 Java中内存泄露场景">
+  
+  
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  <!--[if lt IE 9]><script src="//cdn.bootcss.com/html5shiv/3.7.0/html5shiv.min.js"></script><![endif]-->
+  
+  
+</head>
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">无知是天堂</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2019/11/08/jvm-memery-leak-complete-know/">
+  <time datetime="2019-11-08T09:04:08.000Z">
+    2019-11-08
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">JVM内存泄露场景及解决</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h2 id="什么是内存泄露，为什么会出现内存泄露"><a href="#什么是内存泄露，为什么会出现内存泄露" class="headerlink" title="什么是内存泄露，为什么会出现内存泄露"></a>什么是内存泄露，为什么会出现内存泄露</h2><p>内存泄露是指不再使用的对象由于仍然被其他对象引用导致垃圾收集器不能及时释放这些对象占用的内存从而造成内存空间浪费的现象。从内存泄露的概念我们知道了之所以产生内存内漏，是因为长生命周期的对象持有短生命周期对象的引用，尽管短生命周期对象已经不再需要，但是因为长生命周期对象持有它的引用，会导致短生命周期对象不能被回收，举个例子更详细的说明一下。</p>
+<h2 id="Java中内存泄露场景"><a href="#Java中内存泄露场景" class="headerlink" title="Java中内存泄露场景"></a>Java中内存泄露场景</h2><h3 id="使用静态的集合类"><a href="#使用静态的集合类" class="headerlink" title="使用静态的集合类"></a>使用静态的集合类</h3><p>静态的集合类的生命周期和应用程序的生命周期一样长，所以在程序结束前容器中的对象不能被释放，会造成内存泄露。解决办法是最好不使用静态的集合类，如果使用的话，在不需要容器时要将其赋值为null。</p>
+<h3 id="单例模式可能会造成内存泄露"><a href="#单例模式可能会造成内存泄露" class="headerlink" title="单例模式可能会造成内存泄露"></a>单例模式可能会造成内存泄露</h3><p>单例模式只允许应用程序存在一个实例对象，并且这个实例对象的生命周期和应用程序的生命周期一样长，如果单例对象中拥有另一个对象的引用的话，这个被引用的对象就不能被及时回收。解决办法是单例对象中持有的其他对象使用弱引用，弱引用对象在GC线程工作时，其占用的内存会被回收掉</p>
+<h3 id="变量不合理的作用域"><a href="#变量不合理的作用域" class="headerlink" title="变量不合理的作用域"></a>变量不合理的作用域</h3><p>如果变量的定义范围大于使用范围，并且在使用完后没有赋值为null的话，会出现内存泄露。定义变量的时候，能定义为局部变量就不要定义为成员变量，或者定义为成员变量的话，在使用完变量后，把变量赋值为null。</p>
+<h3 id="数据库、网络、输入输出流，这些资源没有显示的关闭"><a href="#数据库、网络、输入输出流，这些资源没有显示的关闭" class="headerlink" title="数据库、网络、输入输出流，这些资源没有显示的关闭"></a>数据库、网络、输入输出流，这些资源没有显示的关闭</h3><p>垃圾回收只负责内存回收，如果对象正在使用资源的话，Java虚拟机不能判断这些对象是不是正在进行操作，比如输入输出，也就不能回收这些对象占用的内存，所以在资源使用完后要调用close()方法关闭。</p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/JVM/">JVM</a>, <a class="tags-link" href="/tags/Java/">Java</a>, <a class="tags-link" href="/tags/Mermery-Leak/">Mermery Leak</a>
+  </div>
+
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  
+  <div id="sidebar" class="widgets-right">
+  
+
+  
+<div class="widget tagcloud">
+  <h3 class="title">tagcloud</h3>
+  <div class="entry">
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+  </div>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">recent_posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
+      </li>
+    
+  </ul>
+</div>
+
+</div>
+  
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2019 <a href="/">jifuwei</a>
+  
+</div>
+<!-- 
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://blog.dafengning.com/" target="_blank">Chong Zi</a>
+</div>
+-->
+<div class="clearfix"></div>
+</footer>
+  <script src="//lib.sinaapp.com/js/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+<div id="rightfix" style="display:none;">
+
+
+<a href="javascript:void(0)" id="gotop" class="fix_btn" onclick="gotop();" title="回到顶部"><i></i></a>
+<script>
+  function gotop(){
+    $('html,body').animate({
+        scrollTop : '0px'
+      }, 800);
+  }
+  $(function(){
+    _rightfix = $('#rightfix');
+    $(window).scroll(function(){
+      $sollTop = document.documentElement.scrollTop + document.body.scrollTop;
+      if($sollTop > 350){
+        _rightfix.show();
+      }else{
+        _rightfix.hide();
+      }
+    });
+  });
+</script>
+
+</div>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

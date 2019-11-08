@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/02/13/mq-sort/">
-  <time datetime="2019-02-13T13:03:42.000Z">
-    2019-02-13
+      <a href="/2019/02/20/mq-scene-in-enterprise/">
+  <time datetime="2019-02-20T12:07:26.000Z">
+    2019-02-20
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/02/13/mq-sort/">消息队列——顺序性</a></h1>
+    <h1 class="title"><a href="/2019/02/20/mq-scene-in-enterprise/">消息队列——企业使用场景</a></h1>
   
 
   </header>
@@ -77,19 +77,27 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p>我举个例子，我们以前做过一个 mysql binlog 同步的系统，压力还是非常大的，日同步数据要达到上亿，就是说数据从一个 mysql 库原封不动地同步到另一个 mysql 库里面去（mysql -&gt; mysql）。常见的一点在于说比如大数据 team，就需要同步一个 mysql 库过来，对公司的业务系统的数据做各种复杂的操作。</p>
-<p>你在 mysql 里增删改一条数据，对应出来了增删改 3 条 binlog 日志，接着这三条 binlog 发送到 MQ 里面，再消费出来依次执行，起码得保证人家是按照顺序来的吧？不然本来是：增加、修改、删除；你楞是换了顺序给执行成删除、修改、增加，不全错了么。</p>
-<p>本来这个数据同步过来，应该最后这个数据被删除了；结果你搞错了这个顺序，最后这个数据保留下来了，数据同步就出错了。<br>先看看顺序会错乱的俩场景：</p>
+<h2 id="应用解耦、异步"><a href="#应用解耦、异步" class="headerlink" title="应用解耦、异步"></a>应用解耦、异步</h2><h3 id="创建业务订单"><a href="#创建业务订单" class="headerlink" title="创建业务订单"></a>创建业务订单</h3><p>业务入口处（如借款订单），每天订单量较大，高峰时期平均每分钟有6千笔有效订单;<br>创建订单涉及到订单号分配，消息推送、第三方通知（导流）、邀友、等等复杂情形，此处也需要MQ进行解耦</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">producer.send(topic, loan.getId().toString(), tag, loan.getRefId().getBytes(), <span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+<p><code>messageKey</code>使用业务唯一ID，方便C端加锁防重消费(MQ的messageId不能保证唯一，有一定的重复风险)</p>
+<p>由于C端使用的是从库查询创建的订单，在低峰时刻，MQ消费能力很快，恰巧遇到主备同步延迟或者故障，导致C端并未查询到相应的订单，此时不能提交<code>ack</code>，Rocket MQ提供了场景：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// something happen, notice server push to c later again</span></span><br><span class="line"><span class="keyword">return</span> Action.ReconsumeLater;</span><br><span class="line"></span><br><span class="line"><span class="comment">// handle success, notice server finish the msg</span></span><br><span class="line"><span class="keyword">return</span> Action.CommitMessage;</span><br></pre></td></tr></table></figure></p>
+<h3 id="风控审核"><a href="#风控审核" class="headerlink" title="风控审核"></a>风控审核</h3><ul>
+<li>业务日志标记，后台外围系统打标记，丢入客服池，供业务人员竞标</li>
+<li>消息通知，告知客户订单状态流转</li>
+<li>风控审核，这一步需要大量的时间等待风控计算该笔订单流转状态，耗时最长，5~10分钟</li>
+<li>更新订单状态</li>
+</ul>
+<p><img src="https://s2.ax1x.com/2019/02/20/k2jI4e.png" alt=""></p>
+<h2 id="流量削锋"><a href="#流量削锋" class="headerlink" title="流量削锋"></a>流量削锋</h2><h3 id="公众号消息推送与回复"><a href="#公众号消息推送与回复" class="headerlink" title="公众号消息推送与回复"></a>公众号消息推送与回复</h3><p>公众号的入口是我们业务的一大流量入口，客服在公众号对接每天的客户，信息量非常的大（没具体的统计过），<br>常用场景是客户在公众号提出问题，机器人或者人工介入解决问题，此处必须用到MQ</p>
 <ul>
-<li>RabbitMQ：一个 queue，多个 consumer。比如，生产者向 RabbitMQ 里发送了三条数据，顺序依次是 data1/data2/data3，压入的是 RabbitMQ 的一个内存队列。有三个消费者分别从 MQ 中消费这三条数据中的一条，结果消费者2先执行完操作，把 data2 存入数据库，然后是 data1/data3。这不明显乱了。<br><img src="https://s2.ax1x.com/2019/02/13/k0HQ9H.png" alt=""></li>
-<li>Kafka：比如说我们建了一个 topic，有三个 partition。生产者在写的时候，其实可以指定一个 key，比如说我们指定了某个订单 id 作为 key，那么这个订单相关的数据，一定会被分发到同一个 partition 中去，而且这个 partition 中的数据一定是有顺序的。<br>消费者从 partition 中取出来数据的时候，也一定是有顺序的。到这里，顺序还是 ok 的，没有错乱。接着，我们在消费者里可能会搞多个线程来并发处理消息。因为如果消费者是单线程消费处理，而处理比较耗时的话，比如处理一条消息耗时几十 ms，那么 1 秒钟只能处理几十条消息，这吞吐量太低了。而多个线程并发跑的话，顺序可能就乱掉了。<br><img src="https://s2.ax1x.com/2019/02/13/k0HNE8.png" alt=""></li>
+<li>机器人消息：C端检测关键字，尝试回复简单问题列表供客户选择，解决问题</li>
+<li>人工处理：C端判定客户需要人工处理，则立即将客户的唯一识别码（OpenId或者手机号）绑定到客服应答系统，发送的消息将分配给相应的客服，直到问题解决解绑唯一识别码</li>
 </ul>
-<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><h3 id="RabbitMQ"><a href="#RabbitMQ" class="headerlink" title="RabbitMQ"></a>RabbitMQ</h3><p>拆分多个 queue，每个 queue 一个 consumer，就是多一些 queue 而已，确实是麻烦点；或者就一个 queue 但是对应一个 consumer，然后这个 consumer 内部用内存队列做排队，然后分发给底层不同的 worker 来处理。<br><img src="https://s2.ax1x.com/2019/02/13/k0HfC4.png" alt=""></p>
-<h3 id="Kafka"><a href="#Kafka" class="headerlink" title="Kafka"></a>Kafka</h3><ul>
-<li>一个 topic，一个 partition，一个 consumer，内部单线程消费，单线程吞吐量太低，一般不会用这个。</li>
-<li>写 N 个内存 queue，具有相同 key 的数据都到同一个内存 queue；然后对于 N 个线程，每个线程分别消费一个内存 queue 即可，这样就能保证顺序性。<br><img src="https://s2.ax1x.com/2019/02/13/k0HoK1.png" alt=""></li>
+<h2 id="广播"><a href="#广播" class="headerlink" title="广播"></a>广播</h2><p>消息队列的基本功能之一是进行广播。如果没有消息队列，每当一个新的业务方接入，我们都要联调一次新接口。有了消息队列，我们只需要关心消息是否送达了队列，至于谁希望订阅，是下游的事情，无疑极大地减少了开发和联调的工作量。 比如本文开始提到的产品中心发布产品变更的消息，以及景点库很多去重更新的消息，可能“关心”方有很多个，但产品中心和景点库只需要发布变更消息即可，谁关心谁接入。</p>
+<h2 id="延迟消费"><a href="#延迟消费" class="headerlink" title="延迟消费"></a>延迟消费</h2><ul>
+<li>订单一直处于未支付状态时，如何及时的关闭订单，并退还库存？</li>
+<li>定期检查处于退款状态的订单是否已经退款成功？</li>
 </ul>
-<p>参考：<br><a href="https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/how-to-ensure-the-order-of-messages.md" target="_blank" rel="noopener">如何保证消息的顺序性？</a></p>
 
     
   </div>
@@ -125,7 +133,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 10px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -136,23 +144,23 @@
   <ul class="entry">
     
       <li>
+        <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
+      </li>
+    
+      <li>
         <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
       </li>
     
       <li>
         <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/30/spring-complete-know/">【精分】Spring 最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/30/os-complete-know/">【精分】操作系统最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/10/24/service-component-mysql-complete-know/">【精分】MySQL最全最详细分析汇总</a>
       </li>
     
   </ul>
