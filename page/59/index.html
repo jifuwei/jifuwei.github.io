@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2018/08/27/auth/">
-  <time datetime="2018-08-27T08:54:11.000Z">
-    2018-08-27
+      <a href="/2018/09/11/travel-step-20181001/">
+  <time datetime="2018-09-11T12:21:01.000Z">
+    2018-09-11
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2018/08/27/auth/">Http鉴权罗列</a></h1>
+    <h1 class="title"><a href="/2018/09/11/travel-step-20181001/">国庆旅游攻略规划</a></h1>
   
 
   </header>
@@ -77,76 +77,26 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>http协议本身是无状态的,但是在实际的web开发中常有一些操作需要有状态.比如想要访问一些私人访问权限的文章,或者这种操作需要明确当前用户身份.</p>
-<p>显然,最简单的方案就是每次都发送账户和密码,但是这样重复操作用用户并不友好,对服务器页增添了额外的压力.为了解决无状态带来的鉴权问题,大牛们设计多种方案</p>
-<h2 id="1-cookie"><a href="#1-cookie" class="headerlink" title="1.cookie"></a>1.cookie</h2><p>Cookie是储存在客户端的一串字符,一般说来大小不超过4kb.<br>比如我们常见的记住密码功能,或者一些基于之前输入的提醒和默认配置,就是通过cookie来实现的,cookie简单说来就是一种本地存储方法.<br>但是这里存储的信息常用来进行鉴权操作.cookie只能保存文本信息,浏览器可以禁止cookie.cookie的期限可以被自由设定,可以是仅仅一次浏览起效,也可以长达一年.<br>如果是短期的,那么这些信息会被存储在内存中,如果是长期则会存储在硬盘上.cookie的起效范围是路径下的所有子路径.不允许其他来源的访问.</p>
-<p>单纯的采用cookie来认证身份会带来一个比较麻烦的问题,就是伪造比较容易.<br>因为这样处理,cookie中必然要带有身份信息,但是服务器也要解析这个身份信息,所以必然要在原理上支持双向的编码和解码,那么这个信息很容易被破解和进一步伪造.<br>想一想,如果想要解决这个问题,我们常用的方案应该是加一个secret,而这个secret应该是放在服务器上的,服务器返回这样一个带有secret编码的字符串,而在服务器端再带上这个secret反向解密,如此一来,问题不就解决了吗?确实如此,但是这不代表cookie就安全,因为这已经不叫cookie了,而是我们要讲的第二个对象:session.</p>
-<h2 id="2-session"><a href="#2-session" class="headerlink" title="2.session"></a>2.session</h2><p>通过上面说的东西,我们已经能够获得身份信息,额外的,我们还可以把更复杂形式的信息都存储进来,因为这里没有cookie的纯文本限制.<br>但是刚才说的带有secret编码的字符串也就是sessionid,依然要存储在客户端.<br>是不是意味着session必定要依赖cookie呢?不是!想一想,我们实际上需要的是在每一次请求(至少是需要判定身份状态的请求中),都带上这个字符串,我们有以下这几种解决方案:</p>
+<h2 id="出游选择"><a href="#出游选择" class="headerlink" title="出游选择"></a>出游选择</h2><p>国庆高峰，不能瞎选，筛选目标如下：</p>
 <ul>
-<li>cookie</li>
-<li>表单隐藏字段:在form中放置一个隐藏的域</li>
-<li>url重写:在url后边加上session的query段</li>
+<li>人少点</li>
+<li>适合国庆玩的地方</li>
+<li>景色没点，吃的当然要多点（吃为主，玩为辅）</li>
+<li>适合两个人</li>
+<li>距离当前位置远一点</li>
 </ul>
-<p>Session也可以设定有效时间.其实际的存储可以在内存、缓存、文件中.通过类似//可能具体实现不同.//hash表的数据结构存储.cookie是一个存在的实体,session是一种机制.</p>
-<h2 id="3-token"><a href="#3-token" class="headerlink" title="3.token"></a>3.token</h2><p>使用基于 Token 的身份验证方法，在服务端不需要存储用户的登录记录。大概的流程是这样的：</p>
-<ul>
-<li>客户端使用用户名跟密码请求登录</li>
-<li>服务端收到请求，去验证用户名与密码</li>
-<li>验证成功后，服务端会签发一个 Token，再把这个 Token 发送给客户端</li>
-<li>客户端收到 Token 以后可以把它存储起来，比如放在 Cookie 里或者 Local Storage 里</li>
-<li>客户端每次向服务端请求资源的时候需要带着服务端签发的 Token</li>
-<li>服务端收到请求，然后去验证客户端请求里面带着的 Token，如果验证成功，就向客户端返回请求的数据</li>
+<h2 id="备选地点：稻城亚丁"><a href="#备选地点：稻城亚丁" class="headerlink" title="备选地点：稻城亚丁"></a>备选地点：稻城亚丁</h2><h3 id="1-简介"><a href="#1-简介" class="headerlink" title="1.简介"></a>1.简介</h3><p>说在青藏高原雪山深处的一个隐秘地方，有一个被双层雪山环抱王国，那里有雪山、冰川、峡谷、森林、草甸、湖泊、金矿及纯净的空气，这个王国就是香巴拉王国，被称为水蓝色的星球上的最后一片净土，也就是今天的稻城亚丁。在稻城亚丁，极目远跳，天地浩瀚无垠，乱石铺天盖地，憾人心魄，1145个高山湖泊散落于嶙峋乱石间，碧蓝如玉，景色极为壮观，因而稻城亚丁被誉为最后的香巴拉。（马蜂窝拷贝来的，姑且认为真实度五五开~）</p>
+<h3 id="2-最佳旅行时间"><a href="#2-最佳旅行时间" class="headerlink" title="2.最佳旅行时间"></a>2.最佳旅行时间</h3><p>春夏秋最佳，冬季气候较为恶劣</p>
+<h3 id="3-欣赏一下"><a href="#3-欣赏一下" class="headerlink" title="3.欣赏一下"></a>3.欣赏一下</h3><p><img src="/images/travel_1.jpeg" alt=""><br><img src="/images/travel_2.jpeg" alt=""><br><img src="/images/travel_3.jpeg" alt=""></p>
+<h3 id="4-如何去"><a href="#4-如何去" class="headerlink" title="4.如何去"></a>4.如何去</h3><p>跟团啦，这么远而且是高原，万一有个啥高原反应就很头疼了，此处在马蜂窝看的套餐，可参考如下：</p>
+<h4 id="4-1-参考行程"><a href="#4-1-参考行程" class="headerlink" title="4.1.参考行程"></a>4.1.参考行程</h4><ul>
+<li>第1天 成都市-四姑娘山-丹巴县(目的地海拔1800m)<br>成都98km卧龙自然保护区60km巴郎山47km日隆镇143km甲居藏寨<br>途经：映秀地震遗址(车观)、卧龙自然保护区(沿途欣赏巴郎山高原草甸)、巴郎山(天气好有机会看见巴郎山云海漫漫)、(到达日隆镇游玩)四姑娘山双桥沟，当天住在甲居藏寨。<br>1.早上7点半成都市内赠送住宿地点集合出发，沿途成都平原风光。<br>2.四姑娘山双桥沟：建议游玩时间3个小时，双桥沟门票80+观光车80。<br>3.备注：天气好可以早巴郎山猫壁梁观四姑娘山全景。<br>4.甲居藏寨：晚上入住甲居藏寨，次日早起自由活动甲居藏寨参观。<br>住宿：丹巴甲居藏寨或金河大酒店或同级—早/午/晚餐敬请自理<br><img src="/images/travel_4_1.jpeg" alt=""></li>
+<li>第2天 丹巴–亚丁香格里拉镇(目的地海拔2600m)<br>丹巴110km八美镇55km新都桥173km理塘95km稻城海子山109km亚丁香格里拉镇<br>1.八美：沿途游玩/观赏/参观(莲花宝地/惠远寺，八美土林+远眺雅拉雪山)。<br>2.塔公草原/塔公寺：位于四川康定县城西北部113公里处，海拔3730m，建议游玩时间90分钟，景点无门票，塔公寺20￥；<br>3.新都桥：川藏线经典沿途风光,游玩方式自定,好的风光集中在早上和上午或下午以及黄昏…。<br>4.海子山：共有1145个大小湖泊,其规模在中国是很大的,因高山湖泊藏族又叫海子,所以得名海子山。<br>5.川藏南线风光;沿途风景根据不同的天气实时更新…主要集中在早上和上午或下午以及黄昏…。<br>住宿：贡嘎酒店或同级—早/午/晚餐敬请自理<br><img src="/images/travel_4_2.jpeg" alt=""></li>
+<li>第3天 亚丁景区一日游住香格里拉镇(目的地海拔2600m)<br>早起，直接进入亚丁景区接待中心，购买亚丁景区门票、观光车票，进入景区，当日全天游玩亚丁风景区。<br>►亚丁风景名胜区：位于稻城县日瓦乡,海拔3500m～4000m;建议在景区游览8个小时。<br>►稻城亚丁，被誉为“人间最后的净土”，一路上都是最为原始的景色。在这里不可错过的景色：仙乃日雪山、央迈永雪山、夏诺多吉雪山、珍珠海、牛奶海、五色海;<br>►亚丁景点门票150￥+观光车120￥+景区电瓶车上行80/下行40+亚丁景区骑马150￥以上<br>►►►亚丁风景区游玩方式：<br>1、购买门票后乘景区环保车到亚丁村;<br>2、徒步20分钟到亚丁冲古寺;<br>3、乘上行电瓶车约30分钟到三座雪山的中央(洛绒牛场);<br>4、休整40分钟，感觉自己适应高海拔地区后可以继续往牛奶海和五色海游玩(海拔4700米)，请及时返回…<br>住宿：贡嘎酒店/扎西旅游酒店或同级—午/晚餐敬请自理<br><img src="/images/travel_4_3.jpeg" alt=""></li>
+<li>第4天 稻城日瓦乡–新都桥(目的地海拔3300m)<br>日瓦乡→76km稻城县→180km理塘县→135km雅江县→79km新都桥/康定城<br>►稻城风光：位于稻城县境内，平均海拔3600m，在公路两旁长达100km的季节性景点，风景优美的免费景点；<br>►理塘长青春科尔寺：地址位于世界高城理塘县0km，建议参观时间90分钟，中国康巴藏族地区的黄教寺庙，门票免费；<br>温馨提示：如果旅游者有高山反应，当日目的地住宿可以灵活调整到康定城/海拔2760m。<br>住宿：新都桥大观景酒店或同级—午/晚餐敬请自理<br><img src="/images/travel_4_4.jpeg" alt=""></li>
+<li>第5天 新都桥–成都市(目的地海拔500m)<br>新都桥→78km康定→40km红石公园→89km石棉县→266km成都市<br>主要靓点：新都桥风光、折多山、康定溜溜的城、红石公园;<br>►新都桥：川藏线经典沿途风光,游玩方式自定,好的风光集中在上午;<br>►四川红石滩：位于磨西镇,距离海螺沟20km/康定76km,海拔2000m上；建议游玩时间90分钟,景点门票60￥;<br>►►►温馨提示：建议早上06点半出发,沿途风景集中在上午,石棉到成都全程高速,抵达成都正常时间约17点;<br>红石公园如遇修路或其它原因受到交通管制则改道走泸定方向到当天目的地。<br>►►►最后一天返回成都市内参考时间是下午16点-19点之间，请合理安排您的日程（如当天有班机返回，请定21点后成都起飞的航班或列车，机场属于当天返回成都顺路方向，可以直接送到机场..）。<br>►成都市内(返回当天住宿自理)—午/晚餐敬请自理<br>请在行程最后1天中午前通过网评对我们这次的旅行提出您的宝贵意见…便于我们对后面的旅行工作做得越来越好<br><img src="/images/travel_4_5.jpeg" alt=""></li>
 </ul>
-<p>可以看出来,这里的token与sessionid有些类似,其区别:</p>
-<ul>
-<li>sessionid是带着之前的状态的,在服务器端可以getSession(sessionid)</li>
-<li>token是在登录验证之后发放的一个包含着用户基本信息的较长的字符串,用处是验证身份以及简化后续获取信息的难度.</li>
-<li>token机制更灵活,可以实现跨域</li>
-</ul>
-<p>此种方案多用于APP等客户端登录使用，一般过期时间是1个月</p>
-<h2 id="4-JWT"><a href="#4-JWT" class="headerlink" title="4.JWT"></a>4.JWT</h2><p>Jwt简单说来是一种token的具体实现规范!<br>Jwt标准的token有三个部分,中间用点分隔开，并且都会使用 Base64 编码:<br>JWT 的三个部分依次如下：</p>
-<ul>
-<li>Header（头部）</li>
-<li>Payload（负载）</li>
-<li>Signature（签名）</li>
-</ul>
-<h3 id="4-1-Header"><a href="#4-1-Header" class="headerlink" title="4.1.Header"></a>4.1.Header</h3><p>Header 部分是一个 JSON 对象，描述 JWT 的元数据，通常是下面的样子。<br><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"alg"</span>: <span class="string">"HS256"</span>,</span><br><span class="line">  <span class="attr">"typ"</span>: <span class="string">"JWT"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>上面代码中，alg属性表示签名的算法（algorithm），默认是 HMAC SHA256（写成 HS256）；typ属性表示这个令牌（token）的类型（type），JWT 令牌统一写为JWT。</p>
-<p>最后，将上面的 JSON 对象使用 Base64URL 算法（详见后文）转成字符串。</p>
-<h3 id="4-2-Payload"><a href="#4-2-Payload" class="headerlink" title="4.2.Payload"></a>4.2.Payload</h3><p>Payload 部分也是一个 JSON 对象，用来存放实际需要传递的数据。JWT 规定了7个官方字段，供选用。</p>
-<ul>
-<li>iss (issuer)：签发人</li>
-<li>exp (expiration time)：过期时间</li>
-<li>sub (subject)：主题</li>
-<li>aud (audience)：受众</li>
-<li>nbf (Not Before)：生效时间</li>
-<li>iat (Issued At)：签发时间</li>
-<li>jti (JWT ID)：编号</li>
-</ul>
-<p>注意，JWT 默认是不加密的，任何人都可以读到，所以不要把秘密信息放在这个部分。</p>
-<p>这个 JSON 对象也要使用 Base64URL 算法转成字符串。</p>
-<h3 id="4-3-Signature"><a href="#4-3-Signature" class="headerlink" title="4.3.Signature"></a>4.3.Signature</h3><p>Signature 部分是对前两部分的签名，防止数据篡改。<br>首先，需要指定一个密钥（secret）。这个密钥只有服务器才知道，不能泄露给用户。然后，使用 Header 里面指定的签名算法（默认是 HMAC SHA256），按照下面的公式产生签名。</p>
-<p>算出签名以后，把 Header、Payload、Signature 三个部分拼成一个字符串，每个部分之间用”点”（<code>.</code>）分隔，就可以返回给用户。</p>
-<h3 id="4-4-JWT-的使用方式"><a href="#4-4-JWT-的使用方式" class="headerlink" title="4.4.JWT 的使用方式"></a>4.4.JWT 的使用方式</h3><p>客户端收到服务器返回的 JWT，可以储存在 Cookie 里面，也可以储存在 localStorage。</p>
-<p>此后，客户端每次与服务器通信，都要带上这个 JWT。你可以把它放在 Cookie 里面自动发送，但是这样不能跨域，所以更好的做法是放在 HTTP 请求的头信息Authorization字段里面。</p>
-<p>几个特点:</p>
-<ul>
-<li>JWT 默认是不加密，但也是可以加密的。生成原始 Token 以后，可以用密钥再加密一次。</li>
-<li>JWT 不加密的情况下，不能将秘密数据写入 JWT。</li>
-<li>JWT 不仅可以用于认证，也可以用于交换信息。有效使用 JWT，可以降低服务器查询数据库的次数。</li>
-<li>WT 的最大缺点是，由于服务器不保存 session 状态，因此无法在使用过程中废止某个 token，或者更改 token 的权限。也就是说，一旦 JWT 签发了，在到期之前就会始终有效，除非服务器部署额外的逻辑。</li>
-<li>JWT 本身包含了认证信息，一旦泄露，任何人都可以获得该令牌的所有权限。为了减少盗用，JWT 的有效期应该设置得比较短。对于一些比较重要的权限，使用时应该再次对用户进行认证。</li>
-<li>为了减少盗用，JWT 不应该使用 HTTP 协议明码传输，要使用 HTTPS 协议传输。</li>
-</ul>
-<h2 id="5-oauth2"><a href="#5-oauth2" class="headerlink" title="5.oauth2"></a>5.oauth2</h2><p>简单来说,oauth是用来向第三方平台提供可以细致的权限管理的一种方案.</p>
-<p>如何直接向第三方提供账号和密码,可能存在的问题有:</p>
-<ul>
-<li>不安全</li>
-<li>无法更细致的限制授权范围和有效期</li>
-<li>只有修改密码才能收回权限</li>
-<li>一个第三方程序被破解将会导致用户密码泄漏</li>
-</ul>
-<p>OAuth的基本思路如下:<br>OAuth在”客户端”与”服务提供商”之间，设置了一个授权层（authorization layer）。”客户端”不能直接登录”服务提供商”，只能登录授权层，以此将用户与客户端区分开来。”客户端”登录授权层所用的令牌（token），与用户的密码不同。用户可以在登录的时候，指定授权层令牌的权限范围和有效期。”客户端”登录授权层以后，”服务提供商”根据令牌的权限范围和有效期，向”客户端”开放用户储存的资料。</p>
+<h4 id="4-2-价格感人"><a href="#4-2-价格感人" class="headerlink" title="4.2.价格感人"></a>4.2.价格感人</h4><p>国庆感人价格，出去就是被砍的 gay的很~<br><img src="/images/travel_5_1.png" alt=""></p>
 
     
   </div>
@@ -182,7 +132,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -191,6 +141,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/09/distribut-concurrent-programmer-design/">秒杀系统设计</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
+      </li>
     
       <li>
         <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
@@ -202,14 +160,6 @@
     
       <li>
         <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
       </li>
     
   </ul>

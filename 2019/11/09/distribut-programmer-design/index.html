@@ -1,0 +1,232 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>分布式系统设计浅谈 | 无知是天堂</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="jifuwei">
+  
+  
+    <meta name="description" content="分布式系统设计你会考虑哪些策略？
+分布式系统设计理念分布式系统对服务器硬件要求很低
+对服务器硬件可靠性不做要求，允许服务器硬件发生故障，硬件的故障由软件来容错。所以分布式系统的高可靠性是由软件来保证
+对服务器的性能不做要求，不要求使用高频 CPU、大容量内存、高性能存储等等。因为分布式系统的性能瓶颈在于节点间通讯带来的网络开销，单台服务器硬件性能再好，也要等待网络 IO
+
+一般而言，互联网公司的大">
+  
+  <meta name="description" content="分布式系统设计你会考虑哪些策略？ 分布式系统设计理念分布式系统对服务器硬件要求很低 对服务器硬件可靠性不做要求，允许服务器硬件发生故障，硬件的故障由软件来容错。所以分布式系统的高可靠性是由软件来保证 对服务器的性能不做要求，不要求使用高频 CPU、大容量内存、高性能存储等等。因为分布式系统的性能瓶颈在于节点间通讯带来的网络开销，单台服务器硬件性能再好，也要等待网络 IO  一般而言，互联网公司的大">
+<meta name="keywords" content="Design,Distribut">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式系统设计浅谈">
+<meta property="og:url" content="http://yoursite.com/2019/11/09/distribut-programmer-design/index.html">
+<meta property="og:site_name" content="无知是天堂">
+<meta property="og:description" content="分布式系统设计你会考虑哪些策略？ 分布式系统设计理念分布式系统对服务器硬件要求很低 对服务器硬件可靠性不做要求，允许服务器硬件发生故障，硬件的故障由软件来容错。所以分布式系统的高可靠性是由软件来保证 对服务器的性能不做要求，不要求使用高频 CPU、大容量内存、高性能存储等等。因为分布式系统的性能瓶颈在于节点间通讯带来的网络开销，单台服务器硬件性能再好，也要等待网络 IO  一般而言，互联网公司的大">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-09T08:01:26.661Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="分布式系统设计浅谈">
+<meta name="twitter:description" content="分布式系统设计你会考虑哪些策略？ 分布式系统设计理念分布式系统对服务器硬件要求很低 对服务器硬件可靠性不做要求，允许服务器硬件发生故障，硬件的故障由软件来容错。所以分布式系统的高可靠性是由软件来保证 对服务器的性能不做要求，不要求使用高频 CPU、大容量内存、高性能存储等等。因为分布式系统的性能瓶颈在于节点间通讯带来的网络开销，单台服务器硬件性能再好，也要等待网络 IO  一般而言，互联网公司的大">
+  
+  
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  <!--[if lt IE 9]><script src="//cdn.bootcss.com/html5shiv/3.7.0/html5shiv.min.js"></script><![endif]-->
+  
+  
+</head>
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">无知是天堂</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2019/11/09/distribut-programmer-design/">
+  <time datetime="2019-11-09T02:52:27.000Z">
+    2019-11-09
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">分布式系统设计浅谈</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <p>分布式系统设计你会考虑哪些策略？</p>
+<h2 id="分布式系统设计理念"><a href="#分布式系统设计理念" class="headerlink" title="分布式系统设计理念"></a>分布式系统设计理念</h2><h3 id="分布式系统对服务器硬件要求很低"><a href="#分布式系统对服务器硬件要求很低" class="headerlink" title="分布式系统对服务器硬件要求很低"></a>分布式系统对服务器硬件要求很低</h3><ul>
+<li>对服务器硬件可靠性不做要求，允许服务器硬件发生故障，硬件的故障由软件来容错。所以分布式系统的高可靠性是由软件来保证</li>
+<li>对服务器的性能不做要求，不要求使用高频 CPU、大容量内存、高性能存储等等。因为分布式系统的性能瓶颈在于节点间通讯带来的网络开销，单台服务器硬件性能再好，也要等待网络 IO</li>
+</ul>
+<p>一般而言，互联网公司的大型数据中心都是选用大量廉价的 PC 服务器而不是用几台高性能服务器搭建分布式集群，以此来降低数据中心成本。比如，Google 对于数据中心的成本控制做到了极致：所有服务器一律不要机箱；主板完全定制，只要最基本的组件，早期的定制主板连电源开关和 USB 接口都不要；在主板上加装隔离带把 CPU 单独隔出来，让冷风只吹 CPU，不吹内存、硬盘等不需要降温的组件，最大限度降低冷却电力消耗。</p>
+<h3 id="分布式系统强调横向可扩展性"><a href="#分布式系统强调横向可扩展性" class="headerlink" title="分布式系统强调横向可扩展性"></a>分布式系统强调横向可扩展性</h3><p>横向可扩展性（Scale Out）是指通过增加服务器数量来提升集群整体性能。纵向可扩展性（Scale Up）是指提升每台服务器性能进而提升集群整体性能。纵向可扩展性的上限非常明显，单台服务器的性能不可能无限提升，而且跟服务器性能相比，网络开销才是分布式系统最大的瓶颈。横向可扩展性的上限空间比较大，集群总能很方便地增加服务器。而且分布式系统会尽可能保证横向扩展带来集群整体性能的（准）线性提升。比如有 10 台服务器组成的集群，横向扩展为 100 台同样服务器的集群，那么整体分布式系统性能会提升为接近原来的 10 倍。</p>
+<p>互联网公司的数据中心，一般一个分布式系统横向扩展的上限在万台服务器左右。Google 数据中心的基本单元，CELL，由两万台左右服务器组成，每个 CELL 由一套分布式管理系统，BORG，统一管理，每个数据中心都由多个 CELL 组成。</p>
+<h3 id="分布式系统不允许单点失效（No-Single-Point-Failure）（去中心化）"><a href="#分布式系统不允许单点失效（No-Single-Point-Failure）（去中心化）" class="headerlink" title="分布式系统不允许单点失效（No Single Point Failure）（去中心化）"></a>分布式系统不允许单点失效（No Single Point Failure）（去中心化）</h3><p>单点失效是指，某个应用服务只有一份实例运行在某一台服务器上，这台服务器一旦挂掉，那么这个应用服务必然也受影响而挂掉，导致整个服务不可用。例如，某网站后台如果只在某一台服务器上运行一份，那这台服务器一旦宕机，该网站服务必然受影响而不可用。再比如，如果所有数据都存在某一台服务器上，那一旦这台服务器坏了，所有数据都不可访问。</p>
+<p>因为分布式系统的服务器都是廉价的 PC 服务器，硬件不能保证 100% 可靠，所以分布式系统默认每台服务器随时都可能发生故障挂掉。同时分布式系统必须要提供高可靠服务，不允许出现单点失效，因此分布式系统里运行的每个应用服务都有多个运行实例跑在多个节点上，每个数据点都有多个备份存在不同的节点上。这样一来，多个节点同时发生故障，导致某个应用服务的所有实例都挂掉、或某个数据点的多个备份都不可读的概率大大降低，进而有效防止单点失效。</p>
+<p>通常情况，不要让服务器满负荷运行，服务器长时间满负荷运行的话，出故障的概率显著升高。所以分布式系统采用一大堆中低性能的 PC 服务器，尽可能把负载均摊到所有服务器上，让每台服务器的负载都不高，保证集群整体稳定性。</p>
+<h3 id="分布式系统尽可能减少节点间通讯开销"><a href="#分布式系统尽可能减少节点间通讯开销" class="headerlink" title="分布式系统尽可能减少节点间通讯开销"></a>分布式系统尽可能减少节点间通讯开销</h3><p>如前所述，分布式系统的整体性能瓶颈在于内部网络开销。目前网络传输的速度还赶不上 CPU 读取内存或硬盘的速度，所以减少网络通讯开销，让 CPU 尽可能处理内存的数据或本地硬盘的数据，能显著提高分布式系统的性能。典型的例子就是 Hadoop MapReduce，把计算任务分配到要处理的数据所在的节点上运行，从而避免在网络上传输数据。</p>
+<h3 id="分布式系统应用服务最好做成无状态的"><a href="#分布式系统应用服务最好做成无状态的" class="headerlink" title="分布式系统应用服务最好做成无状态的"></a>分布式系统应用服务最好做成无状态的</h3><p>应用服务的状态是指运行时程序因为处理服务请求而存在内存的数据。分布式应用服务最好是设计成无状态。因为如果应用程序是有状态的，那么一旦服务器宕机就会使得应用服务程序受影响而挂掉，那存在内存的数据也就丢失了，这显然不是高可靠的服务。把应用服务设计成无状态的，让程序把需要保存的数据都保存在专门的存储上，这样应用服务程序可以任意重启而不丢失数据，方便分布式系统在服务器宕机后恢复应用服务。</p>
+<p>比如，在设计网站后台的时候，对于用户登陆请求，可以把登陆用户的 session 相关信息保存在 Redis 或 Memcache 等缓存服务中，这样每个网站的后台实例不保存用户登录状态，这样即使重启网站后台程序也不丢失用户的登录状态信息；如果把用户的 session 相关信息保存在网站后台程序的内存里，那一旦受理用户登录的网站后台程序实例挂掉，必然有用户的登录状态信息会丢失。</p>
+<p>总而言之，分布式系统是大数据时代企业级应用的首选平台，它有良好的可扩展性，尤其是横向可扩展性（Scale Out），使得分布式系统非常灵活，能应对千变万化的企业级需求，而且降低了企业客户对服务器硬件的要求，真正能做到应用服务层面的弹性扩展（auto-scaling）。</p>
+<h2 id="关键字"><a href="#关键字" class="headerlink" title="关键字"></a>关键字</h2><ul>
+<li>CAP</li>
+<li>容灾</li>
+<li>监控</li>
+<li>负载均衡</li>
+<li>服务注册&amp;发现</li>
+<li>灰度</li>
+<li>消息队列&amp;解耦</li>
+<li>读写分离</li>
+<li>日志分析</li>
+<li>缓存</li>
+<li>任务调度</li>
+<li>扩展</li>
+<li>无状态节点</li>
+<li>集群高可用</li>
+<li>健康检查</li>
+<li>异常报警</li>
+<li>跟踪</li>
+</ul>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/Design/">Design</a>, <a class="tags-link" href="/tags/Distribut/">Distribut</a>
+  </div>
+
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  
+  <div id="sidebar" class="widgets-right">
+  
+
+  
+<div class="widget tagcloud">
+  <h3 class="title">tagcloud</h3>
+  <div class="entry">
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+  </div>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">recent_posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/09/distribut-concurrent-programmer-design/">秒杀系统设计</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
+      </li>
+    
+  </ul>
+</div>
+
+</div>
+  
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2019 <a href="/">jifuwei</a>
+  
+</div>
+<!-- 
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://blog.dafengning.com/" target="_blank">Chong Zi</a>
+</div>
+-->
+<div class="clearfix"></div>
+</footer>
+  <script src="//lib.sinaapp.com/js/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+<div id="rightfix" style="display:none;">
+
+
+<a href="javascript:void(0)" id="gotop" class="fix_btn" onclick="gotop();" title="回到顶部"><i></i></a>
+<script>
+  function gotop(){
+    $('html,body').animate({
+        scrollTop : '0px'
+      }, 800);
+  }
+  $(function(){
+    _rightfix = $('#rightfix');
+    $(window).scroll(function(){
+      $sollTop = document.documentElement.scrollTop + document.body.scrollTop;
+      if($sollTop > 350){
+        _rightfix.show();
+      }else{
+        _rightfix.hide();
+      }
+    });
+  });
+</script>
+
+</div>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

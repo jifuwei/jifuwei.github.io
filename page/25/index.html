@@ -59,47 +59,158 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/06/10/arthas/">
-  <time datetime="2019-06-10T02:43:12.000Z">
-    2019-06-10
+      <a href="/2019/07/31/travel-zhangjiajie/">
+  <time datetime="2019-07-31T08:53:39.000Z">
+    2019-07-31
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/06/10/arthas/">Arthas——Alibaba Java诊断利器</a></h1>
+    <h1 class="title"><a href="/2019/07/31/travel-zhangjiajie/">旅游——张家界8月行</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <blockquote>
-<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
-</blockquote>
-<p>Arthas是一个java在线诊断工具，能够分析、诊断、定位java应用问题。<br>具体使用方法参考官方文档。我将详细地分析下arthas是如何实现对java程序的分析和诊断的。</p>
-<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Arthas是一个功能非常强大的诊断工具，功能点很多，例如：jvm信息、线程信息、搜索类中的方法、跟踪代码执行、观测方法的入参和返回参数等等。这些会驱使你去了解它是如何做到的。在这之前你可能还需要了解一些额外的知识，例如ava SE 5中增加的特性Instrumentation、ASM字节码增强技术。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Instrumentation把 Java的instrument 功能从本地代码中解放出来，使之可以用Java代码的方式解决问题。使用 Instrumentation，开发者可以构建一个独立于应用程序的代理程序（Agent），用来监测和协助运行在 JVM 上的程序，甚至能够替换和修改某些类的定义。Instrumentation是Java SE 5中的新特性。在SE 5中只能在运行前进行加载,在SE 6中实现能够在运行时加载。例如java -javaagent: agent.jar -jar agent-demo.jar</span><br></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ASM是一个java字节码操纵框架，它能被用来动态生成类或者增强既有类的功能。ASM 可以直接产生二进制 class 文件，也可以在类被加载入 Java 虚拟机之前动态改变类行为。Java class 被存储在严格格式定义的 .class文件里，这些类文件拥有足够的元数据来解析类中的所有元素：类名称、方法、属性以及 Java 字节码（指令）。ASM从类文件中读入信息后，能够改变类行为，分析类信息，甚至能够根据用户要求生成新类。asm字节码增强技术主要是用来反射的时候提升性能的，如果单纯用jdk的反射调用，性能是非常低下的，而使用字节码增强技术后反射调用的时间已经基本可以与直接调用相当。  </span><br><span class="line">ASM相对于其他类似工具如BCEL、SERP、Javassist、CGLIB，它的最大的优势就在于其性能更高，其jar包仅30K。Hibernate和Spring都使用了cglib代理，而cglib本身就是使用的ASM，可见ASM在各种开源框架都有广泛的应用。  </span><br><span class="line">　ASM框架中的核心类有以下几个：</span><br><span class="line">- ClassReader:该类用来解析编译过的class字节码文件。</span><br><span class="line">- ClassWriter:该类用来重新构建编译后的类，比如说修改类名、属性以及方法，甚至可以生成新的类的字节码文件。</span><br><span class="line">- ClassAdapter:该类也实现了ClassVisitor接口，它将对它的方法调用委托给另一个ClassVisitor对象。</span><br></pre></td></tr></table></figure>
-<h2 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h2><p>执行as.sh 启动<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">main()</span><br><span class="line">&#123;</span><br><span class="line">    echo "Arthas script version: $ARTHAS_SCRIPT_VERSION"</span><br><span class="line"></span><br><span class="line">    check_permission</span><br><span class="line">    reset_for_env</span><br><span class="line"></span><br><span class="line">    parse_arguments "$&#123;@&#125;" \</span><br><span class="line">        || exit_on_err 1 "$(usage)"</span><br><span class="line"></span><br><span class="line">    # try to find arthas home from --use-version</span><br><span class="line">    if [[ (-z "$&#123;ARTHAS_HOME&#125;")  &amp;&amp; (! -z "$&#123;USE_VERSION&#125;") ]]; then</span><br><span class="line">        if [[ ! -d "$&#123;ARTHAS_LIB_DIR&#125;/$&#123;USE_VERSION&#125;/arthas" ]] ; then</span><br><span class="line">            update_if_necessary "$&#123;USE_VERSION&#125;" || echo "update fail, ignore this update." 1&gt;&amp;2</span><br><span class="line">        fi</span><br><span class="line">        ARTHAS_HOME="$&#123;ARTHAS_LIB_DIR&#125;/$&#123;USE_VERSION&#125;/arthas"</span><br><span class="line">    fi</span><br><span class="line"></span><br><span class="line">    # try to set arthas home from as.sh directory</span><br><span class="line">    if [ -z "$&#123;ARTHAS_HOME&#125;" ] ; then</span><br><span class="line">        [[ -a "$&#123;DIR&#125;/arthas-core.jar" ]] \</span><br><span class="line">        &amp;&amp; [[ -a "$&#123;DIR&#125;/arthas-agent.jar" ]] \</span><br><span class="line">        &amp;&amp; [[ -a "$&#123;DIR&#125;/arthas-spy.jar" ]] \</span><br><span class="line">        &amp;&amp; ARTHAS_HOME="$&#123;DIR&#125;"</span><br><span class="line">    fi</span><br><span class="line"></span><br><span class="line">    # try to find arthas under ~/.arthas/lib</span><br><span class="line">    if [ -z "$&#123;ARTHAS_HOME&#125;" ] ; then</span><br><span class="line">        local remote_version=$(get_remote_version)</span><br><span class="line">        local arthas_local_version=$(get_local_version)</span><br><span class="line">        if $(version_gt $remote_version $arthas_local_version) ; then</span><br><span class="line">            update_if_necessary "$&#123;remote_version&#125;" || echo "update fail, ignore this update." 1&gt;&amp;2</span><br><span class="line">        fi</span><br><span class="line">        local arthas_local_version=$(get_local_version)</span><br><span class="line">        ARTHAS_HOME="$&#123;ARTHAS_LIB_DIR&#125;/$&#123;arthas_local_version&#125;/arthas"</span><br><span class="line">    fi</span><br><span class="line"></span><br><span class="line">    echo "Arthas home: $&#123;ARTHAS_HOME&#125;"</span><br><span class="line"></span><br><span class="line">    if [ ! -d "$&#123;ARTHAS_HOME&#125;" ] ; then</span><br><span class="line">        exit_on_err 1 "Arthas home is not a directory, please delete it and retry."</span><br><span class="line">    fi</span><br><span class="line"></span><br><span class="line">    sanity_check</span><br><span class="line"></span><br><span class="line">    echo "Calculating attach execution time..."</span><br><span class="line">    time (attach_jvm "$&#123;ARTHAS_HOME&#125;" || exit 1)</span><br><span class="line"></span><br><span class="line">    if [ $? -ne 0 ]; then</span><br><span class="line">        exit_on_err 1 "attach to target jvm ($&#123;TARGET_PID&#125;) failed, check $&#123;HOME&#125;/logs/arthas/arthas.log or stderr of target jvm for any exceptions."</span><br><span class="line">    fi</span><br><span class="line"></span><br><span class="line">    echo "Attach success."</span><br><span class="line"></span><br><span class="line">    if [ $&#123;ATTACH_ONLY&#125; = false ]; then</span><br><span class="line">      active_console "$&#123;ARTHAS_HOME&#125;"</span><br><span class="line">    fi</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+      <h2 id="必备"><a href="#必备" class="headerlink" title="必备"></a>必备</h2><p>如下列出，个人自查，旅游必备，缺一不可</p>
 <ul>
-<li>parsearguments 解析用户输入参数，并获取用户输入的pid </li>
-<li>attachjvm对选中的java程序进行挂载 </li>
-<li>active_console 启动arthas的客户端，显示命令行界面</li>
+<li>证件：身份证、学生证</li>
+<li>个人洗漱：换洗衣服，牙刷毛巾建议自备（酒店怕是不卫生），防晒 @黄黄</li>
+<li>药品：驱蚊、其它随意，如创口贴之类</li>
+<li>生活：雨伞，带一把 看了最近天气，有备无患</li>
+<li>充电线、充电宝！！！！！！！这个重要了</li>
 </ul>
-<p>其中attach_jvm是其中最核心的功能点，它的主要作用是启动arthas-core.jar<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">attach_jvm()</span><br><span class="line">&#123;</span><br><span class="line">    local arthas_lib_dir=$1</span><br><span class="line">    # http://www.inonit.com/cygwin/faq/</span><br><span class="line">    if [ "$&#123;OS_TYPE&#125;" = "Cygwin" ]; then</span><br><span class="line">        arthas_lib_dir=`cygpath -wp "$arthas_lib_dir"`</span><br><span class="line">    fi</span><br><span class="line"></span><br><span class="line">    echo "Attaching to $&#123;TARGET_PID&#125; using version $&#123;1&#125;..."</span><br><span class="line"></span><br><span class="line">    local java_command=("$&#123;JAVA_HOME&#125;"/bin/java)</span><br><span class="line">    if [ "$&#123;BOOT_CLASSPATH&#125;" ]; then</span><br><span class="line">        java_command+=("$&#123;BOOT_CLASSPATH&#125;")</span><br><span class="line">    fi</span><br><span class="line"></span><br><span class="line">    "$&#123;java_command[@]&#125;" \</span><br><span class="line">        $&#123;ARTHAS_OPTS&#125; $&#123;JVM_OPTS&#125; \</span><br><span class="line">        -jar "$&#123;arthas_lib_dir&#125;/arthas-core.jar" \</span><br><span class="line">            -pid $&#123;TARGET_PID&#125; \</span><br><span class="line">            -target-ip $&#123;TARGET_IP&#125; \</span><br><span class="line">            -telnet-port $&#123;TELNET_PORT&#125; \</span><br><span class="line">            -http-port $&#123;HTTP_PORT&#125; \</span><br><span class="line">            -session-timeout $&#123;SESSION_TIMEOUT&#125; \</span><br><span class="line">            -core "$&#123;arthas_lib_dir&#125;/arthas-core.jar" \</span><br><span class="line">            -agent "$&#123;arthas_lib_dir&#125;/arthas-agent.jar"</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>在arthas-core中主要的功能其实就是加载agent.jar到对应的java程序中<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">attachAgent</span><span class="params">(Configure configure)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    VirtualMachineDescriptor virtualMachineDescriptor = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">for</span> (VirtualMachineDescriptor descriptor : VirtualMachine.list()) &#123;</span><br><span class="line">        String pid = descriptor.id();</span><br><span class="line">        <span class="keyword">if</span> (pid.equals(Integer.toString(configure.getJavaPid()))) &#123;</span><br><span class="line">            virtualMachineDescriptor = descriptor;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    VirtualMachine virtualMachine = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> == virtualMachineDescriptor) &#123; <span class="comment">// 使用 attach(String pid) 这种方式</span></span><br><span class="line">            virtualMachine = VirtualMachine.attach(<span class="string">""</span> + configure.getJavaPid());</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            virtualMachine = VirtualMachine.attach(virtualMachineDescriptor);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Properties targetSystemProperties = virtualMachine.getSystemProperties();</span><br><span class="line">        String targetJavaVersion = JavaVersionUtils.javaVersionStr(targetSystemProperties);</span><br><span class="line">        String currentJavaVersion = JavaVersionUtils.javaVersionStr();</span><br><span class="line">        <span class="keyword">if</span> (targetJavaVersion != <span class="keyword">null</span> &amp;&amp; currentJavaVersion != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (!targetJavaVersion.equals(currentJavaVersion)) &#123;</span><br><span class="line">                AnsiLog.warn(<span class="string">"Current VM java version: &#123;&#125; do not match target VM java version: &#123;&#125;, attach may fail."</span>,</span><br><span class="line">                                currentJavaVersion, targetJavaVersion);</span><br><span class="line">                AnsiLog.warn(<span class="string">"Target VM JAVA_HOME is &#123;&#125;, arthas-boot JAVA_HOME is &#123;&#125;, try to set the same JAVA_HOME."</span>,</span><br><span class="line">                                targetSystemProperties.getProperty(<span class="string">"java.home"</span>), System.getProperty(<span class="string">"java.home"</span>));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        String arthasAgentPath = configure.getArthasAgent();</span><br><span class="line">        <span class="comment">//convert jar path to unicode string</span></span><br><span class="line">        configure.setArthasAgent(encodeArg(arthasAgentPath));</span><br><span class="line">        configure.setArthasCore(encodeArg(configure.getArthasCore()));</span><br><span class="line">        virtualMachine.loadAgent(arthasAgentPath,</span><br><span class="line">                configure.getArthasCore() + <span class="string">";"</span> + configure.toString());</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> != virtualMachine) &#123;</span><br><span class="line">            virtualMachine.detach();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>程序先用获取所有java的VirtualMachine，根据已知的pid找到对应的VirtualMachine，然后进行VirtualMachine.loadAgent加载arthas.jar。这里加载agent在主程序启动之后获取pid进行运行后加载的，这个特性是Java SE 6的新特性。可以在运行后对加载的class进行重加载。</p>
-<h2 id="加载Agent"><a href="#加载Agent" class="headerlink" title="加载Agent"></a>加载Agent</h2><p>想要理解虚拟机如何加载agent，那么就需要找到agent的启动方法，并理解agent如何对运行时的class进行修改。 找到com.taobao.arthas.agent.AgentBootstrap这个类，它是agent的启动类。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">premain</span><span class="params">(String args, Instrumentation inst)</span> </span>&#123;</span><br><span class="line">    main(args, inst);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">agentmain</span><span class="params">(String args, Instrumentation inst)</span> </span>&#123;</span><br><span class="line">    main(args, inst);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>上面图片中显示了premain和agentmain两个方法。这两个方法有些不同，premain方法用于运行前的agent加载，agentmain用于运行时的加载。在arthas中使用的是agentmain方法。 那么jar是怎么封装成agent进行使用的呢？可以打开pom.xml文件，使用assembly进行打包的时候制定了manifest文件的一些信息<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-assembly-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">executions</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">goal</span>&gt;</span>single<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">phase</span>&gt;</span>package<span class="tag">&lt;/<span class="name">phase</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">descriptorRefs</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">descriptorRef</span>&gt;</span>jar-with-dependencies<span class="tag">&lt;/<span class="name">descriptorRef</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="name">descriptorRefs</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">archive</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">manifestEntries</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">Premain-Class</span>&gt;</span>com.taobao.arthas.agent.AgentBootstrap<span class="tag">&lt;/<span class="name">Premain-Class</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">Agent-Class</span>&gt;</span>com.taobao.arthas.agent.AgentBootstrap<span class="tag">&lt;/<span class="name">Agent-Class</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">Can-Redefine-Classes</span>&gt;</span>true<span class="tag">&lt;/<span class="name">Can-Redefine-Classes</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">Can-Retransform-Classes</span>&gt;</span>true<span class="tag">&lt;/<span class="name">Can-Retransform-Classes</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">Specification-Title</span>&gt;</span>$&#123;project.name&#125;<span class="tag">&lt;/<span class="name">Specification-Title</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">Specification-Version</span>&gt;</span>$&#123;project.version&#125;<span class="tag">&lt;/<span class="name">Specification-Version</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">Implementation-Title</span>&gt;</span>$&#123;project.name&#125;<span class="tag">&lt;/<span class="name">Implementation-Title</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">Implementation-Version</span>&gt;</span>$&#123;project.version&#125;<span class="tag">&lt;/<span class="name">Implementation-Version</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">manifestEntries</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="name">archive</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">executions</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>回到AgentBootstrap类,agentmain方法里面调用了main方法。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args, <span class="keyword">final</span> Instrumentation inst)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        ps.println(<span class="string">"Arthas server agent start..."</span>);</span><br><span class="line">        <span class="comment">// 传递的args参数分两个部分:agentJar路径和agentArgs, 分别是Agent的JAR包路径和期望传递到服务端的参数</span></span><br><span class="line">        args = decodeArg(args);</span><br><span class="line">        <span class="keyword">int</span> index = args.indexOf(<span class="string">';'</span>);</span><br><span class="line">        String agentJar = args.substring(<span class="number">0</span>, index);</span><br><span class="line">        <span class="keyword">final</span> String agentArgs = args.substring(index);</span><br><span class="line"></span><br><span class="line">        File agentJarFile = <span class="keyword">new</span> File(agentJar);</span><br><span class="line">        <span class="keyword">if</span> (!agentJarFile.exists()) &#123;</span><br><span class="line">            ps.println(<span class="string">"Agent jar file does not exist: "</span> + agentJarFile);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        File spyJarFile = <span class="keyword">new</span> File(agentJarFile.getParentFile(), ARTHAS_SPY_JAR);</span><br><span class="line">        <span class="keyword">if</span> (!spyJarFile.exists()) &#123;</span><br><span class="line">            ps.println(<span class="string">"Spy jar file does not exist: "</span> + spyJarFile);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">            * Use a dedicated thread to run the binding logic to prevent possible memory leak. #195</span></span><br><span class="line"><span class="comment">            */</span></span><br><span class="line">        <span class="keyword">final</span> ClassLoader agentLoader = getClassLoader(inst, spyJarFile, agentJarFile);</span><br><span class="line">        initSpy(agentLoader);</span><br><span class="line"></span><br><span class="line">        Thread bindingThread = <span class="keyword">new</span> Thread() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    bind(inst, agentLoader, agentArgs);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Throwable throwable) &#123;</span><br><span class="line">                    throwable.printStackTrace(ps);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        bindingThread.setName(<span class="string">"arthas-binding-thread"</span>);</span><br><span class="line">        bindingThread.start();</span><br><span class="line">        bindingThread.join();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        t.printStackTrace(ps);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (ps != System.err) &#123;</span><br><span class="line">                ps.close();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable tt) &#123;</span><br><span class="line">            <span class="comment">// ignore</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(t);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>main方法实现以下几点功能</p>
+<h2 id="保险"><a href="#保险" class="headerlink" title="保险"></a>保险</h2><p>出行意外保险必备，为大家准备的如下保险，也希望养成买保险的意识~</p>
+<table>
+<thead>
+<tr>
+<th>品牌</th>
+<th>被保人</th>
+<th>额度</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>齐乐游-计划F</td>
+<td>**伟</td>
+<td>60w</td>
+<td>保额到顶，<a href="https://cps.xiebao18.com/wj1000090/product/detail-100371-100719.html" target="_blank" rel="noopener">详情</a></td>
+</tr>
+<tr>
+<td>齐乐游-计划F</td>
+<td>**蕾</td>
+<td>60w</td>
+<td>保额到顶，<a href="https://cps.xiebao18.com/wj1000090/product/detail-100371-100719.html" target="_blank" rel="noopener">详情</a></td>
+</tr>
+<tr>
+<td>齐乐游-计划E</td>
+<td>**宇</td>
+<td>50w</td>
+<td>未成年保额到顶只能50w，<a href="https://cps.xiebao18.com/wj1000090/product/detail-100371-100719.html" target="_blank" rel="noopener">详情</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="交通"><a href="#交通" class="headerlink" title="交通"></a>交通</h2><table>
+<thead>
+<tr>
+<th>日期</th>
+<th>路线</th>
+<th>航班</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8月1号 20:10 ~ 22:35</td>
+<td>上海（浦东机场T2） -&gt; 张家界（荷花机场T2）</td>
+<td>春秋航空 9C8983</td>
+<td>行程预计2小时25分钟</td>
+</tr>
+<tr>
+<td>8月5号 23:20 ~ 01:20</td>
+<td>张家界（荷花机场T2） -&gt; 上海（浦东机场T2）</td>
+<td>春秋航空 9C8984</td>
+<td>行程预计2小时</td>
+</tr>
+</tbody>
+</table>
+<p><strong>8月1号晚22:35到达机场，考虑人生地不熟，出租容易被宰，决定安排接机 @黄黄 搞定</strong></p>
+<h2 id="住宿"><a href="#住宿" class="headerlink" title="住宿"></a>住宿</h2><table>
+<thead>
+<tr>
+<th>日期</th>
+<th>酒店</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[8月1号 ~ 8月3号)</td>
+<td>张家界六甲酒店</td>
+<td>共2天、景观家庭亲子套房、1间房、含早、提供接机</td>
+</tr>
+<tr>
+<td>(8月3号 ~ 8月5号)</td>
+<td>张家界华天酒店</td>
+<td>共2天、家庭套餐、1间房、不含早、提供接机</td>
+</tr>
+</tbody>
+</table>
+<h2 id="天气"><a href="#天气" class="headerlink" title="天气"></a>天气</h2><p>一周基本在下阵雨，温度维持在24~35左右，感觉还行<br><img src="https://s2.ax1x.com/2019/07/31/eN95RK.jpg" alt=""></p>
+<h2 id="行程"><a href="#行程" class="headerlink" title="行程"></a>行程</h2><p><strong>8月2号</strong><br>天门山国家森林公园</p>
 <ul>
-<li>获取arthas-spy.jar，用bootstrapClassLoader进行加载</li>
-<li>创建自定义的类加载器</li>
-<li>初始化探针，加载com.taobao.arthas.core.advisor.AdviceWeaver中的methodOnBegin、methodOnReturnEnd、methodOnThrowingEnd等等方法（下面章节将具体介绍为何要加载探针和AdviceWeaver中的方法）</li>
-<li>加载com.taobao.arthas.core.server.ArthasBootstrap，调用bind方法，启动server服务</li>
+<li>简介<ul>
+<li>很大，景点很多，<strong>门票是可以进出四天的</strong>，</li>
+<li>景点主要分为山上跟山下，山上跟山下的环保车不是互通的。</li>
+<li>黄石寨是一个单独的景区，可以选择步行或者坐缆车。</li>
+<li>张家界森林公园山上山下互通的交通工具有：三个缆车和一个百龙天梯，都是收费的，72元。缆车有天子山缆车、黄石寨缆车、杨家界缆车。</li>
 </ul>
+</li>
+<li>如何去<br>六甲酒店就在公园旁边，两条腿即可<br><img src="https://s2.ax1x.com/2019/07/31/etIHts.jpg" alt=""></li>
+<li>游玩路线<br>森林公园大门—金鞭溪—乱窜坡—袁家界—杨家界—百龙天梯—武陵源大门<br><img src="https://s2.ax1x.com/2019/07/31/etoLUH.jpg" alt=""></li>
+<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/etIzBF.jpg" alt=""><br><img src="https://s2.ax1x.com/2019/07/31/etomHe.jpg" alt=""></li>
+</ul>
+<p><strong>8月3号</strong><br><strong>早上退房</strong>，前往张家界华天大酒店，32.9公里，45分钟左右</p>
+<p>今天看情况只能在下面景点任选其一，不然行程有点挤，看大家精力和状态</p>
+<p>1.黄龙洞</p>
+<ul>
+<li>简介<ul>
+<li>高阔的洞天、幽深的暗河、密集的石笋而出名</li>
+<li><strong>标志性景点</strong>是已生长了二十万年的“定海神针”，高达20米的石笋柱，最细处直径只有10厘米</li>
+<li>“水陆兼备”的游览观光线路，先步行游览一段，然后在洞中暗河边的码头上船，在水中赏沿河美景和石笋奇观</li>
+</ul>
+</li>
+<li>如何去<br>距离华天酒店有点远，44.9公里，打车1小时左右<br><img src="https://s2.ax1x.com/2019/07/31/eNi326.jpg" alt=""></li>
+<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/et7pWR.jpg" alt=""></li>
+</ul>
+<p>2.大峡谷</p>
+<ul>
+<li>简介<ul>
+<li>集山、水、洞于一身，可观赏到北温带喀斯特地形的全部风景</li>
+<li>天然大氧吧</li>
+<li>目前世界最高、跨度最长的玻璃桥，据地高度400米处的谷底风光尽收眼底（放心大胆的走 保险我买了~）</li>
+</ul>
+</li>
+<li>如何去<br>从黄龙洞出发去大峡谷，20.2公里，车程35分钟左右<br><img src="https://s2.ax1x.com/2019/07/31/etHhCj.jpg" alt=""></li>
+<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/etHx2R.jpg" alt=""></li>
+</ul>
+<p>今天的行程有点满，看情况适当往后推</p>
+<p>从大峡谷返回华天大酒店，65.5公里，行程1个半小时左右<br><img src="https://s2.ax1x.com/2019/07/31/etOrFS.jpg" alt=""></p>
+<p><strong>8月4号</strong><br>回到市区</p>
+<p>天门山玻璃栈道</p>
+<ul>
+<li>简介<ul>
+<li>天门山玻璃栈道悬于天门山顶西线，是一处悬于峭壁之上的玻璃眺望台。</li>
+<li>天门山玻璃栈道给人带来的刺激震撼感，可以与美国大峡谷玻璃走廊“天空之路”媲美</li>
+</ul>
+</li>
+<li>如何去<br>距离入住的华天大酒店非常近，步行10分钟即可到达<br><img src="https://s2.ax1x.com/2019/07/31/eNElwD.jpg" alt=""></li>
+<li>概览<br><img src="https://s2.ax1x.com/2019/07/31/etLcb6.jpg" alt=""></li>
+</ul>
+<p><strong>8月5号</strong><br>逛吃逛吃~，品尝当地特色和采购特产，具体前一天晚上待定，大众点评掏出来选选即可</p>
 
     
   </div>
@@ -135,7 +246,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -144,6 +255,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/09/distribut-concurrent-programmer-design/">秒杀系统设计</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
+      </li>
     
       <li>
         <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
@@ -155,14 +274,6 @@
     
       <li>
         <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
       </li>
     
   </ul>

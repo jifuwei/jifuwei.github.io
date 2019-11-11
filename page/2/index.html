@@ -59,100 +59,54 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/11/08/jvm-optmize-complete-know/">
-  <time datetime="2019-11-08T07:56:56.000Z">
-    2019-11-08
+      <a href="/2019/11/09/distribut-programmer-design/">
+  <time datetime="2019-11-09T02:52:27.000Z">
+    2019-11-09
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a></h1>
+    <h1 class="title"><a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <h2 id="JVM参数示例"><a href="#JVM参数示例" class="headerlink" title="JVM参数示例"></a>JVM参数示例</h2><p>配置：<br>-Xmx4g –Xms4g –Xmn1200m –Xss512k -XX:NewRatio=4 -XX:SurvivorRatio=8 -XX:PermSize=100m</p>
-<p>-XX:MaxPermSize=256m -XX:MaxTenuringThreshold=15</p>
-<p>解析：<br>-Xmx4g：堆内存最大值为4GB。<br>-Xms4g：初始化堆内存大小为4GB 。<br>-Xmn1200m：设置年轻代大小为1200MB。增大年轻代后，将会减小年老代大小。此值对系统性能影响较大，Sun官方推荐配置为整个堆的3/8。<br>-Xss512k：设置每个线程的堆栈大小。JDK5.0以后每个线程堆栈大小为1MB，以前每个线程堆栈大小为256K。应根据应用线程所需内存大小进行调整。在相同物理内存下，减小这个值能生成更多的线程。但是操作系统对一个进程内的线程数还是有限制的，不能无限生成，经验值在3000~5000左右。<br>-XX:NewRatio=4：设置年轻代（包括Eden和两个Survivor区）与年老代的比值（除去持久代）。设置为4，则年轻代与年老代所占比值为1：4，年轻代占整个堆栈的1/5<br>-XX:SurvivorRatio=8：设置年轻代中Eden区与Survivor区的大小比值。设置为8，则两个Survivor区与一个Eden区的比值为2:8，一个Survivor区占整个年轻代的1/10<br>-XX:PermSize=100m：初始化永久代大小为100MB。<br>-XX:MaxPermSize=256m：设置持久代大小为256MB。<br>-XX:MaxTenuringThreshold=15：设置垃圾最大年龄。如果设置为0的话，则年轻代对象不经过Survivor区，直接进入年老代。对于年老代比较多的应用，可以提高效率。如果将此值设置为一个较大值，则年轻代对象会在Survivor区进行多次复制，这样可以增加对象再年轻代的存活时间，增加在年轻代即被回收的概论。</p>
-<h2 id="何时需要做jvm调优？"><a href="#何时需要做jvm调优？" class="headerlink" title="何时需要做jvm调优？"></a>何时需要做jvm调优？</h2><ul>
-<li>heap 内存（老年代）持续上涨达到设置的最大内存值；</li>
-<li>Full GC 次数频繁；</li>
-<li>GC 停顿时间过长（超过1秒）；</li>
-<li>应用出现OutOfMemory 等内存异常；</li>
-<li>应用中有使用本地缓存且占用大量内存空间；</li>
-<li>系统吞吐量与响应性能不高或下降。</li>
+      <p>分布式系统设计你会考虑哪些策略？</p>
+<h2 id="分布式系统设计理念"><a href="#分布式系统设计理念" class="headerlink" title="分布式系统设计理念"></a>分布式系统设计理念</h2><h3 id="分布式系统对服务器硬件要求很低"><a href="#分布式系统对服务器硬件要求很低" class="headerlink" title="分布式系统对服务器硬件要求很低"></a>分布式系统对服务器硬件要求很低</h3><ul>
+<li>对服务器硬件可靠性不做要求，允许服务器硬件发生故障，硬件的故障由软件来容错。所以分布式系统的高可靠性是由软件来保证</li>
+<li>对服务器的性能不做要求，不要求使用高频 CPU、大容量内存、高性能存储等等。因为分布式系统的性能瓶颈在于节点间通讯带来的网络开销，单台服务器硬件性能再好，也要等待网络 IO</li>
 </ul>
-<h2 id="JVM调优原则"><a href="#JVM调优原则" class="headerlink" title="JVM调优原则"></a>JVM调优原则</h2><ul>
-<li>多数的Java应用不需要在服务器上进行JVM优化；</li>
-<li>多数导致GC问题的Java应用，都不是因为我们参数设置错误，而是代码问题；</li>
-<li>在应用上线之前，先考虑将机器的JVM参数设置到最优（最适合）；</li>
-<li>减少创建对象的数量；</li>
-<li>减少使用全局变量和大对象；</li>
-<li>JVM优化是到最后不得已才采用的手段；</li>
-<li>在实际使用中，分析GC情况优化代码比优化JVM参数更好；</li>
-</ul>
-<h2 id="JVM调优目标"><a href="#JVM调优目标" class="headerlink" title="JVM调优目标"></a>JVM调优目标</h2><ul>
-<li>GC低停顿；</li>
-<li>GC低频率；</li>
-<li>低内存占用； </li>
-<li>高吞吐量;</li>
-</ul>
-<h2 id="VM调优量化目标（示例）："><a href="#VM调优量化目标（示例）：" class="headerlink" title="VM调优量化目标（示例）："></a>VM调优量化目标（示例）：</h2><ul>
-<li>Heap 内存使用率 &lt;= 70%;</li>
-<li>Old generation内存使用率&lt;= 70%;</li>
-<li>avgpause &lt;= 1秒; </li>
-<li>Full gc 次数0 或 avg pause interval &gt;= 24小时 ;</li>
-</ul>
-<p>注意：不同应用，其JVM调优量化目标是不一样的。</p>
-<h2 id="JVM调优经验"><a href="#JVM调优经验" class="headerlink" title="JVM调优经验"></a>JVM调优经验</h2><h3 id="VM调优的一般步骤为："><a href="#VM调优的一般步骤为：" class="headerlink" title="VM调优的一般步骤为："></a>VM调优的一般步骤为：</h3><ul>
-<li>第1步：分析GC日志及dump文件，判断是否需要优化，确定瓶颈问题点；</li>
-<li>第2步：确定JVM调优量化目标；</li>
-<li>第3步：确定JVM调优参数（根据历史JVM参数来调整）；</li>
-<li>第4步：调优一台服务器，对比观察调优前后的差异；</li>
-<li>第5步：不断的分析和调整，直到找到合适的JVM参数配置；</li>
-<li>第6步：找到最合适的参数，将这些参数应用到所有服务器，并进行后续跟踪。</li>
-</ul>
-<h3 id="VM调优重要参数解析"><a href="#VM调优重要参数解析" class="headerlink" title="VM调优重要参数解析"></a>VM调优重要参数解析</h3><p>配置： -server  </p>
-<p>-Xms12g -Xmx12g -XX:PermSize=500m -XX:MaxPermSize=1000m -Xmn2400m -XX:SurvivorRatio=1 -Xss512k  -XX:MaxDirectMemorySize=1G </p>
-<p>-XX:+DisableExplicitGC -XX:CompileThreshold=8000 -XX:+UseConcMarkSweepGC  -XX:+UseParNewGC</p>
-<p>-XX:+UseCompressedOops -XX:CMSInitiatingOccupancyFraction=60  -XX:ConcGCThreads=4</p>
-<p>-XX:MaxTenuringThreshold=10  -XX:ParallelGCThreads=8</p>
-<p>-XX:+ParallelRefProcEnabled  -XX:+CMSClassUnloadingEnabled  -XX:+CMSParallelRemarkEnabled</p>
-<p>-XX:CMSMaxAbortablePrecleanTime=500 -XX:CMSFullGCsBeforeCompaction=4 </p>
-<p>XX:+UseCMSInitiatingOccupancyOnly -XX:+UseCMSCompactAtFullCollection </p>
-<p>-XX:+HeapDumpOnOutOfMemoryError  -verbose:gc  -XX:+PrintGCDetails  -XX:+PrintGCDateStamps  -Xloggc:/weblogic/gc/gc_$$.log</p>
-<p>重要参数（可调优）解析：</p>
-<p>-Xms12g：初始化堆内存大小为12GB。</p>
-<p>-Xmx12g：堆内存最大值为12GB 。</p>
-<p>-Xmn2400m：新生代大小为2400MB，包括 Eden区与2个Survivor区。</p>
-<p>-XX:SurvivorRatio=1：Eden区与一个Survivor区比值为1:1。</p>
-<p>-XX:MaxDirectMemorySize=1G：直接内存。报java.lang.OutOfMemoryError: Direct buffer memory 异常可以上调这个值。</p>
-<p>-XX:+DisableExplicitGC：禁止运行期显式地调用 System.gc() 来触发fulll GC。</p>
-<p>注意: Java RMI的定时GC触发机制可通过配置-Dsun.rmi.dgc.server.gcInterval=86400来控制触发的时间。</p>
-<p>-XX:CMSInitiatingOccupancyFraction=60：老年代内存回收阈值，默认值为68。</p>
-<p>-XX:ConcGCThreads=4：CMS垃圾回收器并行线程线，推荐值为CPU核心数。</p>
-<p>-XX:ParallelGCThreads=8：新生代并行收集器的线程数。</p>
-<p>-XX:MaxTenuringThreshold=10：设置垃圾最大年龄。如果设置为0的话，则年轻代对象不经过Survivor区，直接进入年老代。对于年老代比较多的应用，可以提高效率。如果将此值设置为一个较大值，则年轻代对象会在Survivor区进行多次复制，这样可以增加对象再年轻代的存活时间，增加在年轻代即被回收的概论。</p>
-<p>-XX:CMSFullGCsBeforeCompaction=4：指定进行多少次fullGC之后，进行tenured区 内存空间压缩。</p>
-<p>-XX:CMSMaxAbortablePrecleanTime=500：当abortable-preclean预清理阶段执行达到这个时间时就会结束。</p>
-<h3 id="触发Full-GC的场景及应对策略"><a href="#触发Full-GC的场景及应对策略" class="headerlink" title="触发Full GC的场景及应对策略"></a>触发Full GC的场景及应对策略</h3><p>年轻代空间（包括 Eden 和 Survivor 区域）回收内存被称为 Minor GC，对老年代GC称为MajorGC，而Full GC是对整个堆来说的，在最近几个版本的JDK里默认包括了对永生带即方法区的回收（JDK8中无永生带了），出现Full GC的时候经常伴随至少一次的Minor GC,但非绝对的。MajorGC的速度一般会比Minor GC慢10倍以上。</p>
-<p>触发Full GC的场景及应对策略： </p>
-<ul>
-<li>System.gc()方法的调用，应对策略：通过-XX:+DisableExplicitGC来禁止调用System.gc ;</li>
-<li>老年代代空间不足，应对策略：让对象在Minor GC阶段被回收，让对象在新生代多存活一段时间，不要创建过大的对象及数组;</li>
-<li>永生区空间不足，应对策略：增大PermGen空间</li>
-<li>GC时出现promotionfailed和concurrent mode failure，应对策略：增大survivor space</li>
-<li>Minor GC后晋升到旧生代的对象大小大于老年代的剩余空间，应对策略：增大Tenured space 或下调CMSInitiatingOccupancyFraction=60</li>
-<li>内存持续增涨达到上限导致Full GC  ，应对策略：通过dumpheap 分析是否存在内存泄漏</li>
-</ul>
-<h2 id="Gc日志分析工具"><a href="#Gc日志分析工具" class="headerlink" title="Gc日志分析工具"></a>Gc日志分析工具</h2><p>借助GCViewer日志分析工具，可以非常直观地分析出待调优点。</p>
-<p>可从以下几方面来分析：</p>
-<ul>
-<li>Memory,分析Totalheap、Tenuredheap、Youngheap内存占用率及其他指标，理论上内存占用率越小越好；</li>
-<li>Pause  ,分析Gc pause、Fullgc pause、Total pause三个大项中各指标，理论上GC次数越少越好，GC时长越小越好</li>
+<p>一般而言，互联网公司的大型数据中心都是选用大量廉价的 PC 服务器而不是用几台高性能服务器搭建分布式集群，以此来降低数据中心成本。比如，Google 对于数据中心的成本控制做到了极致：所有服务器一律不要机箱；主板完全定制，只要最基本的组件，早期的定制主板连电源开关和 USB 接口都不要；在主板上加装隔离带把 CPU 单独隔出来，让冷风只吹 CPU，不吹内存、硬盘等不需要降温的组件，最大限度降低冷却电力消耗。</p>
+<h3 id="分布式系统强调横向可扩展性"><a href="#分布式系统强调横向可扩展性" class="headerlink" title="分布式系统强调横向可扩展性"></a>分布式系统强调横向可扩展性</h3><p>横向可扩展性（Scale Out）是指通过增加服务器数量来提升集群整体性能。纵向可扩展性（Scale Up）是指提升每台服务器性能进而提升集群整体性能。纵向可扩展性的上限非常明显，单台服务器的性能不可能无限提升，而且跟服务器性能相比，网络开销才是分布式系统最大的瓶颈。横向可扩展性的上限空间比较大，集群总能很方便地增加服务器。而且分布式系统会尽可能保证横向扩展带来集群整体性能的（准）线性提升。比如有 10 台服务器组成的集群，横向扩展为 100 台同样服务器的集群，那么整体分布式系统性能会提升为接近原来的 10 倍。</p>
+<p>互联网公司的数据中心，一般一个分布式系统横向扩展的上限在万台服务器左右。Google 数据中心的基本单元，CELL，由两万台左右服务器组成，每个 CELL 由一套分布式管理系统，BORG，统一管理，每个数据中心都由多个 CELL 组成。</p>
+<h3 id="分布式系统不允许单点失效（No-Single-Point-Failure）（去中心化）"><a href="#分布式系统不允许单点失效（No-Single-Point-Failure）（去中心化）" class="headerlink" title="分布式系统不允许单点失效（No Single Point Failure）（去中心化）"></a>分布式系统不允许单点失效（No Single Point Failure）（去中心化）</h3><p>单点失效是指，某个应用服务只有一份实例运行在某一台服务器上，这台服务器一旦挂掉，那么这个应用服务必然也受影响而挂掉，导致整个服务不可用。例如，某网站后台如果只在某一台服务器上运行一份，那这台服务器一旦宕机，该网站服务必然受影响而不可用。再比如，如果所有数据都存在某一台服务器上，那一旦这台服务器坏了，所有数据都不可访问。</p>
+<p>因为分布式系统的服务器都是廉价的 PC 服务器，硬件不能保证 100% 可靠，所以分布式系统默认每台服务器随时都可能发生故障挂掉。同时分布式系统必须要提供高可靠服务，不允许出现单点失效，因此分布式系统里运行的每个应用服务都有多个运行实例跑在多个节点上，每个数据点都有多个备份存在不同的节点上。这样一来，多个节点同时发生故障，导致某个应用服务的所有实例都挂掉、或某个数据点的多个备份都不可读的概率大大降低，进而有效防止单点失效。</p>
+<p>通常情况，不要让服务器满负荷运行，服务器长时间满负荷运行的话，出故障的概率显著升高。所以分布式系统采用一大堆中低性能的 PC 服务器，尽可能把负载均摊到所有服务器上，让每台服务器的负载都不高，保证集群整体稳定性。</p>
+<h3 id="分布式系统尽可能减少节点间通讯开销"><a href="#分布式系统尽可能减少节点间通讯开销" class="headerlink" title="分布式系统尽可能减少节点间通讯开销"></a>分布式系统尽可能减少节点间通讯开销</h3><p>如前所述，分布式系统的整体性能瓶颈在于内部网络开销。目前网络传输的速度还赶不上 CPU 读取内存或硬盘的速度，所以减少网络通讯开销，让 CPU 尽可能处理内存的数据或本地硬盘的数据，能显著提高分布式系统的性能。典型的例子就是 Hadoop MapReduce，把计算任务分配到要处理的数据所在的节点上运行，从而避免在网络上传输数据。</p>
+<h3 id="分布式系统应用服务最好做成无状态的"><a href="#分布式系统应用服务最好做成无状态的" class="headerlink" title="分布式系统应用服务最好做成无状态的"></a>分布式系统应用服务最好做成无状态的</h3><p>应用服务的状态是指运行时程序因为处理服务请求而存在内存的数据。分布式应用服务最好是设计成无状态。因为如果应用程序是有状态的，那么一旦服务器宕机就会使得应用服务程序受影响而挂掉，那存在内存的数据也就丢失了，这显然不是高可靠的服务。把应用服务设计成无状态的，让程序把需要保存的数据都保存在专门的存储上，这样应用服务程序可以任意重启而不丢失数据，方便分布式系统在服务器宕机后恢复应用服务。</p>
+<p>比如，在设计网站后台的时候，对于用户登陆请求，可以把登陆用户的 session 相关信息保存在 Redis 或 Memcache 等缓存服务中，这样每个网站的后台实例不保存用户登录状态，这样即使重启网站后台程序也不丢失用户的登录状态信息；如果把用户的 session 相关信息保存在网站后台程序的内存里，那一旦受理用户登录的网站后台程序实例挂掉，必然有用户的登录状态信息会丢失。</p>
+<p>总而言之，分布式系统是大数据时代企业级应用的首选平台，它有良好的可扩展性，尤其是横向可扩展性（Scale Out），使得分布式系统非常灵活，能应对千变万化的企业级需求，而且降低了企业客户对服务器硬件的要求，真正能做到应用服务层面的弹性扩展（auto-scaling）。</p>
+<h2 id="关键字"><a href="#关键字" class="headerlink" title="关键字"></a>关键字</h2><ul>
+<li>CAP</li>
+<li>容灾</li>
+<li>监控</li>
+<li>负载均衡</li>
+<li>服务注册&amp;发现</li>
+<li>灰度</li>
+<li>消息队列&amp;解耦</li>
+<li>读写分离</li>
+<li>日志分析</li>
+<li>缓存</li>
+<li>任务调度</li>
+<li>扩展</li>
+<li>无状态节点</li>
+<li>集群高可用</li>
+<li>健康检查</li>
+<li>异常报警</li>
+<li>跟踪</li>
 </ul>
 
     
@@ -189,7 +143,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -198,6 +152,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/09/distribut-concurrent-programmer-design/">秒杀系统设计</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
+      </li>
     
       <li>
         <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
@@ -209,14 +171,6 @@
     
       <li>
         <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
       </li>
     
   </ul>

@@ -59,109 +59,112 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/02/12/spring-cloud-zuul/">
-  <time datetime="2019-02-12T08:21:15.000Z">
-    2019-02-12
+      <a href="/2019/02/13/mq-init/">
+  <time datetime="2019-02-13T12:26:08.000Z">
+    2019-02-13
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/02/12/spring-cloud-zuul/">Spring Cloud——网管 zuul</a></h1>
+    <h1 class="title"><a href="/2019/02/13/mq-init/">消息队列——纵览</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <blockquote>
-<p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
+      <p>消息队列（Message Queue），是分布式系统中重要的组件，其通用的使用场景可以简单地描述为：</p>
+<blockquote>
+<p>当不需要立即获得结果，但是并发量又需要进行控制的时候，差不多就是需要使用消息队列的时候。</p>
 </blockquote>
-<p><img src="https://s2.ax1x.com/2019/02/12/kdvFVx.png" alt=""><br>首先需要 肯定的是， 上面的架构实现系统功能是完全没有问题的， 但是我们还是可以进一步思考一 下， 这样的架构是否还有不足的地方会使运维人员或开发人员感到痛苦。</p>
-<p>首先， 我们从运维人员的角度来看看， 他们平时都需要做一些什么工作来支持这样的 架构。当客户端应用单击某个功能的时候往往会发出 一些对微服务获取资源的请求到后端， 这些请求通过FS、 Nginx等设施的路由和负载均衡分配后，被转发到各个不同的服务实例 上。 而为了让这些设施能够正确路由与分发请求， 运维人员需要手工维护这些路由规则与 服务实例列表， 当有实例增减或是IP地址变动等情况发生的时候， 也需要手工地去同步修 改这些信息以保持实例信息与中间件配置内容的一致性。 在系统规模不大的时候， 维护这 些信息的工作还不会太过复杂， 但是如果当系统规模不断增大， 那么这些看似简单的维护 任务会变得越来越难， 并且出现配置错误的概率也会逐渐增加。 很显然， 这样的做法并不 可取， 所以我们需要一套机制来有效降低维护路由规则与服务实例列表的难度。</p>
-<p>其次，我们再从开发入员的角度来看看，在这样的架构下，会产生一些怎样的问题呢? 大多数清况下， 为了保证对外服务的安全性， 我们在服务端实现的微服务接口， 往往都会 有一定的权限校验机制， 比如对用户登录状态的校验等; 同时为了防止客户端在发起请求 时被篡改等安全方面的考虑， 还会有一些签名校验的机制存在。 这时候， 由千使用了微服 务架构的理念， 我们将原本处千一个应用中的多个模块拆成了多个应用， 但是这些应用提供的接口都需要这些校验逻辑， 我们不得不在这些应用中都实现这样一套校验逻辑。 随着 微服务规模的扩大， 这些校验逻辑的冗余变得越来越多， 突然有一天我们发现这套校验逻 辑有个BUG需要修复，或者需要对其做一些扩展和优化，此时我们就不得不去每个应用里 修改这些逻辑，而这样的修改不仅会引起开发入员的抱怨，更会加重测试人员的负担。 所 以， 我们也需要一 套机制能够很好地解决微服务架构中， 对于微服务接口访问时各前置校 验的冗余问题。</p>
-<p>为了解决上面这些常见的架构问题，API网关的概念应运而生。API网关是一个更为 智能的应用服务器， 它的定义类似于面向对象设计模式中的Facade模式， 它的存在就像是 整个微服务架构系统的门面一样，所有的外部客户端访问都需要经过它来进行调度和过滤。 它除了要实现请求路由、 负载均衡、 校验过滤等功能之外， 还需要更多能力， 比如与服务 治理框架的结合、 请求转发时的熔断机制、 服务的聚合等一系列高级功能。</p>
-<p>既然APT网关对于微服务架构这么重要， 那么在Spring Cloud中是否有相应的解决方案呢?答案是很肯定的， 在SpringCloud中了提供了基于NetflixZuul实现的API网关组件SpringCloudZuul。 那么， 它是如何解决上面这两个普遍问题的呢?</p>
-<p>首先， 对千路由规则与服务实例的维护间题。 SpringCloudZuul通过与SpringCloud Eureka进行整合， 将自身注册为Eureka服务治理下的应用， 同时从Eureka中获得了所有 其他微服务的实例信息。 这样的设计非常巧妙地将服务治理体系中维护的实例信息利用起 来， 使得将维护服务实例的工作交给了服务治理框架自动完成， 不再需要人工介入。 而对 千路由规则的维护， Zuul默认会将通过以服务名作为ContextPath的方式来创建路由映射， 大部分情况下， 这样的默认设置已经可以实现我们大部分的路由需求， 除了一些特殊情况 (比如兼容一些老的URL)还需要做一些特别的配置。 但是相比于之前架构下的运维工作<br>量， 通过引入SpringCloudZuul实现API网关后， 已经能够大大减少了。</p>
-<p>其次， 对千类似签名校验、 登录校验在微服务架构中的冗余问题。 理论上来说， 这些 校验逻辑在本质上与微服务应用自身的业务并没有多大的关系， 所以 它们完全可以独立成 一 个单独的服务存在， 只是它们被剥离和独立出来之后， 并不是给各个微服务调用， 而是 在API网关服务上进行统一调用来对微服务接口做前置过滤， 以实现对微服务接口的拦截 和校验 。 SpringCloudZuul提供了一套过滤器机制， 它可以 很好地支持这样的任务。 开发 者可以通过使用Zuul来创建各种校验过滤器，然后指定哪些规则的请求需要执行校验逻辑，只有通过校验的才会被路由到具体的微服务接口，不然就返回错误提示。 通过这样的改造， 各个业务层的微服务应用就不再需要非业务性质的校验逻辑了， 这使得我们的微服务应用 可以更专注千业务逻辑的开发， 同时微服务的自动化测试也变得更容易实现。</p>
-<h2 id="服务路由配置"><a href="#服务路由配置" class="headerlink" title="服务路由配置"></a>服务路由配置</h2><p>比如下面的示例， 它实现了 对符合 / user-service/**规则的请求路径转发到名为 user-service的服务实例上去的路由规则。 其中<code>&lt;route&gt;</code>可以指定为任意的路由名称。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">zuul.routes.user-service.path=/user-service<span class="comment">/** </span></span><br><span class="line"><span class="comment">zuul.routes.user-service.serviceid=user-service</span></span><br></pre></td></tr></table></figure></p>
-<p>对千面向服务的路由配置， 除 了使用path与serviceId映射的配置方式 之外， 还 有 一 种更简洁的配置方式: zuul.routes.<code>&lt;serviceid&gt;=&lt;path&gt;</code>, 其中<code>&lt;serviceid&gt;</code> 用来指定路由的具体服务名，<code>&lt;path&gt;</code>用来配置匹配的请求表达式。比如下面的例子， 它的路由规则等价于上面通过path与serviceId组合使用的配置方式。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zuul.routes.user-service=/user-service<span class="comment">/**</span></span><br></pre></td></tr></table></figure></p>
-<p>在本章 一 开始， 我们就提到 了Zuul巧妙地整合了 Eureka 来实现面向服务的路由。 实 际上，我们可以直接将API网关也看作Eureka服务治理下的 一个普通微服务应用。 它除了 会将自己注册到Eureka服务注册中心上之外，也会从注册中心获取所有服务以及它们的实例清单。所以，在Eureka的帮助下，API网关服务本身就已经维护了系统中所有 serviceId 与实例地址的映射关系。当有外部请求到达 API 网关的时候，根据请求的 URL 路径找到最 佳匹配的path规则， API 网关就可以知道要将该请求路由到哪个具体的service Id上 去。 由于在 API 网关中已经知道serviceid对应服务实例的地址清单， 那么只需要通过 Ribbon的负载均衡策略， 直接在这些清单中选择一个具体的实例进行转发就能完成路由工 作了。</p>
-<h2 id="服务路由的默认规则"><a href="#服务路由的默认规则" class="headerlink" title="服务路由的默认规则"></a>服务路由的默认规则</h2><p>虽然通过Eureka与Zuul的整合已经为我们省去了维护服务实例清单的大量配置工作， 剩下只需要再维护请求路径的匹配表达式与服务名的映射关系即可。 但是在实际的运用过 程中会发现， 大部分的路由配置规则几乎都会采用服务名作为外部请求的前缀， 比如下面 的例子， 其中 pa七h 路径的前缀使用了 user-service, 而对应的服务名称也是user-service 。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">zuul.routes.user-service.path=/user-service<span class="comment">/** </span></span><br><span class="line"><span class="comment">zuul.routes.user-service.serviceid=user-service</span></span><br></pre></td></tr></table></figure></p>
-<p>对于这样具有规则性的配置内容， 我们总是希望可以自动化地完成。 非常庆幸，Zuul 默认实现了这样的贴心功能， 当我们为Spring CloudZuul构建的 API 网关服务引入Spring CloudEureka之后， 它为Eureka中的每个服务都自动创建一个默认路由规则， 这些默认规 则的path会使用serviceId配置的服务名作为请求前缀， 就如上面的例子那样。<br>由千默认情况下所有 Eureka上的服务都会被 Zuul自动地创建映射关系来进行路由， 这会使得一些我们不希望对外开放的服务也可能被外部访问到。 这个时候，我们可以使用 <code>zuul.ignored-services</code>参数来设置一 个服务名匹配表达式来定义不自动创建路由的 规则。 Zuul在自动创建服务路由的时候会根据该表达式来进行判断， 如果服务名匹配表达 式， 那么 Zuul 将跳过该服务， 不为其创建路由规则。 比如， 设置为 zuul.ignored-services=*的时候，Zuul将对所有的服务都不自动创建路由规则。 在 这种情况下，我们就要在配置文件中逐个为需要路由的服务添加映射规则(可以使用path 与service工d组合的配置方式，也可使用更简洁的 <code>zuul.routes.&lt;serviceid&gt;= &lt;path&gt;</code>配置方式)， 只有在配置文件中出现的映射规则会被创建路由， 而从Eureka中获取 的其他服务，Zuul将不会再为它们创建路由规则。</p>
-<h2 id="自定义路由映射规则"><a href="#自定义路由映射规则" class="headerlink" title="自定义路由映射规则"></a>自定义路由映射规则</h2><p>我们在构建微服务系统进行业务逻辑开发的时候， 为了兼容外部不同版本的客户端程 序(尽量不强迫用户升级客户端)，一般都会采用开闭原则来进行设计与开发。 这使得系统 在迭代过程中， 有时候会需要我们为一组互相配合的微服务定义一个版本标识来方便管理它们的版本关系，根据这个 标识我们可以 很容易地知道这些服务需要一 起启动并配合使用。 比如可 以 采 用 类 似这 样 的 命 名: userservice-vl 、 userservice-v2、 orderservice-vl、 orderservice-v2。 默认情况下，Zuul自动为服务创建的路由表达式会采用服务名作为前缀， 比如针对上面的userservice-vl 和userservice-v2, 它会产生/userservice-v1 和/userservice-v2两个路径表达式来映射，但是这样生 成出来的表达式规则较为单一，不利于通过路径规则来进行管理。 通常的做法是为这些不同版本的微服务应用生成以版本代号作为路由前缀定义的路由规则， 比如 /vl/userservice/。 这时候，通过这样具有版本号前缀的URL路径，我们就可以很容易地通过路径表达式来归类和管理这些具有版本信息的微服务了。</p>
-<p>针对上面所述的需求，如果我们的各个微服务应用都遵循了类似userservice-vl 这样的命名规则， 通过-分隔的规范来定义服务名和服务版本标识 的话，那么，我们可以使 用Zuul中自定义服务与路由映射 关系的功能，来实现为符合上述规则的微服务自动化地创建类似/vl/userservice/** 的路由匹配规则。 实现步骤非常简单， 只需在 API 网关程 序中， 增加如下Bean的创建 即可:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> PatternServiceRouteMapper <span class="title">serviceRouteMapper</span><span class="params">()</span> </span></span><br><span class="line"><span class="function"></span>&#123; </span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> PatternServiceRouteMapper(<span class="string">"(?&lt;name&gt;A .+)-(?&lt;version&gt;v.+$)"</span>, <span class="string">"$&#123;version&#125;/$&#123;name&#125;"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>PatternServiceRouteMapper对象可以让开发者通过正则表达式来自定义服务与 路由映射的生成 关系。 其中构造函数的第一个参数是用来匹配服务名称是否符合该自定义 规则的正则表达式， 而第二个参数则是定义根据服务名中定义的内容转换出的路径表达式 规则。当开发者在 API 网关中定义了PatternServiceRouteMapper 实现之后，只要符 合第一个参数定义规则的服务名， 都会优先使用该实现构建出的路径表达式，如果没有匹 配上的服务则还是会使用默认的路由映射规则，即采用完整服务名作为前缀的路径表达式。</p>
-<h2 id="路径匹配"><a href="#路径匹配" class="headerlink" title="路径匹配"></a>路径匹配</h2><p>不论是使用传统路由的配置方式还是服务路由的配置方式， 我们都需要为每个路由规 则定义匹配表达式，也就是上面所说的pa七h参数。 在Zuul中，路由匹配的路径表达式采 用了Ant风格定义。</p>
-<table>
-<thead>
-<tr>
-<th>通配符</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>?</td>
-<td>匹配任意个单 字符</td>
-</tr>
-<tr>
-<td>*</td>
-<td>匹配任意数朵的字符</td>
-</tr>
-<tr>
-<td>**</td>
-<td>匹配任意数址的字符， 支待多级目录</td>
-</tr>
-</tbody>
-</table>
-<p>我们可以通过下表中的示例来进一 步理解这三个通配符的含义并进行参考使用。</p>
-<table>
-<thead>
-<tr>
-<th>URL路径</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>/user-service/?</code></td>
-<td>它可以匹 配<code>/user-service/</code>之后拼接一个任务字 符的路径， 比如 <code>/user-service/a、 /user-service/b、 /user-service/c</code></td>
-</tr>
-<tr>
-<td><code>/ user-service/*</code></td>
-<td>它可以匹 配<code>/user-service/</code>之后拼接任 意字 符的路径， 比如<code>/user-service/a 、 /user-service/aaa 、 /user-service/bbb</code>。 但无法匹配/user-service/alb</td>
-</tr>
-<tr>
-<td><code>/ user-service/**</code></td>
-<td>它可以匹 配<code>/user-service/*</code>包含的内容之外， 还可以匹 配形如<code>/user-service/alb</code>的多级目录路径</td>
-</tr>
-</tbody>
-</table>
-<p>另外， 当我们使用通配符的时候，经常会碰到这样的问题: 一个 URL 路径可能会被多 个不同路由的表达式匹配上。 比如， 有这样一 个场景， 我们在系统建设的一 开始实现了 user-service 服务， 并且配置了如下路由规则:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">zuul.routes.user-service. path=/user-service<span class="comment">/** </span></span><br><span class="line"><span class="comment">zuul.routes.user-service.serviceid=user-service</span></span><br></pre></td></tr></table></figure></p>
-<p>但是随着版本的迭代， 我们对 user-service 服务做了 一 些功能拆分， 将原属于 user-service 服务的某些功能拆分到了另外一个全新的服务 user-service-ext 中 去，而这些拆分的外部调用 URL 路径希望能够符合规则/user-service/ext/**, 这个 时候我们需要就在配置文件中增加一个路由规则，完整配置如下:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">zuul.routes. user-service.path=/user-service<span class="comment">/** </span></span><br><span class="line"><span class="comment">zuul.routes.user-service.serviceid=user-service</span></span><br><span class="line"><span class="comment">zuul.routes.user-service-ex七.path=/user-service/ext/** </span></span><br><span class="line"><span class="comment">zuul.routes. user-service-ext.serviceid= user-service-ext</span></span><br></pre></td></tr></table></figure></p>
-<p>此时， 调用 user-service-ex七服务的 URL 路径实际上会同时被/user­ service/<strong>和/user-service/ext/</strong>两个表达式所匹配。 在逻辑上， API 网关服务 需要优先选择/user-service/ext/<strong>路由，然后再匹配/user-service/</strong>路由才能实现上述需求。但是如果使用上面的配置方式，实际上是无法保证这样的路由优先顺序的。</p>
-<h2 id="过滤器详解"><a href="#过滤器详解" class="headerlink" title="过滤器详解"></a>过滤器详解</h2><p><strong>过滤器</strong><br>我们对于Zuul的第 一 印象通常是这样的:它包含了对请求的路 由和过滤两个功能，其中路由功能负责将外部请求转发到具体的微服务实例上， 是实现外 部访问统 一入口的基础;而过滤器功能则负责对请求的处理过程进行干预， 是实现请求校验、 服务聚合等功能的基础。 然而实际上， 路由功能在真正运行时， 它的路由映射和请求 转发都 是由几个不同的过滤器完成的。 其中，路由映射主要通过pre类型的过滤器完成， 它将请求路径与配置的路由规则进行匹配，以找到需要转发的目标地址;而请求转发的部 分则是由route类型的过滤器来完成，对pre类型过滤器获得的路由地址进行转发。 所以，过滤器可以说是Zuul实现API网关功能最为核心的部件，每一个进入Zuul的HTTP 请求都会经过一 系列的过滤器处理链得到请求响应并返回给客户端。</p>
-<p>在Spring Cloud Zuul中实现的过滤器必须包含4个基本特征: 过滤类型、 执行顺序、执行条件、 具体操作。 这些元素看起来非常熟悉，实际上它就是ZuulFi丘er接口中定义的4个抽象方法:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">String <span class="title">filterType</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">filterOrder</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">boolean</span> <span class="title">shouldFilter</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function">Object <span class="title">run</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure></p>
-<p>它们各自的含义与功能总结如下。</p>
+<p>消息队列主要解决了应用耦合、异步处理、流量削锋等问题。</p>
+<p>当前使用较多的消息队列有RabbitMQ、RocketMQ、ActiveMQ、Kafka、ZeroMQ、MetaMq等，而部分数据库如Redis、Mysql以及phxsql也可实现消息队列的功能。</p>
+<h2 id="消息队列场景"><a href="#消息队列场景" class="headerlink" title="消息队列场景"></a>消息队列场景</h2><p><strong>为什么使用消息队列</strong><br>先说一下消息队列常见的使用场景吧，其实场景有很多，但是比较核心的有 3 个：<strong>解耦、异步、削峰</strong>。<br><strong>解耦</strong><br>看这么个场景。A 系统发送数据到 BCD 三个系统，通过接口调用发送。如果 E 系统也要这个数据呢？那如果 C 系统现在不需要了呢？A 系统负责人几乎崩溃……<br><img src="https://s2.ax1x.com/2019/02/13/k0TJxI.png" alt=""></p>
+<p>在这个场景中，A 系统跟其它各种乱七八糟的系统严重耦合，A 系统产生一条比较关键的数据，很多系统都需要 A 系统将这个数据发送过来。A 系统要时时刻刻考虑 BCDE 四个系统如果挂了该咋办？要不要重发，要不要把消息存起来？头发都白了啊！</p>
+<p>如果使用 MQ，A 系统产生一条数据，发送到 MQ 里面去，哪个系统需要数据自己去 MQ 里面消费。如果新系统需要数据，直接从 MQ 里消费即可；如果某个系统不需要这条数据了，就取消对 MQ 消息的消费即可。这样下来，A 系统压根儿不需要去考虑要给谁发送数据，不需要维护这个代码，也不需要考虑人家是否调用成功、失败超时等情况。<br><img src="https://s2.ax1x.com/2019/02/13/k0TUqf.png" alt=""></p>
+<p>总结：通过一个 MQ，Pub/Sub 发布订阅消息这么一个模型，A 系统就跟其它系统彻底解耦了。</p>
+<p><strong>异步</strong><br>再来看一个场景，A 系统接收一个请求，需要在自己本地写库，还需要在 BCD 三个系统写库，自己本地写库要 3ms，BCD 三个系统分别写库要 300ms、450ms、200ms。最终请求总延时是 3 + 300 + 450 + 200 = 953ms，接近 1s，用户感觉搞个什么东西，慢死了慢死了。用户通过浏览器发起请求，等待个 1s，这几乎是不可接受的。<br><img src="https://s2.ax1x.com/2019/02/13/k0TrGj.png" alt=""></p>
+<p>一般互联网类的企业，对于用户直接的操作，一般要求是每个请求都必须在 200 ms 以内完成，对用户几乎是无感知的。</p>
+<p>如果使用 MQ，那么 A 系统连续发送 3 条消息到 MQ 队列中，假如耗时 5ms，A 系统从接受一个请求到返回响应给用户，总时长是 3 + 5 = 8ms，对于用户而言，其实感觉上就是点个按钮，8ms 以后就直接返回了，爽！网站做得真好，真快！<br><img src="https://s2.ax1x.com/2019/02/13/k0Tyzn.png" alt=""></p>
+<p><strong>削峰</strong><br>每天 0:00 到 12:00，A 系统风平浪静，每秒并发请求数量就 50 个。结果每次一到 12:00 ~ 13:00 ，每秒并发请求数量突然会暴增到 5k+ 条。但是系统是直接基于 MySQL 的，大量的请求涌入 MySQL，每秒钟对 MySQL 执行约 5k 条 SQL。</p>
+<p>一般的 MySQL，扛到每秒 2k 个请求就差不多了，如果每秒请求到 5k 的话，可能就直接把 MySQL 给打死了，导致系统崩溃，用户也就没法再使用系统了。</p>
+<p>但是高峰期一过，到了下午的时候，就成了低峰期，可能也就 1w 的用户同时在网站上操作，每秒中的请求数量可能也就 50 个请求，对整个系统几乎没有任何的压力。<br><img src="https://s2.ax1x.com/2019/02/13/k0TsRs.png" alt=""></p>
+<p>如果使用 MQ，每秒 5k 个请求写入 MQ，A 系统每秒钟最多处理 2k 个请求，因为 MySQL 每秒钟最多处理 2k 个。A 系统从 MQ 中慢慢拉取请求，每秒钟就拉取 2k 个请求，不要超过自己每秒能处理的最大请求数量就 ok，这样下来，哪怕是高峰期的时候，A 系统也绝对不会挂掉。而 MQ 每秒钟 5k 个请求进来，就 2k 个请求出去，结果就导致在中午高峰期（1 个小时），可能有几十万甚至几百万的请求积压在 MQ 中。<br><img src="https://s2.ax1x.com/2019/02/13/k0TDiQ.png" alt=""></p>
+<p>这个短暂的高峰期积压是 ok 的，因为高峰期过了之后，每秒钟就 50 个请求进 MQ，但是 A 系统依然会按照每秒 2k 个请求的速度在处理。所以说，只要高峰期一过，A 系统就会快速将积压的消息给解决掉。</p>
+<p><strong>消息队列有什么优缺点</strong><br>优点上面已经说了，就是在特殊场景下有其对应的好处，解耦、异步、削峰。<br>缺点有以下几个：</p>
 <ul>
-<li>filterType: 该函数需要返回 一 个字符串来代表过滤器的类型， 而这个类型就是 在HTTP请求过程中定义的各个阶段。在 Zuul 中默认定义了 4 种不同生命周期的过 滤器类型， 具体如下所示。<ul>
-<li>pre: 可以在请求被路由之前调用。</li>
-<li>routing: 在路由请求时被调用。</li>
-<li>post: 在 routing 和 error 过滤器之后被调用。 </li>
-<li>error: 处理请求时发生错误时被调用。</li>
-</ul>
+<li><p>系统可用性降低<br>  系统引入的外部依赖越多，越容易挂掉。本来你就是 A 系统调用 BCD 三个系统的接口就好了，人 ABCD 四个系统好好的，没啥问题，你偏加个 MQ 进来，万一 MQ 挂了咋整，MQ 一挂，整套系统崩溃的，你不就完了？如何保证消息队列的高可用，可以点击这里查看。</p>
 </li>
-<li>filterOrder: 通过 int 值来定义过滤器的执行顺序， 数值越小优先级越高。</li>
-<li>shouldFilter: 返回一个 boolean 值来判断该过滤器是否要执行。 我们可以通过此方法来指定过滤器的有效范围。</li>
-<li>run: 过滤器的具体逻辑。 在该函数中， 我们可以实现自定义的过滤逻辑， 来确定 是否要拦截当前的请求， 不对其进行后续的路由， 或是在请求路由返回结果之后， 对处理结果做一 些加工等。</li>
+<li><p>系统复杂度提高<br>  硬生生加个 MQ 进来，你怎么保证消息没有重复消费？怎么处理消息丢失的情况？怎么保证消息传递的顺序性？头大头大，问题一大堆，痛苦不已。</p>
+</li>
+<li><p>一致性问题<br>  A 系统处理完了直接返回成功了，人都以为你这个请求就成功了；但是问题是，要是 BCD 三个系统那里，BD 两个系统写库成功了，结果 C 系统写库失败了，咋整？你这数据就不一致了。</p>
+</li>
 </ul>
-<p><strong>请求生命周期</strong><br>对千 Zuul 中的过滤器类型 filterType, 我们已经做过一些简单的介绍。 Zuul 默认 定义了4种不同的过滤器类型， 它们覆盖了一个外部HTTP请求到达API网关， 直到返回 请求结果的全部生命周期。 下图源自 Zuul 的官方Wi灼中关于请求生命周期的图解， 它描 述了一个HTTP请求到达API网关之后， 如何在各种不同类型的过滤器之间流转的详细过 程。<br><img src="https://s2.ax1x.com/2019/02/12/kwFql6.png" alt=""></p>
-<p>从上图中我们可以看到， 当外部 HTTP 请求到达 API 网关服务的时候， 首先它会进入 第一个阶段pre, 在这里它会被pre类型的过滤器进行处理，该类型过滤器的主要目的是 在进行请求路由之前做一些前置加工， 比如请求的校验等。 在完成了pre类型的过滤器处理之后，请求进入第二个阶段rou巨ng, 也就是之前说的路由请求转发阶段，请求将会被routing类型过滤器处理。这里的具体处理 内容就是将外部请求转发到具体服务实例上去 的过程， 当服务实例将请求结果都返回之后，routing 阶段完成， 请求进入第三个阶段 post。 此时请求将会被post类型的过滤器处理，这些过滤器在处理的时候不仅可以获取到请求信息， 还能获取到服务实例的返回信息， 所以在 post类型的过滤器 中，我们可以 对处理结果进行 一 些加工或转换等内容。 另外， 还有 一 个特殊的阶段error, 该阶段只有 在上述三个阶段中发生异常的时候才会触发，但是它的最后流向还是 po江类型的过滤器， 因为它需要通过post过滤器将最终结果返回给请求客户端(对于error过滤器的处理， 在Spring Cloud Zuul的过滤链中实际上有一 些不同， 后续我们在介绍核心过滤器时会做详细分析)。</p>
-<p><strong>核心过滤器</strong><br><img src="https://s2.ax1x.com/2019/02/12/kwkvvV.png" alt=""></p>
-<p><strong>异常处理</strong></p>
-<h2 id="动态加载"><a href="#动态加载" class="headerlink" title="动态加载"></a>动态加载</h2><p><strong>动态路由</strong><br>与分布式配置中心联动，动态设置properties文件即可</p>
-<p><strong>动态过滤器</strong><br>既然通过 Zuul 构建的API网关服务能够轻松地实现动态路由的加载，那么对于API 网关服务的另外 一 大重要功能一—请求过滤器的动态加载自然也不能放过， 只是对于请求 过滤器的动态加载与请求路由的动态加载在实现机制上会有所不同。 这个不难理解，通过之前介绍的请求路由和请求过滤的示例， 我们可以看到请求路由通过配置文件就能实现， 而请求过滤则都是通过编码实现。 所以，对于实现请求过滤器的动态加载， 我们需要借助 基于NM实现的动态语言的帮助， 比如Groovy。</p>
+<p>所以消息队列实际是一种非常复杂的架构，你引入它有很多好处，但是也得针对它带来的坏处做各种额外的技术方案和架构来规避掉，做好之后，你会发现，妈呀，系统复杂度提升了一个数量级，也许是复杂了 10 倍。但是关键时刻，用，还是得用的。</p>
+<p><strong>Kafka、ActiveMQ、RabbitMQ、RocketMQ 有什么优缺点？</strong></p>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>ActiveMQ</th>
+<th>RabbitMQ</th>
+<th>RocketMQ</th>
+<th>Kafka</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单机吞吐量</td>
+<td>万级，比 RocketMQ、Kafka 低一个数量级</td>
+<td>同 ActiveMQ</td>
+<td>10 万级，支撑高吞吐</td>
+<td>10 万级，高吞吐，一般配合大数据类的系统来进行实时数据计算、日志采集等场景</td>
+</tr>
+<tr>
+<td>topic 数量对吞吐量的影响</td>
+<td></td>
+<td></td>
+<td>topic 可以达到几百/几千的级别，吞吐量会有较小幅度的下降，这是 RocketMQ 的一大优势，在同等机器下，可以支撑大量的 topic</td>
+<td>topic 从几十到几百个时候，吞吐量会大幅度下降，在同等机器下，Kafka 尽量保证 topic 数量不要过多，如果要支撑大规模的 topic，需要增加更多的机器资源</td>
+</tr>
+<tr>
+<td>时效性</td>
+<td>ms 级</td>
+<td>微秒级，这是 RabbitMQ 的一大特点，延迟最低</td>
+<td>ms 级</td>
+<td>延迟在 ms 级以内</td>
+</tr>
+<tr>
+<td>可用性</td>
+<td>高，基于主从架构实现高可用</td>
+<td>同 ActiveMQ</td>
+<td>非常高，分布式架构</td>
+<td>非常高，分布式，一个数据多个副本，少数机器宕机，不会丢失数据，不会导致不可用</td>
+</tr>
+<tr>
+<td>消息可靠性</td>
+<td>有较低的概率丢失数据</td>
+<td>基本不丢</td>
+<td>经过参数优化配置，可以做到 0 丢失</td>
+<td>同 RocketMQ</td>
+</tr>
+<tr>
+<td>功能支持</td>
+<td>MQ 领域的功能极其完备</td>
+<td>基于 erlang 开发，并发能力很强，性能极好，延时很低</td>
+<td>MQ 功能较为完善，还是分布式的，扩展性好</td>
+<td>功能较为简单，主要支持简单的 MQ 功能，在大数据领域的实时计算以及日志采集被大规模使用</td>
+</tr>
+</tbody>
+</table>
+<p>综上，各种对比之后，有如下建议：</p>
+<p>一般的业务系统要引入 MQ，最早大家都用 ActiveMQ，但是现在确实大家用的不多了，没经过大规模吞吐量场景的验证，社区也不是很活跃，所以大家还是算了吧，我个人不推荐用这个了；</p>
+<p>后来大家开始用 RabbitMQ，但是确实 erlang 语言阻止了大量的 Java 工程师去深入研究和掌控它，对公司而言，几乎处于不可控的状态，但是确实人家是开源的，比较稳定的支持，活跃度也高；</p>
+<p>不过现在确实越来越多的公司，会去用 RocketMQ，确实很不错（阿里出品），但社区可能有突然黄掉的风险，对自己公司技术实力有绝对自信的，推荐用 RocketMQ，否则回去老老实实用 RabbitMQ 吧，人家有活跃的开源社区，绝对不会黄。</p>
+<p>所以中小型公司，技术实力较为一般，技术挑战不是特别高，用 RabbitMQ 是不错的选择；大型公司，基础架构研发实力较强，用 RocketMQ 是很好的选择。</p>
+<p>如果是大数据领域的实时计算、日志采集等场景，用 Kafka 是业内标准的，绝对没问题，社区活跃度很高，绝对不会黄，何况几乎是全世界这个领域的事实性规范。</p>
+<p>参考：<br><a href="https://github.com/doocs/advanced-java/blob/master/docs/high-concurrency/why-mq.md" target="_blank" rel="noopener">为什么使用消息队列？消息队列有什么优点和缺点？Kafka、ActiveMQ、RabbitMQ、RocketMQ 都有什么优点和缺点？</a></p>
 
     
   </div>
@@ -197,7 +200,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -206,6 +209,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/09/distribut-concurrent-programmer-design/">秒杀系统设计</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
+      </li>
     
       <li>
         <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
@@ -217,14 +228,6 @@
     
       <li>
         <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
       </li>
     
   </ul>

@@ -59,15 +59,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/02/12/spring-cloud-feign/">
-  <time datetime="2019-02-12T02:09:10.000Z">
+      <a href="/2019/02/12/spring-cloud-config/">
+  <time datetime="2019-02-12T12:15:27.000Z">
     2019-02-12
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/02/12/spring-cloud-feign/">Spring Cloud——高级负载 Hystrix</a></h1>
+    <h1 class="title"><a href="/2019/02/12/spring-cloud-config/">Spring Cloud——配置中心 Config</a></h1>
   
 
   </header>
@@ -77,34 +77,18 @@
       <blockquote>
 <p>如果您觉得文章不错或者有什么需要吐槽的，请联系我😄<br>nickName: 无知是天堂<br>Mail: <a href="mailto:1256427371@qq.com" target="_blank" rel="noopener">1256427371@qq.com</a><br>WeChat: 1256427371</p>
 </blockquote>
-<p>本章我们即将介绍的 Spring Cloud Feign 就是这样一个工具。 它基于Netflix Feign实现， 整合了 pring Cloud Ribbon 与 Spring Cloud Hystrix, 除了提供这两者的强大功能之外， 它还提供了一 种声明式的 Web 服务客户端定义方式。</p>
-<h2 id="继承特性"><a href="#继承特性" class="headerlink" title="继承特性"></a>继承特性</h2><p>当使用 Spring MVC 的 注解来绑定服务接口时， 我们几乎完全可以从服务提供方的 Controller 中依靠复制操作，构建出相应的服务客户端绑定接口。既然存在这么多复制操作， 我们自然需要考虑这部分内容是否可以得到进一 步的抽象呢?在 Spring Cloud Feign 中，针 对该问题提供了继承特性来帮助我们解决这些复制操作， 以进一步减少编码量。 下面， 我们详细看看如何通过Spring Cloud Feign 的继承特性来实现 REST 接口定义的复用。</p>
+<p>Spring Cloud Config 是 Spring Cloud 团队创建的一个全新项目，用来为分布式系统中的基础设施和微服务应用提供集中化的外部配置支持，它分为服务端与客户端两个部分。 其 中服务端也称为分布式配置中心， 它是一个独立的微服务应用， 用来连接配置仓库并为客 户端提供获取配置信息、 加密/解密信息等访问接口;而客户端则是微服务架构中的各个微 服务应用或基础设施， 它们通过指定的配置中心来管理应用资源与业务相关的配置内容， 并在启动的时候从配置中心获取和加载配置信息。 Spring Cloud Config 实现了对服务端和客 户端中环境变量和属性配置的抽象映射， 所以它除了适用于 Spring 构建的应用程序之外， 也可以在任何其他语言运行的应用程序中使用。 由于 Spring Cloud Config 实现的配置中心 默认采用 Git 来存储配置信息， 所以使用 Spring Cloud Config 构建的配置服务器， 天然就 支持对微服务应用配置信息的版本管理， 并且可以通过 Git 客户端工具来方便地管理和访 问配置内容。 当然它也提供了对其他存储方式的支持， 比如 SVN 仓库、 本地化文件系统。 接下来， 我们从一个简单的入门示例开始学习 Spring Cloud Config 服务端以及客户端的详 细构建与使用方法。</p>
+<h2 id="服务端详解"><a href="#服务端详解" class="headerlink" title="服务端详解"></a>服务端详解</h2><p><strong>基础架构</strong><br><img src="https://s2.ax1x.com/2019/02/12/kwWGse.png" alt=""></p>
+<p>客户端应用从配置管理中获取配置信息遵从下面的执行流程:</p>
 <ul>
-<li>独立api二方包</li>
-<li>producer &amp; consumer 依赖api包构建服务</li>
+<li>应用启动时，根据bootstrap.proper巨es中配置的应用名{app巨cation}、 环境名{profile}、 分支名{label}, 向ConfigServer请求获取配置信息。</li>
+<li>ConfigServer根据自己维护的Git仓库信息和客户端传递过来的配置定位信息去查找配置信息</li>
+<li>通过git clone命令将找到的配置信息下载到ConfigServer的文件系统中</li>
+<li>ConfigServer创建Spring的ApplicationContext实例，并从Git本地仓库中 加载配置文件， 最后将这些配置内容读取出来返回给客户端应用。</li>
+<li>客户端应用在获得外部配置文件后加载到客户端的ApplicationContext实例， 该配置内容的优先级高于客户端Jar包内部的配置内容， 所以在Jar包中重复的内 容将不再被加载。</li>
 </ul>
-<p><strong>优点与缺点</strong><br>使用 Spring Cloud Feign 继承特性的优点很明显， 可以将接口的定义从 Controller 中剥离， 同时配合Maven私有仓库就可以轻易地实现接口定义的共享， 实现在构建期的接口绑 定， 从而有效减少服务客户端的绑定配置。 这么做虽然可以很方便地实现接口定义和依赖 的共享， 不用再复制粘贴接口进行绑定， 但是这样的做法使用不当的话会带来副作用。 由 于接口在构建期间就建立起了依赖，那么接口变动就会对项目构建造成影响， 可能服务提 供方修改了一个接口定义，那么会直接导致客户端工程的构建失败。 所以， 如果开发团队 通过此方法来实现接口共享的话， 建议在开发评审期间严格遵守面向对象的开闭原则， 尽 可能地做好前后版本的兼容，防止牵一发而动全身的后果，增加团队不必要的维护工作量。</p>
-<h2 id="Ribbon配置"><a href="#Ribbon配置" class="headerlink" title="Ribbon配置"></a>Ribbon配置</h2><p>由于SpringCloudFeign的客户端负载均衡是通过SpringCloudRibbon实现的，所以我 们可以直接通过配置沁bbon客户端的方式来自定义各个服务客户端调用的参数<br><strong>全局配置</strong><br>全局配置的方法非常简单， 我们可以直接使用ribbon.<code>&lt;key&gt;=&lt;value&gt;</code>的方式来设 置ribbon的各项默认参数<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ribbon.ConnectTimeout=<span class="number">500</span> </span><br><span class="line">ribbon.ReadTimeout=SOOO</span><br></pre></td></tr></table></figure></p>
-<p><strong>指定服务配置</strong><br>大多数情况下，我们对于服务调用的超时时间可能会根据实际服务的特性做一 些调整， 所以仅仅依靠默认的全局配置是不行的。 在使用SpringCloudFeign的时候，针对各个服务 客户端进行个性化配置的方式与使用SpringCloudRibbon时的配置方式是一样的， 都采用<code>&lt;client&gt;. Ribbon.key=value</code> 的格式进行设置<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">HELLO-SERVICE.ribbon.ConnectTimeout=SOO </span><br><span class="line">HELLO-SERVICE.ribbon.ReadTimeout=<span class="number">2000</span></span><br></pre></td></tr></table></figure></p>
-<h2 id="重试机制"><a href="#重试机制" class="headerlink" title="重试机制"></a>重试机制</h2><p>在 c端 应用中增加上文中提到的重试配置参数。其中，由于 HELLO­ SERVICE.ribbon.MaxAutoRetries 设置为 1, 所以重试策略先尝试访问首选实 例一次， 失败后才更换实例访问， 而更换实例访问的次数通过 HELLO-SERVICE. ribbon.MaxAutoRetriesNextServer 参数 设置为 2, 所以会尝试更换两次实 例进行重试。</p>
-<h2 id="Hystrix配置"><a href="#Hystrix配置" class="headerlink" title="Hystrix配置"></a>Hystrix配置</h2><p><strong>全局配置</strong><br>对于Hystrix的全局配置同Spring Cloud伈bbon的全局配置 一 样，直接使用它的 默认配 置前缀hys七豆x.command.defau巨 就可以进行设置， 比如设置全局的超时时间:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hystrix.command.<span class="keyword">default</span>.execution.isolation.thread.timeoutinMilliseconds=SOOO</span><br></pre></td></tr></table></figure></p>
-<p><strong>服务降级配置</strong></p>
-<ul>
-<li>服务降级逻辑的实现只需要为 Feign 客户端的定义接口编写一个具体的接口实现类。 比如为 HelloService 接口实现一个服务降级类 HelloServiceFallback, 其 中每个重写方法的实现逻辑都可以用来定义相应的服务降级逻辑</li>
-<li>在服务绑定接口 HelloService 中， 通过@FeignC巨ent 注解的 fallback 属性来 指定对应的服务降级实现类。<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@FeignClient</span>&#123;narne=<span class="string">"HELLO-SERVICE"</span>, fallback= HelloServiceFallback.class) </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">HelloService</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h2 id="其他配置"><a href="#其他配置" class="headerlink" title="其他配置"></a>其他配置</h2><p><strong>请求压缩</strong><br>Spring Cloud Feign支持对请求与响应进行 GZIP 压缩，以减少通信过程中的性能损耗。 我们只需通过下面两个参数设置， 就能开启请求与响应的压缩功能:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">feign.compression.request.enabled=<span class="keyword">true</span> </span><br><span class="line">feign.compression.response.enabled=<span class="keyword">true</span></span><br></pre></td></tr></table></figure></p>
-<p>同时， 我们还能对请求压缩做一些更细致的设置， 比如下面的配置内容指定了压缩的 请求数据类型， 并设置了请求压缩的大小下限， 只有超过这个大小的请求才会对其进行压缩。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">feign.compression.request.enabled=<span class="keyword">true</span> </span><br><span class="line">feign.compression.request.mime-types=text/xml,application/xml,application/json</span><br><span class="line">feign.compression.request.min-request-size=<span class="number">2048</span></span><br></pre></td></tr></table></figure></p>
-<p><strong>日志配置</strong><br>Spring Cloud Feign 在构建被@FeignClient 注解修饰的服务客户端时，会为每一个客 户端都创建一个 feign.Logger 实例，我们可以利用该日志对象的 DEBUG 模式来帮助分 析 Feign 的请求细节。可以在app巨ca巨on.proper巨es 文件中使用logging.level. <feignclient> 的参数配置格式 来开 启 指 定 Feign 客 户 端的 DEBUG 日 志 ， 其中 <feignclient>为 Feign 客户端定义接口的完整路径， 比如针对本章中我们实现的 HelloService 可以按如下配置开启:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logging.level.com.didispace.web.HelloService= DEBUG</span><br></pre></td></tr></table></figure></feignclient></feignclient></p>
-<p>但是， 只是添加了如上配置， 还无法实现对 DEBUG 日志的输出。 这时由于 Feign 客 户端默认的 Logger.Level 对象定义为 NONE 级别， 该级别不会记录任何 Feign 调用过程 中的信息， 所以我们需要调整它的级别， 针对全局的日志级别， 可以在应用主类中直接加 入 Logger.Level 的 Bean 创建</p>
-<p>对于 Feign 的 Logger级别主要有下面 4 类， 可根据实际需要进行调整使用。</p>
-<ul>
-<li>NONE: 不记录任何信息。</li>
-<li>BASIC: 仅记录请求方法、URL以及响应状态码和执行时间。</li>
-<li>HEADERS: 除了记录BASIC级别的信息之外， 还会记录请求和响应的头信息。 </li>
-<li>FULL: 记录所有请求与响应的明细， 包括头信息、 请求体、 元数据等。</li>
-</ul>
+<p>Config Server巧妙地通过git clone将配置信息存于本地， 起到了缓存的作用， 即使当Git服务端无法访问的时候， 依然可以取ConfigServer中的缓存内容进行使用。</p>
+<p>个人觉得config较简单 不在深入看了。。</p>
 
     
   </div>
@@ -140,7 +124,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 11.43px;">Concurrent</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -149,6 +133,14 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/09/distribut-concurrent-programmer-design/">秒杀系统设计</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
+      </li>
     
       <li>
         <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
@@ -160,14 +152,6 @@
     
       <li>
         <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a>
       </li>
     
   </ul>
