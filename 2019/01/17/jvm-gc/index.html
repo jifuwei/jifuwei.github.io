@@ -30,8 +30,9 @@
 <meta property="og:image" content="https://pic.yupoo.com/crowhawk/605f57b5/75122b84.png">
 <meta property="og:image" content="https://pic.yupoo.com/crowhawk/6b90388c/6c281cf0.png">
 <meta property="og:image" content="https://pic.yupoo.com/crowhawk/9a6b1249/b1800d45.png">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g8udfe5gyvj20pg05iq39.jpg">
 <meta property="og:image" content="https://pic.yupoo.com/crowhawk/fffcf9a2/f60599b2.png">
-<meta property="og:updated_time" content="2019-01-26T13:27:00.976Z">
+<meta property="og:updated_time" content="2019-11-11T14:09:32.237Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="JVM——垃圾收集器">
 <meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  1.1对象已死么？堆存放几乎所有对象实例，GC回收前，第一件事情是要确认堆中哪些还”存活“着，哪些已经”死去“ 1.1.1引用计数法给对象中添加个引用计数器，每当有一个地方引用，则加1；引用失效，则减1，回收计数为0的缺点：  循">
@@ -163,23 +164,33 @@
 </ul>
 <p><img src="https://pic.yupoo.com/crowhawk/6b90388c/6c281cf0.png" alt=""></p>
 <h4 id="1-4-5Parallel-Old-收集器"><a href="#1-4-5Parallel-Old-收集器" class="headerlink" title="1.4.5Parallel Old 收集器"></a>1.4.5Parallel Old 收集器</h4><p>Parallel Old是Parallel Scavenge收集器的老年代版本，使用多线程和“标记-整理”算法。<br>在注重吞吐量以及CPU资源敏感的场合，都可以优先考虑Parallel Scavenge加Parallel Old收集器。<br><img src="https://pic.yupoo.com/crowhawk/9a6b1249/b1800d45.png" alt=""></p>
-<h4 id="1-4-6CMS-收集器"><a href="#1-4-6CMS-收集器" class="headerlink" title="1.4.6CMS 收集器"></a>1.4.6CMS 收集器</h4><p>CMS（Concurrent Mark Sweep）收集器死一种以获得最短回收停顿时间为目标的收集器。目前很大的一部分Java应用集中在互联网站或者B/S系统的服务端上。这类应用尤其重视服务的响应速度，给用户带来更好的体验。</p>
+<h4 id="1-4-6CMS-收集器"><a href="#1-4-6CMS-收集器" class="headerlink" title="1.4.6CMS 收集器"></a>1.4.6CMS 收集器</h4><p>CMS（Concurrent Mark Sweep）收集器死一种以<strong>获得最短回收停顿时间为目标的收集器</strong>。目前很大的一部分Java应用集中在互联网站或者B/S系统的服务端上。这类应用尤其重视服务的响应速度，给用户带来更好的体验。</p>
 <p>从名字能看出，CMS收集器基于“标记-清除”算法实现，整个过程分为4步骤：</p>
 <ul>
-<li>初始标记</li>
-<li>并发标记</li>
-<li>重新标记</li>
-<li>并发清除</li>
+<li>初始标记(STW initial mark)</li>
+<li>并发标记(Concurrent marking)</li>
+<li>并发预清理(Concurrent precleaning)</li>
+<li>重新标记(STW remark)</li>
+<li>并发清理(Concurrent sweeping)</li>
+<li>并发重置(Concurrent reset)</li>
 </ul>
-<p>其中，初始标记、重新标记仍然需要“Stop The World”。<br>初始标记只是标记一下GC Roots能直接关联到的对象，速度很快，<br>并发标记阶段就是进行GC Roots Tracing过程，<br>重新标记阶段则是为了修正并发标记区间因用户程序继续运作而导致标记产生变动的那一部分记录记录，这个阶段的停顿时间一般会比初始标记的稍长一些，但远比并发标记短。</p>
-<p>由于整个过程最长的并发标记和并发清除过程收集器都是可以与用户线程一期工作，所以，CMS收集器的内存回收过程是与用户线程一期并发执行的。</p>
+<p>初始标记 ：在这个阶段，需要虚拟机停顿正在执行的任务，官方的叫法STW(Stop The Word)。这个过程从垃圾回收的”根对象”开始，只扫描到能够和”根对象”直接关联的对象，并作标记。所以这个过程虽然暂停了整个JVM，但是很快就完成了。</p>
+<p>并发标记 ：这个阶段紧随初始标记阶段，在初始标记的基础上继续向下追溯标记。并发标记阶段，应用程序的线程和并发标记的线程并发执行，所以用户不会感受到停顿。</p>
+<p>并发预清理 ：并发预清理阶段仍然是并发的。在这个阶段，虚拟机查找在执行并发标记阶段新进入老年代的对象(可能会有一些对象从新生代晋升到老年代， 或者有一些对象被分配到老年代)。通过重新扫描，减少下一个阶段”重新标记”的工作，因为下一个阶段会Stop The World。</p>
+<p>重新标记 ：这个阶段会暂停虚拟机，收集器线程扫描在CMS堆中剩余的对象。扫描从”跟对象”开始向下追溯，并处理对象关联。</p>
+<p>并发清理 ：清理垃圾对象，这个阶段收集器线程和应用程序线程并发执行。</p>
+<p>并发重置 ：这个阶段，重置CMS收集器的数据结构，等待下一次垃圾回收。</p>
 <p>缺点：</p>
 <ul>
 <li>对CPU资源非常敏感。在并发时。占用一部分线程资源（或者说CPU资源）而导致应用程序变慢，总吞吐量会降低。CMS默认启动的回收线程数是 （CPU数量 + 3）/ 4，也就是当COU时4以下时，并发回收时来及手机线程不少于25%的CPU资源，并随着CPU的数量上升而降低。但CPU不足4个时，对程序的影响很大，从而导致用户的程序的执行速度变慢。</li>
 <li>CMS收集器无法处理浮动的垃圾，可能出现“Concurrent Mode Failure”失败而导致另一次Full GC的产生。由于CMS并发清理阶段用户的线程还在运行着，伴随着程序运行阶段还会头新的垃圾不断的产生，这部分垃圾出现在标记之后。CMS无法在档次收集清理他们，只好留在下次清理。这部分垃圾就是“浮动垃圾”。也由于在垃圾收集阶段用户线程还需要运行，那就需要预留足够的内存空间给用户线程使用，因此CMS收集器不能像其它的收集器那样等到老年代几乎完全被填满了在收集，需要预留一部分。要是CMS运行期间预留的内存无法满足程序的需要，就会出现“Concurrent Mode Failure”失败，虚拟机启动后背预案：临时启动Serial Old收集器来重新进行老年代的垃圾收集，这样停顿时间就更长了</li>
 <li>CMS基于“标记-清除”，清除完会出现大量空间碎片。大对象分配会很麻烦，往往老年代还有很大的空间剩余，但是无法找到足够大的空间来分配当前对象，不得不提前触发一次Full GC，CMS提供<code>-XX:+UseCMSCompactAtFullCollection</code>开关参数，用于在CMS收集器顶不住要进行Full GC时开启内存的合并整理过程，内存整理过程无法并发的，空间碎片问题解决了，但是停顿时间不得不变长、</li>
+<li>CMS回收器采用的基础算法是Mark-Sweep。所有CMS不会整理、压缩堆空间。这样就会有一个问题：<strong>经过CMS收集的堆会产生空间碎片</strong>。 CMS不对堆空间整理压缩节约了垃圾回收的停顿时间，但也带来的堆空间的浪费。为了解决堆空间浪费问题，CMS回收器不再采用简单的指针指向一块可用堆空 间来为下次对象分配使用。而是把一些未分配的空间汇总成一个列表，当JVM分配对象空间的时候，会搜索这个列表找到足够大的空间来hold住这个对象。</li>
+<li><strong>需要更多的CPU资源</strong>。从上面的图可以看到，为了让应用程序不停顿，CMS线程和应用程序线程并发执行，这样就需要有更多的CPU，单纯靠线程切 换是不靠谱的。并且，重新标记阶段，为空保证STW快速完成，也要用到更多的甚至所有的CPU资源。当然，多核多CPU也是未来的趋势！</li>
+<li><strong>CMS的另一个缺点是它需要更大的堆空间</strong>。因为CMS标记阶段应用程序的线程还是在执行的，那么就会有堆空间继续分配的情况，为了保证在CMS回 收完堆之前还有空间分配给正在运行的应用程序，必须预留一部分空间。也就是说，CMS不会在老年代满的时候才开始收集。相反，它会尝试更早的开始收集，已 避免上面提到的情况：在回收完成之前，堆没有足够空间分配！默认当老年代使用68%的时候，CMS就开始行动了。 – XX:CMSInitiatingOccupancyFraction =n 来设置这个阀值。</li>
 </ul>
-<p><img src="https://pic.yupoo.com/crowhawk/fffcf9a2/f60599b2.png" alt=""></p>
+<p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8udfe5gyvj20pg05iq39.jpg" alt=""><br><img src="https://pic.yupoo.com/crowhawk/fffcf9a2/f60599b2.png" alt=""></p>
+<p>啥时候用CMS<br>如果你的应用程序对停顿比较敏感，并且在应用程序运行的时候可以提供更大的内存和更多的CPU(也就是硬件牛逼)，那么使用CMS来收集会给你带来好处。还有，如果在JVM中，有相对较多存活时间较长的对象(老年代比较大)会更适合使用CMS。</p>
 <h4 id="1-4-7G1-收集器"><a href="#1-4-7G1-收集器" class="headerlink" title="1.4.7G1 收集器"></a>1.4.7G1 收集器</h4><p>G1收集器是当今收集器技术发展的最前沿成果之一。是一款服务端应用的垃圾收集器。<br>特点：</p>
 <ul>
 <li>并行与并发：G1能够充分利用多CPU、多核环境下的硬件优势，使用多个CPU来缩短Stop-The-World停顿时间，部分收集器原本需要停顿Java线程执行的GC动作，G1收集器仍然可以通过并发方式让Java程序继续执行</li>
