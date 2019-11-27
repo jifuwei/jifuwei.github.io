@@ -28,7 +28,7 @@ Spring Cloud R巾bon 是一个基于 HTTP 和 TCP 的客户端负载均衡工具
 <meta property="og:image" content="https://s2.ax1x.com/2019/01/29/kQ9fit.png">
 <meta property="og:image" content="https://s2.ax1x.com/2019/01/29/kQk991.png">
 <meta property="og:image" content="https://s2.ax1x.com/2019/01/29/kQt0YR.png">
-<meta property="og:updated_time" content="2019-01-29T11:46:44.442Z">
+<meta property="og:updated_time" content="2019-11-20T02:20:19.758Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spring Cloud——负载均衡 Ribbon">
 <meta name="twitter:description" content="如果您觉得文章不错或者有什么需要吐槽的，请联系我😄nickName: 无知是天堂Mail: 1256427371@qq.comWeChat: 1256427371  Spring Cloud R巾bon 是一个基于 HTTP 和 TCP 的客户端负载均衡工具，它基于 Netflix 伈bbon实现。 通过SpringCloud的封装，可以让我们轻松地将面向服务的REST模板请求 自动转换成客户">
@@ -87,6 +87,10 @@ Spring Cloud R巾bon 是一个基于 HTTP 和 TCP 的客户端负载均衡工具
 <p>Spring Cloud R巾bon 是一个基于 HTTP 和 TCP 的客户端负载均衡工具，它基于 Netflix 伈bbon实现。 通过SpringCloud的封装，可以让我们轻松地将面向服务的REST模板请求 自动转换成客户端负载均衡的服务调用。 Spring Cloud 沁bbon 虽然只是一个工具类框架， 它不像服务注册中心、 配置中心、 API 网关那样需要独立部署，但是它几乎存在于每一个 Spring Cloud 构建的微服务和基础设施中。 因为微服务间的调用，API 网关的请求转发等内 容实际上都是通过伈bbon 来实现的，包括后续我们将要介绍的 Feign, 它也是基于 Ribbon 实现的工具。 所以，对SpringCloudRibbon的理解和使用，对于我们使用SpringCloud来<br>构建微服务非常重要。</p>
 <p>负载均衡(what? when? why? how?)<br>不会的请自行Google，节约时间~</p>
 <p>我们更应该关系的是如何实现负载均衡及高可用策略，以期自己造轮子时做到心中有数。</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><ul>
+<li>@LoadBalanced</li>
+<li>客户端请求流程？如何是被实例地址和选取的？</li>
+</ul>
 <h2 id="整体流程"><a href="#整体流程" class="headerlink" title="整体流程"></a>整体流程</h2><p>回顾 一 下之前的消费者示例: 我们是如何实现客户端负载均衡的?仔细观察 一 下之前的实现代码， 可以发现在 消费者的例子中， 可能就@LoadaBalanced这个 注解是之 前没有接触过的，并且从命名上来看也与负载均衡相关 。我们不妨以此为线索来看看Spring Cloud Ribbon的源码实现。</p>
 <p>从@LoadBalanced注解 源码的注释中可以知道， 该 注解用来给RestTemplate做 标记， 以使用负载均衡的客户端(LoadaB lancerC巨ent)来配置它。</p>
 <p>顺着 LoadBalancerClient 接口的所属包 org.springframework.cloud.client.loadbalancer, 我们对其内容进行整理， 可以得出如下图所示的关系。<br><img src="https://s2.ax1x.com/2019/01/28/kMiG6O.png" alt=""></p>
@@ -312,7 +316,7 @@ Spring Cloud R巾bon 是一个基于 HTTP 和 TCP 的客户端负载均衡工具
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -321,6 +325,10 @@ Spring Cloud R巾bon 是一个基于 HTTP 和 TCP 的客户端负载均衡工具
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/17/sort-algorithm-common/">常见排序算法总结</a>
+      </li>
     
       <li>
         <a href="/2019/11/09/distribut-concurrent-programmer-design/">秒杀系统设计</a>
@@ -336,10 +344,6 @@ Spring Cloud R巾bon 是一个基于 HTTP 和 TCP 的客户端负载均衡工具
     
       <li>
         <a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a>
       </li>
     
   </ul>
