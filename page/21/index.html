@@ -59,113 +59,39 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/10/15/db-distribute/">
-  <time datetime="2019-10-15T07:49:13.000Z">
+      <a href="/2019/10/15/mysql-master-slave/">
+  <time datetime="2019-10-15T10:13:05.000Z">
     2019-10-15
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/10/15/db-distribute/">分库分表</a></h1>
+    <h1 class="title"><a href="/2019/10/15/mysql-master-slave/">读写分离</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <h2 id="为什么要分库分表（设计高并发系统的时候，数据库层面该如何设计）？用过哪些分库分表中间件？不同的分库分表中间件都有什么优点和缺点？你们具体是如何对数据库如何进行垂直拆分或水平拆分的？"><a href="#为什么要分库分表（设计高并发系统的时候，数据库层面该如何设计）？用过哪些分库分表中间件？不同的分库分表中间件都有什么优点和缺点？你们具体是如何对数据库如何进行垂直拆分或水平拆分的？" class="headerlink" title="为什么要分库分表（设计高并发系统的时候，数据库层面该如何设计）？用过哪些分库分表中间件？不同的分库分表中间件都有什么优点和缺点？你们具体是如何对数据库如何进行垂直拆分或水平拆分的？"></a>为什么要分库分表（设计高并发系统的时候，数据库层面该如何设计）？用过哪些分库分表中间件？不同的分库分表中间件都有什么优点和缺点？你们具体是如何对数据库如何进行垂直拆分或水平拆分的？</h2><h3 id="分表"><a href="#分表" class="headerlink" title="分表"></a>分表</h3><p>比如你单表都几千万数据了，你确定你能扛住么？绝对不行，单表数据量太大，会极大影响你的 sql 执行的性能，到了后面你的 sql 可能就跑的很慢了。一般来说，就以我的经验来看，单表到几百万的时候，性能就会相对差一些了，你就得分表了。</p>
-<p>分表是啥意思？就是把一个表的数据放到多个表中，然后查询的时候你就查一个表。比如按照用户 id 来分表，将一个用户的数据就放在一个表中。然后操作的时候你对一个用户就操作那个表就好了。这样可以控制每个表的数据量在可控的范围内，比如每个表就固定在 200 万以内。</p>
-<h3 id="分库"><a href="#分库" class="headerlink" title="分库"></a>分库</h3><p>分库是啥意思？就是你一个库一般我们经验而言，最多支撑到并发 2000，一定要扩容了，而且一个健康的单库并发值你最好保持在每秒 1000 左右，不要太大。那么你可以将一个库的数据拆分到多个库中，访问的时候就访问一个库好了。</p>
-<h3 id="你们具体是如何对数据库如何进行垂直拆分或水平拆分的？"><a href="#你们具体是如何对数据库如何进行垂直拆分或水平拆分的？" class="headerlink" title="你们具体是如何对数据库如何进行垂直拆分或水平拆分的？"></a>你们具体是如何对数据库如何进行垂直拆分或水平拆分的？</h3><p>水平拆分的意思，就是把一个表的数据给弄到多个库的多个表里去，但是每个库的表结构都一样，只不过每个库表放的数据是不同的，所有库表的数据加起来就是全部数据。水平拆分的意义，就是将数据均匀放更多的库里，然后用多个库来扛更高的并发，还有就是用多个库的存储容量来进行扩容。<br><img src="https://ws1.sinaimg.cn/large/bb901a77gy1g7z0ny129ej20d608r745.jpg" alt=""></p>
-<p>垂直拆分的意思，就是把一个有很多字段的表给拆分成多个表，或者是多个库上去。每个库表的结构都不一样，每个库表都包含部分字段。一般来说，会将较少的访问频率很高的字段放到一个表里去，然后将较多的访问频率很低的字段放到另外一个表里去。因为数据库是有缓存的，你访问频率高的行字段越少，就可以在缓存里缓存更多的行，性能就越好。这个一般在表层面做的较多一些。<br><img src="https://ws1.sinaimg.cn/large/bb901a77gy1g7z0omhwbvj208w07fmwz.jpg" alt=""></p>
-<p>还有表层面的拆分，就是分表，将一个表变成 N 个表，就是让每个表的数据量控制在一定范围内，保证 SQL 的性能。否则单表数据量越大，SQL 性能就越差。一般是 200 万行左右，不要太多，但是也得看具体你怎么操作，也可能是 500 万，或者是 100 万。你的SQL越复杂，就最好让单表行数越少。</p>
-<p>而且这儿还有两种分库分表的方式：</p>
+      <h2 id="MySQL-读写分离？如何实现-MySQL-的读写分离？MySQL-主从复制原理的是啥？如何解决-MySQL-主从同步的延时问题？"><a href="#MySQL-读写分离？如何实现-MySQL-的读写分离？MySQL-主从复制原理的是啥？如何解决-MySQL-主从同步的延时问题？" class="headerlink" title="MySQL 读写分离？如何实现 MySQL 的读写分离？MySQL 主从复制原理的是啥？如何解决 MySQL 主从同步的延时问题？"></a>MySQL 读写分离？如何实现 MySQL 的读写分离？MySQL 主从复制原理的是啥？如何解决 MySQL 主从同步的延时问题？</h2><h3 id="如何实现-MySQL-的读写分离？"><a href="#如何实现-MySQL-的读写分离？" class="headerlink" title="如何实现 MySQL 的读写分离？"></a>如何实现 MySQL 的读写分离？</h3><p>其实很简单，就是基于主从复制架构，简单来说，就搞一个主库，挂多个从库，然后我们就单单只是写主库，然后主库会自动把数据给同步到从库上去。</p>
+<h3 id="MySQL-主从复制原理的是啥？"><a href="#MySQL-主从复制原理的是啥？" class="headerlink" title="MySQL 主从复制原理的是啥？"></a>MySQL 主从复制原理的是啥？</h3><p>主库将变更写入 binlog 日志，然后从库连接到主库之后，从库有一个 IO 线程，将主库的 binlog 日志拷贝到自己本地，写入一个 relay 中继日志中。接着从库中有一个 SQL 线程会从中继日志读取 binlog，然后执行 binlog 日志中的内容，也就是在自己本地再次执行一遍 SQL，这样就可以保证自己跟主库的数据是一样的。<br><img src="https://ws1.sinaimg.cn/large/bb901a77gy1g7z1v8c4wqj20jy0by749.jpg" alt=""></p>
+<p>这里有一个非常重要的一点，就是从库同步主库数据的过程是串行化的，也就是说主库上并行的操作，在从库上会串行执行。所以这就是一个非常重要的点了，由于从库从主库拷贝日志以及串行执行 SQL 的特点，在高并发场景下，从库的数据一定会比主库慢一些，是有延时的。所以经常出现，刚写入主库的数据可能是读不到的，要过几十毫秒，甚至几百毫秒才能读取到。</p>
+<p>而且这里还有另外一个问题，就是如果主库突然宕机，然后恰好数据还没同步到从库，那么有些数据可能在从库上是没有的，有些数据可能就丢失了。</p>
+<p>所以 MySQL 实际上在这一块有两个机制，一个是半同步复制，用来解决主库数据丢失问题；一个是并行复制，用来解决主从同步延时问题。</p>
+<p>这个所谓半同步复制，也叫 semi-sync 复制，指的就是主库写入 binlog 日志之后，就会将强制此时立即将数据同步到从库，从库将日志写入自己本地的 relay log 之后，接着会返回一个 ack 给主库，主库接收到至少一个从库的 ack 之后才会认为写操作完成了。</p>
+<p>所谓并行复制，指的是从库开启多个线程，并行读取 relay log 中不同库的日志，然后并行重放不同库的日志，这是库级别的并行。</p>
+<h3 id="MySQL-主从同步延时问题（精华）"><a href="#MySQL-主从同步延时问题（精华）" class="headerlink" title="MySQL 主从同步延时问题（精华）"></a>MySQL 主从同步延时问题（精华）</h3><p>以前线上确实处理过因为主从同步延时问题而导致的线上的 bug，属于小型的生产事故。</p>
+<p>是这个么场景。有个同学是这样写代码逻辑的。先插入一条数据，再把它查出来，然后更新这条数据。在生产环境高峰期，写并发达到了 2000/s，这个时候，主从复制延时大概是在小几十毫秒。线上会发现，每天总有那么一些数据，我们期望更新一些重要的数据状态，但在高峰期时候却没更新。用户跟客服反馈，而客服就会反馈给我们。</p>
+<p>我们通过 MySQL 命令：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">status</span></span><br></pre></td></tr></table></figure></p>
+<p>查看 Seconds_Behind_Master，可以看到从库复制主库的数据落后了几 ms。</p>
+<p>一般来说，如果主从延迟较为严重，有以下解决方案：</p>
 <ul>
-<li>一种是按照 range 来分，就是每个库一段连续的数据，这个一般是按比如时间范围来的，但是这种一般较少用，因为很容易产生热点问题，大量的流量都打在最新的数据上了。<br>或者是按照某个字段 hash 一下均匀分散，这个较为常用。</li>
-<li>range 来分，好处在于说，扩容的时候很简单，因为你只要预备好，给每个月都准备一个库就可以了，到了一个新的月份的时候，自然而然，就会写新的库了；缺点，但是大部分的请求，都是访问最新的数据。实际生产用 range，要看场景。</li>
+<li>分库，将一个主库拆分为多个主库，每个主库的写并发就减少了几倍，此时主从延迟可以忽略不计。</li>
+<li>打开 MySQL 支持的并行复制，多个库并行复制。如果说某个库的写入并发就是特别高，单库写并发达到了 2000/s，并行复制还是没意义。</li>
+<li>重写代码，写代码的同学，要慎重，插入数据时立马查询可能查不到。</li>
+<li>如果确实是存在必须先插入，立马要求就查询到，然后立马就要反过来执行一些操作，对这个查询设置直连主库。不推荐这种方法，你要是这么搞，读写分离的意义就丧失了。</li>
 </ul>
-<p>hash 分发，好处在于说，可以平均分配每个库的数据量和请求压力；坏处在于说扩容起来比较麻烦，会有一个数据迁移的过程，之前的数据需要重新计算 hash 值重新分配到不同的库或表。</p>
-<h2 id="现在有一个未分库分表的系统，未来要分库分表，如何设计才可以让系统从未分库分表动态切换到分库分表上？"><a href="#现在有一个未分库分表的系统，未来要分库分表，如何设计才可以让系统从未分库分表动态切换到分库分表上？" class="headerlink" title="现在有一个未分库分表的系统，未来要分库分表，如何设计才可以让系统从未分库分表动态切换到分库分表上？"></a>现在有一个未分库分表的系统，未来要分库分表，如何设计才可以让系统从未分库分表动态切换到分库分表上？</h2><p><strong>停机迁移方案</strong><br><img src="https://ws1.sinaimg.cn/large/bb901a77gy1g7z0qgxdnaj20nz0howeo.jpg" alt=""></p>
-<p><strong>双写迁移方案</strong><br>简单来说，就是在线上系统里面，之前所有写库的地方，增删改操作，除了对老库增删改，都加上对新库的增删改，这就是所谓的双写，同时写俩库，老库和新库。</p>
-<p>然后系统部署之后，新库数据差太远，用之前说的导数工具，跑起来读老库数据写新库，写的时候要根据 gmt_modified 这类字段判断这条数据最后修改的时间，除非是读出来的数据在新库里没有，或者是比新库的数据新才会写。简单来说，就是不允许用老数据覆盖新数据。</p>
-<p>导完一轮之后，有可能数据还是存在不一致，那么就程序自动做一轮校验，比对新老库每个表的每条数据，接着如果有不一样的，就针对那些不一样的，从老库读数据再次写。反复循环，直到两个库每个表的数据都完全一致为止。</p>
-<p>接着当数据完全一致了，就 ok 了，基于仅仅使用分库分表的最新代码，重新部署一次，不就仅仅基于分库分表在操作了么，还没有几个小时的停机时间，很稳。所以现在基本玩儿数据迁移之类的，都是这么干的。<br><img src="https://ws1.sinaimg.cn/large/bb901a77gy1g7z0ru7bx4j20o00idq39.jpg" alt=""></p>
-<h2 id="如何设计可以动态扩容缩容的分库分表方案？"><a href="#如何设计可以动态扩容缩容的分库分表方案？" class="headerlink" title="如何设计可以动态扩容缩容的分库分表方案？"></a>如何设计可以动态扩容缩容的分库分表方案？</h2><p>一开始上来就是 32 个库，每个库 32 个表，那么总共是 1024 张表。</p>
-<p>我可以告诉各位同学，这个分法，第一，基本上国内的互联网肯定都是够用了，第二，无论是并发支撑还是数据量支撑都没问题。</p>
-<p>每个库正常承载的写入并发量是 1000，那么 32 个库就可以承载 32 <em> 1000 = 32000 的写并发，如果每个库承载 1500 的写并发，32 </em> 1500 = 48000 的写并发，接近 5 万每秒的写入并发，前面再加一个MQ，削峰，每秒写入 MQ 8 万条数据，每秒消费 5 万条数据。</p>
-<p>有些除非是国内排名非常靠前的这些公司，他们的最核心的系统的数据库，可能会出现几百台数据库的这么一个规模，128 个库，256 个库，512 个库。</p>
-<p>1024 张表，假设每个表放 500 万数据，在 MySQL 里可以放 50 亿条数据。</p>
-<p>每秒 5 万的写并发，总共 50 亿条数据，对于国内大部分的互联网公司来说，其实一般来说都够了。</p>
-<p>谈分库分表的扩容，第一次分库分表，就一次性给他分个够，32 个库，1024 张表，可能对大部分的中小型互联网公司来说，已经可以支撑好几年了。</p>
-<p>一个实践是利用 32 * 32 来分库分表，即分为 32 个库，每个库里一个表分为 32 张表。一共就是 1024 张表。根据某个 id 先根据 32 取模路由到库，再根据 32 取模路由到库里的表。</p>
-<table>
-<thead>
-<tr>
-<th>orderId</th>
-<th>id % 32 (库)</th>
-<th>id / 32 % 32 (表)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>259</td>
-<td>3</td>
-<td>8</td>
-</tr>
-<tr>
-<td>1189</td>
-<td>5</td>
-<td>5</td>
-</tr>
-<tr>
-<td>352</td>
-<td>0</td>
-<td>11</td>
-</tr>
-<tr>
-<td>4593</td>
-<td>17</td>
-<td>15</td>
-</tr>
-</tbody>
-</table>
-<p>刚开始的时候，这个库可能就是逻辑库，建在一个数据库上的，就是一个 mysql 服务器可能建了 n 个库，比如 32 个库。后面如果要拆分，就是不断在库和 mysql 服务器之间做迁移就可以了。然后系统配合改一下配置即可。</p>
-<p>比如说最多可以扩展到 32 个数据库服务器，每个数据库服务器是一个库。如果还是不够？最多可以扩展到 1024 个数据库服务器，每个数据库服务器上面一个库一个表。因为最多是 1024 个表。</p>
-<p>这么搞，是不用自己写代码做数据迁移的，都交给 dba 来搞好了，但是 dba 确实是需要做一些库表迁移的工作，但是总比你自己写代码，然后抽数据导数据来的效率高得多吧。</p>
-<p>哪怕是要减少库的数量，也很简单，其实说白了就是按倍数缩容就可以了，然后修改一下路由规则。</p>
-<p>这里对步骤做一个总结：</p>
-<ul>
-<li>设定好几台数据库服务器，每台服务器上几个库，每个库多少个表，推荐是 32 库 * 32 表，对于大部分公司来说，可能几年都够了。</li>
-<li>路由的规则，orderId 模 32 = 库，orderId / 32 模 32 = 表</li>
-<li>扩容的时候，申请增加更多的数据库服务器，装好 mysql，呈倍数扩容，4 台服务器，扩到 8 台服务器，再到 16 台服务器。</li>
-<li>由 dba 负责将原先数据库服务器的库，迁移到新的数据库服务器上去，库迁移是有一些便捷的工具的。</li>
-<li>我们这边就是修改一下配置，调整迁移的库所在数据库服务器的地址。</li>
-<li>重新发布系统，上线，原先的路由规则变都不用变，直接可以基于 n 倍的数据库服务器的资源，继续进行线上系统的提供服务。</li>
-</ul>
-<h2 id="分库分表之后，id-主键如何处理？"><a href="#分库分表之后，id-主键如何处理？" class="headerlink" title="分库分表之后，id 主键如何处理？"></a>分库分表之后，id 主键如何处理？</h2><h3 id="基于数据库的实现方案"><a href="#基于数据库的实现方案" class="headerlink" title="基于数据库的实现方案"></a>基于数据库的实现方案</h3><h4 id="数据库自增-id"><a href="#数据库自增-id" class="headerlink" title="数据库自增 id"></a>数据库自增 id</h4><p>这个就是说你的系统里每次得到一个 id，都是往一个库的一个表里插入一条没什么业务含义的数据，然后获取一个数据库自增的一个 id。拿到这个 id 之后再往对应的分库分表里去写入。</p>
-<p>这个方案的好处就是方便简单，谁都会用；缺点就是单库生成自增 id，要是高并发的话，就会有瓶颈的；如果你硬是要改进一下，那么就专门开一个服务出来，这个服务每次就拿到当前 id 最大值，然后自己递增几个 id，一次性返回一批 id，然后再把当前最大 id 值修改成递增几个 id 之后的一个值；但是无论如何都是基于单个数据库。</p>
-<p>适合的场景：你分库分表就俩原因，要不就是单库并发太高，要不就是单库数据量太大；除非是你并发不高，但是数据量太大导致的分库分表扩容，你可以用这个方案，因为可能每秒最高并发最多就几百，那么就走单独的一个库和表生成自增主键即可。</p>
-<h4 id="设置数据库-sequence-或者表自增字段步长"><a href="#设置数据库-sequence-或者表自增字段步长" class="headerlink" title="设置数据库 sequence 或者表自增字段步长"></a>设置数据库 sequence 或者表自增字段步长</h4><p>设置数据库 sequence 或者表自增字段步长<br>可以通过设置数据库 sequence 或者表的自增字段步长来进行水平伸缩。</p>
-<p>比如说，现在有 8 个服务节点，每个服务节点使用一个 sequence 功能来产生 ID，每个 sequence 的起始 ID 不同，并且依次递增，步长都是 8。<br><img src="https://ws1.sinaimg.cn/large/bb901a77gy1g7z179rhraj20bn0cu3yk.jpg" alt=""></p>
-<p>适合的场景：在用户防止产生的 ID 重复时，这种方案实现起来比较简单，也能达到性能目标。但是服务节点固定，步长也固定，将来如果还要增加服务节点，就不好搞了。</p>
-<h3 id="UUID"><a href="#UUID" class="headerlink" title="UUID"></a>UUID</h3><p>好处就是本地生成，不要基于数据库来了；不好之处就是，UUID 太长了、占用空间大，作为主键性能太差了；更重要的是，UUID 不具有有序性，会导致 B+ 树索引在写的时候有过多的随机写操作（连续的 ID 可以产生部分顺序写），还有，由于在写的时候不能产生有顺序的 append 操作，而需要进行 insert 操作，将会读取整个 B+ 树节点到内存，在插入这条记录后会将整个节点写回磁盘，这种操作在记录占用空间比较大的情况下，性能下降明显。</p>
-<p>适合的场景：如果你是要随机生成个什么文件名、编号之类的，你可以用 UUID，但是作为主键是不能用 UUID 的。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">UUID.randomUUID().toString().replace(“-”, “”) -&gt; sfsdf23423rr234sfdaf</span><br></pre></td></tr></table></figure></p>
-<h3 id="获取系统当前时间"><a href="#获取系统当前时间" class="headerlink" title="获取系统当前时间"></a>获取系统当前时间</h3><p>这个就是获取当前时间即可，但是问题是，并发很高的时候，比如一秒并发几千，会有重复的情况，这个是肯定不合适的。基本就不用考虑了。</p>
-<p>适合的场景：一般如果用这个方案，是将当前时间跟很多其他的业务字段拼接起来，作为一个 id，如果业务上你觉得可以接受，那么也是可以的。你可以将别的业务字段值跟当前时间拼接起来，组成一个全局唯一的编号。</p>
-<h3 id="snowflake-算法"><a href="#snowflake-算法" class="headerlink" title="snowflake 算法"></a>snowflake 算法</h3><p>snowflake 算法是 twitter 开源的分布式 id 生成算法，采用 Scala 语言实现，是把一个 64 位的 long 型的 id，1 个 bit 是不用的，用其中的 41 bit 作为毫秒数，用 10 bit 作为工作机器 id，12 bit 作为序列号。</p>
-<ul>
-<li>1 bit：不用，为啥呢？因为二进制里第一个 bit 为如果是 1，那么都是负数，但是我们生成的 id 都是正数，所以第一个 bit 统一都是 0。</li>
-<li>41 bit：表示的是时间戳，单位是毫秒。41 bit 可以表示的数字多达 2^41 - 1，也就是可以标识 2^41 - 1 个毫秒值，换算成年就是表示69年的时间。</li>
-<li>10 bit：记录工作机器 id，代表的是这个服务最多可以部署在 2^10台机器上哪，也就是1024台机器。但是 10 bit 里 5 个 bit 代表机房 id，5 个 bit 代表机器 id。意思就是最多代表 2^5个机房（32个机房），每个机房里可以代表 2^5 个机器（32台机器）。</li>
-<li>12 bit：这个是用来记录同一个毫秒内产生的不同 id，12 bit 可以代表的最大正整数是 2^12 - 1 = 4096，也就是说可以用这个 12 bit 代表的数字来区分同一个毫秒内的 4096 个不同的 id。</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0 | 0001100 10100010 10111110 10001001 01011100 00 | 10001 | 1 1001 | 0000 00000000</span><br></pre></td></tr></table></figure>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">IdWorker</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> workerId;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> datacenterId;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> sequence;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">IdWorker</span><span class="params">(<span class="keyword">long</span> workerId, <span class="keyword">long</span> datacenterId, <span class="keyword">long</span> sequence)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// sanity check for workerId</span></span><br><span class="line">        <span class="comment">// 这儿不就检查了一下，要求就是你传递进来的机房id和机器id不能超过32，不能小于0</span></span><br><span class="line">        <span class="keyword">if</span> (workerId &gt; maxWorkerId || workerId &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(</span><br><span class="line">                    String.format(<span class="string">"worker Id can't be greater than %d or less than 0"</span>, maxWorkerId));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (datacenterId &gt; maxDatacenterId || datacenterId &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(</span><br><span class="line">                    String.format(<span class="string">"datacenter Id can't be greater than %d or less than 0"</span>, maxDatacenterId));</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.printf(</span><br><span class="line">                <span class="string">"worker starting. timestamp left shift %d, datacenter id bits %d, worker id bits %d, sequence bits %d, workerid %d"</span>,</span><br><span class="line">                timestampLeftShift, datacenterIdBits, workerIdBits, sequenceBits, workerId);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">this</span>.workerId = workerId;</span><br><span class="line">        <span class="keyword">this</span>.datacenterId = datacenterId;</span><br><span class="line">        <span class="keyword">this</span>.sequence = sequence;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> twepoch = <span class="number">1288834974657L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> workerIdBits = <span class="number">5L</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> datacenterIdBits = <span class="number">5L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 这个是二进制运算，就是 5 bit最多只能有31个数字，也就是说机器id最多只能是32以内</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> maxWorkerId = -<span class="number">1L</span> ^ (-<span class="number">1L</span> &lt;&lt; workerIdBits);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 这个是一个意思，就是 5 bit最多只能有31个数字，机房id最多只能是32以内</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> maxDatacenterId = -<span class="number">1L</span> ^ (-<span class="number">1L</span> &lt;&lt; datacenterIdBits);</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> sequenceBits = <span class="number">12L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> workerIdShift = sequenceBits;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> datacenterIdShift = sequenceBits + workerIdBits;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> timestampLeftShift = sequenceBits + workerIdBits + datacenterIdBits;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> sequenceMask = -<span class="number">1L</span> ^ (-<span class="number">1L</span> &lt;&lt; sequenceBits);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> lastTimestamp = -<span class="number">1L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">getWorkerId</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> workerId;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">getDatacenterId</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> datacenterId;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">getTimestamp</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> System.currentTimeMillis();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">long</span> <span class="title">nextId</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 这儿就是获取当前时间戳，单位是毫秒</span></span><br><span class="line">        <span class="keyword">long</span> timestamp = timeGen();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (timestamp &lt; lastTimestamp) &#123;</span><br><span class="line">            System.err.printf(<span class="string">"clock is moving backwards.  Rejecting requests until %d."</span>, lastTimestamp);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(String.format(</span><br><span class="line">                    <span class="string">"Clock moved backwards.  Refusing to generate id for %d milliseconds"</span>, lastTimestamp - timestamp));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (lastTimestamp == timestamp) &#123;</span><br><span class="line">            <span class="comment">// 这个意思是说一个毫秒内最多只能有4096个数字</span></span><br><span class="line">            <span class="comment">// 无论你传递多少进来，这个位运算保证始终就是在4096这个范围内，避免你自己传递个sequence超过了4096这个范围</span></span><br><span class="line">            sequence = (sequence + <span class="number">1</span>) &amp; sequenceMask;</span><br><span class="line">            <span class="keyword">if</span> (sequence == <span class="number">0</span>) &#123;</span><br><span class="line">                timestamp = tilNextMillis(lastTimestamp);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            sequence = <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这儿记录一下最近一次生成id的时间戳，单位是毫秒</span></span><br><span class="line">        lastTimestamp = timestamp;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 这儿就是将时间戳左移，放到 41 bit那儿；</span></span><br><span class="line">        <span class="comment">// 将机房 id左移放到 5 bit那儿；</span></span><br><span class="line">        <span class="comment">// 将机器id左移放到5 bit那儿；将序号放最后12 bit；</span></span><br><span class="line">        <span class="comment">// 最后拼接起来成一个 64 bit的二进制数字，转换成 10 进制就是个 long 型</span></span><br><span class="line">        <span class="keyword">return</span> ((timestamp - twepoch) &lt;&lt; timestampLeftShift) | (datacenterId &lt;&lt; datacenterIdShift)</span><br><span class="line">                | (workerId &lt;&lt; workerIdShift) | sequence;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">long</span> <span class="title">tilNextMillis</span><span class="params">(<span class="keyword">long</span> lastTimestamp)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> timestamp = timeGen();</span><br><span class="line">        <span class="keyword">while</span> (timestamp &lt;= lastTimestamp) &#123;</span><br><span class="line">            timestamp = timeGen();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> timestamp;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">long</span> <span class="title">timeGen</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> System.currentTimeMillis();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ---------------测试---------------</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        IdWorker worker = <span class="keyword">new</span> IdWorker(<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">30</span>; i++) &#123;</span><br><span class="line">            System.out.println(worker.nextId());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>就是说 41 bit 是当前毫秒单位的一个时间戳，就这意思；然后 5 bit 是你传递进来的一个机房 id（但是最大只能是 32 以内），另外 5 bit 是你传递进来的机器 id（但是最大只能是 32 以内），剩下的那个 12 bit序列号，就是如果跟你上次生成 id 的时间还在一个毫秒内，那么会把顺序给你累加，最多在 4096 个序号以内。</p>
-<p>所以你自己利用这个工具类，自己搞一个服务，然后对每个机房的每个机器都初始化这么一个东西，刚开始这个机房的这个机器的序号就是 0。然后每次接收到一个请求，说这个机房的这个机器要生成一个 id，你就找到对应的 Worker 生成。</p>
-<p>利用这个 snowflake 算法，你可以开发自己公司的服务，甚至对于机房 id 和机器 id，反正给你预留了 5 bit + 5 bit，你换成别的有业务含义的东西也可以的。</p>
-<p>这个 snowflake 算法相对来说还是比较靠谱的，所以你要真是搞分布式 id 生成，如果是高并发啥的，那么用这个应该性能比较好，一般每秒几万并发的场景，也足够你用了。</p>
 
     
   </div>
@@ -201,7 +127,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 11.43px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Structure/" style="font-size: 10px;">Structure</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 11.43px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/English/" style="font-size: 10px;">English</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/Interview/" style="font-size: 10px;">Interview</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Structure/" style="font-size: 10px;">Structure</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -210,6 +136,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/28/my-english-interview/">英文简历速记</a>
+      </li>
     
       <li>
         <a href="/2019/11/28/common-data-structure/">数据结构</a>
@@ -225,10 +155,6 @@
     
       <li>
         <a href="/2019/11/09/distribut-concurrent-programmer-design/">秒杀系统设计</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
       </li>
     
   </ul>

@@ -59,220 +59,112 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/09/19/zookeeper-principle/">
-  <time datetime="2019-09-19T08:00:55.000Z">
-    2019-09-19
+      <a href="/2019/10/09/distribut-dubbo/">
+  <time datetime="2019-10-09T02:19:25.000Z">
+    2019-10-09
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/09/19/zookeeper-principle/">Zookeeper:分布式过程协同技术详解</a></h1>
+    <h1 class="title"><a href="/2019/10/09/distribut-dubbo/">dubbo疑难杂症解惑</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <h2 id="Zookeeper的使命"><a href="#Zookeeper的使命" class="headerlink" title="Zookeeper的使命"></a>Zookeeper的使命</h2><p>Zookeeper主要作用为在分布式系统中协调多个任务，一个任务可以是协作或者是竞争。协作意味着多个进程需要一同处理某些事情，一些进程采取某些行动使得其他进程可以继续工作，例如在主从模式中，主节点与从节点协作，主节点分配任务给从节点；竞争是指两个进程不能同时处理工作，一个进程必须等待另一个进程，同样在主从工作模式中，通过互斥排它锁的方式保证任何时刻只有一个主。</p>
-<p>使用Zookeeper的应用包括如下几个大家非常熟悉的系统：</p>
-<ul>
-<li>Apache HBase</li>
-<li>Apache Kafka</li>
-<li>Apache Solr</li>
-<li>…</li>
+      <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><ul>
+<li>说一下的 dubbo 的工作原理？注册中心挂了可以继续通信吗？</li>
+<li>dubbo 支持哪些序列化协议？说一下 hessian 的数据结构？PB 知道吗？为什么 PB 的效率是最高的？</li>
+<li>dubbo 负载均衡策略和高可用策略都有哪些？动态代理策略呢？</li>
+<li>dubbo 的 spi 思想是什么？</li>
+<li>如何基于 dubbo 进行服务治理、服务降级、失败重试以及超时重试？</li>
+<li>分布式服务接口的幂等性如何设计（比如不能重复扣款）？</li>
+<li>分布式服务接口请求的顺序性如何保证？</li>
+<li>如何自己设计一个类似 dubbo 的 rpc 框架？</li>
 </ul>
-<p>除了上述应用之外，还有很多使用Zookeeper的例子。我们在使用Zookeeper的时候，往往都是通过Zookeeper客户端暴露的API来使用的，Zookeeper的客户端API功能强大，其中包括：</p>
+<h2 id="dubbo-工作流程"><a href="#dubbo-工作流程" class="headerlink" title="dubbo 工作流程"></a>dubbo 工作流程</h2><p><img src="https://s2.ax1x.com/2019/10/09/u4UzqI.png" alt=""></p>
+<p>注册中心挂了可以继续通信吗？<br>可以，因为刚开始初始化的时候，消费者会将提供者的地址等信息拉取到本地缓存，所以注册中心挂了可以继续通信。</p>
+<h2 id="dubbo-支持不同的通信协议"><a href="#dubbo-支持不同的通信协议" class="headerlink" title="dubbo 支持不同的通信协议"></a>dubbo 支持不同的通信协议</h2><p><strong>dubbo 协议</strong><br>默认就是走 dubbo 协议，单一长连接，进行的是 NIO 异步通信，基于 hessian 作为序列化协议。使用的场景是：传输数据量小（每次请求在 100kb 以内），但是并发量很高。</p>
+<p>为了要支持高并发场景，一般是服务提供者就几台机器，但是服务消费者有上百台，可能每天调用量达到上亿次！此时用长连接是最合适的，就是跟每个服务消费者维持一个长连接就可以，可能总共就 100 个连接。然后后面直接基于长连接 NIO 异步通信，可以支撑高并发请求。</p>
+<p>长连接，通俗点说，就是建立连接过后可以持续发送请求，无须再建立连接。</p>
+<p><strong>rmi 协议</strong><br>走 Java 二进制序列化，多个短连接，适合消费者和提供者数量差不多的情况，适用于文件的传输，一般较少用。</p>
+<p><strong>hessian 协议</strong><br>走 hessian 序列化协议，多个短连接，适用于提供者数量比消费者数量还多的情况，适用于文件的传输，一般较少用。</p>
+<p><strong>http 协议</strong><br>走 json 序列化。</p>
+<p><strong>webservice</strong><br>走 SOAP 文本序列化。</p>
+<p>dubbo 支持的序列化协议<br>dubbo 支持 hession、Java 二进制序列化、json、SOAP 文本序列化多种序列化协议。但是 hessian 是其默认的序列化协议。</p>
+<p><strong>为什么 PB 的效率是最高的？</strong></p>
 <ul>
-<li>保障强一致性、有序性和持久性</li>
-<li>实现通用的同步原语的能力</li>
-<li>在实际分布式系统中，并发往往导致不正确的行为，Zookeeper提供了一种简单的并发处理机制</li>
+<li>第一，它使用 proto 编译器，自动进行序列化和反序列化，速度非常快，应该比 XML 和 JSON 快上了 20~100 倍；</li>
+<li>第二，它的数据压缩效果好，就是说它序列化后的数据量体积小。因为体积小，传输起来带宽和速度上会有优化。</li>
 </ul>
-<h2 id="Zookeeper不适用的场景"><a href="#Zookeeper不适用的场景" class="headerlink" title="Zookeeper不适用的场景"></a>Zookeeper不适用的场景</h2><p>Zookeeper应该用来管理分布式应用的协作关键数据，这些数据一般都是精且少的，Zookeeper不适合用作海量数据存储。在实际应用中，建议将协同数据和应用数据分开，协同数据可以使用Zookeeper，而应用数据则可以考虑数据库或者分布式文件系统等存储方案。</p>
-<h2 id="关于Apache项目"><a href="#关于Apache项目" class="headerlink" title="关于Apache项目"></a>关于Apache项目</h2><p>Zookeeper是一个托管到Apache软件基金会的开源项目，Apache的项目管理委员会负责项目管理和监督。只有技术专家可以检查补丁，但任何开发人员都可以贡献补丁。</p>
-<h2 id="通过Zookeeper构建分布式系统"><a href="#通过Zookeeper构建分布式系统" class="headerlink" title="通过Zookeeper构建分布式系统"></a>通过Zookeeper构建分布式系统</h2><p>我们采用分布式设计系统有很多原因，分布式系统能够利用多处理器的运算能力来运行组件，比如并行复制任务。一个系统也许需要分布在不同的地点，比如一个应用由多个不同地点的服务器提供服务。</p>
-<p>在分布式系统中，我们需要特别注意以下问题：</p>
+<h2 id="dubbo-负载均衡-amp-集群容错"><a href="#dubbo-负载均衡-amp-集群容错" class="headerlink" title="dubbo 负载均衡&amp;集群容错"></a>dubbo 负载均衡&amp;集群容错</h2><ul>
+<li><p>random loadbalance<br>默认情况下，dubbo 是 random load balance ，即随机调用实现负载均衡，可以对 provider 不同实例设置不同的权重，会按照权重来负载均衡，权重越大分配流量越高，一般就用这个默认的就可以了。</p>
+</li>
+<li><p>roundrobin loadbalance<br>这个的话默认就是均匀地将流量打到各个机器上去，但是如果各个机器的性能不一样，容易导致性能差的机器负载过高。所以此时需要调整权重，让性能差的机器承载权重小一些，流量少一些。</p>
+</li>
+<li><p>leastactive loadbalance<br>这个就是自动感知一下，如果某个机器性能越差，那么接收的请求越少，越不活跃，此时就会给不活跃的性能差的机器更少的请求。</p>
+</li>
+<li><p>consistanthash loadbalance<br>一致性 Hash 算法，相同参数的请求一定分发到一个 provider 上去，provider 挂掉的时候，会基于虚拟节点均匀分配剩余的流量，抖动不会太大。如果你需要的不是随机负载均衡，是要一类请求都到一个节点，那就走这个一致性 Hash 策略。</p>
+</li>
+</ul>
+<p><strong>集群容错策略</strong></p>
 <ul>
-<li>消息延迟：消息传输可能会发生任意延迟，比如因为网络拥堵。这种延迟可能会导致不可预期的后果，比如进程P先发送了一个消息，之后另一个进程Q发送了消息，但是也许进程Q的消息先完成传送。</li>
-<li>处理器性能：当一个进程向另一个进程发送消息时，整个消息的延迟时间约等于发送端消耗的时间、传输时间、接收端的处理时间的总和，因此操作系统的调度和超载也可能会导致消息处理的延迟。</li>
-<li>时钟偏移：使用时间概念的系统并不少见，比如确定某一时间系统中发生了哪些事件。但处理器时钟并不可靠，它们之间也会发生任意的偏移，依赖处理器时钟也许会导致错误的决策。<br>这些问题导致一个结果，那就是在实际情况中我们很难判断一个进程是崩溃了还是某些因素导致了延时。</li>
+<li>failover cluster 模式<br>失败自动切换，自动重试其他机器，默认就是这个，常见于读操作。（失败重试其它机器）</li>
 </ul>
-<p>Zookeeper的精确设计简化了这些问题的处理，它实现了重要的分布式计算问题的解决方案，为开发人员提供了某种程度的封装，减轻了我们的开发。</p>
-<h2 id="Zookeeper基础"><a href="#Zookeeper基础" class="headerlink" title="Zookeeper基础"></a>Zookeeper基础</h2><p>分布式协作通常需要暴露一些原语，例如分布式锁机制需要提供创建（create）、获取（acquire）和释放（release）等原语。但作为分布式协调中间件来说，提供原语有两个缺点：1）分布式协作有很多种类，要么提供一份详尽的原语列表，要么时刻保持原语的更新；2）这种以原语提供服务的方式缺乏灵活性。</p>
-<p>因此，Zookeeper另辟蹊径，它不直接暴露原语，而是通过提供类似于文件系统的方式允许应用实现自己的原语。Zookeeper主要维护一个树形的数据结构，结构中的节点被称为znode。下图描述了一个znode树的结构，根节点包含4个子节点，其中三个子节点拥有下一个节点，叶子节点存储了数据信息。</p>
-<p><img src="https://s2.ax1x.com/2019/09/19/nLCdYQ.png" alt=""></p>
-<h2 id="API概述"><a href="#API概述" class="headerlink" title="API概述"></a>API概述</h2><p>znode节点可以含有数据，也可以没有。如果一个znode节点包含数据的话，那么数据是以字节数组的形式来存储。字节数组的具体格式依赖于应用本身的实现，Zookeeper不直接提供解析的支持，应用可以使用如Protocol Buffer、Thrift、Avro或MessagePack等序列化包来处理保存于znode节点的数据，但往往UTF-8或ASCII编码的字符串已经够用了。</p>
-<p>Zookeeper的API提供了如下操作：</p>
+<p>可以通过以下几种方式配置重试次数：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:service</span> <span class="attr">retries</span>=<span class="string">"2"</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>或者<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">retries</span>=<span class="string">"2"</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>或者<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dubbo:method</span> <span class="attr">name</span>=<span class="string">"findFoo"</span> <span class="attr">retries</span>=<span class="string">"2"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dubbo:reference</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
 <ul>
-<li>create /path data：创建一个名为/path的znode节点，并包含data数据</li>
-<li>delete /path：删除名为/path的znode</li>
-<li>exists /path：检查是否存在名为/path的节点</li>
-<li>setData /path data：设置名为/path的znode的数据为data</li>
-<li>getData /path：返回名为/path节点的数据</li>
-<li>getChildren /path：返回/path节点的子节点列表</li>
+<li><p>failfast cluster 模式<br>一次调用失败就立即失败，常见于非幂等性的写操作，比如新增一条记录（调用失败就立即失败）</p>
+</li>
+<li><p>failsafe cluster 模式<br>出现异常时忽略掉，常用于不重要的接口调用，比如记录日志。</p>
+</li>
 </ul>
-<p>需要注意的是，Zookeeper并不允许局部的写入或读取，当进行数据读写时，znode的内容会被整个替换或读取出来。</p>
-<h2 id="znode的不同类型"><a href="#znode的不同类型" class="headerlink" title="znode的不同类型"></a>znode的不同类型</h2><p>当新建znode时，需要指定该节点的类型，不同的类型决定了znode节点的行为方式。</p>
-<h3 id="持久节点和临时节点"><a href="#持久节点和临时节点" class="headerlink" title="持久节点和临时节点"></a>持久节点和临时节点</h3><p>znode节点可以是持久（persistent）节点或者临时（ephemeral）节点。持久节点只能通过delete调用来进行删除，而临时节点在客户端崩溃或者关闭连接时也会被删除。</p>
-<p>持久节点可以为应用保存数据，即使其创建者不再存活，数据也可以保存下来而不丢失。而临时节点传达了应用某些方面的信息，那就是仅当创建者的会话有效时这些信息必须有效保存。例如在主从模式的例子中，master创建的znode可以为临时节点，当该节点存在时意味着当前存在一个master并且它正常运行中；如果master对应的临时节点消失，那意味着主节点崩溃了，其他备份节点可以接替原master。</p>
-<h3 id="有序节点"><a href="#有序节点" class="headerlink" title="有序节点"></a>有序节点</h3><p>一个znode还可以设置为有序（sequential）节点，一个有序的znode会被分配唯一的单调递增的整数。当创建有序节点时，一个序号会被追加到路径之后。例如创建一个有序znode节点，其路径为/tasks/task-，那么Zookeeper将会分配一个序号，如1，并将这个数字追加到路径之后，最后该节点为/tasks/task-1。</p>
-<p>总之，znode一共有4种类型：</p>
+<p>配置示例如下：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:service</span> <span class="attr">cluster</span>=<span class="string">"failsafe"</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>或者<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">cluster</span>=<span class="string">"failsafe"</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
 <ul>
-<li>持久的（persistent）</li>
-<li>临时的（ephemeral）</li>
-<li>持久且有序的（persistent_sequential）</li>
-<li>临时且有序的（ephemeral_sequential）</li>
+<li><p>failback cluster 模式<br>失败了后台自动记录请求，然后定时重发，比较适合于写消息队列这种。</p>
+</li>
+<li><p>forking cluster 模式<br>并行调用多个 provider，只要一个成功就立即返回。常用于实时性要求比较高的读操作，但是会浪费更多的服务资源，可通过 forks=”2” 来设置最大并行数。</p>
+</li>
+<li><p>broadcacst cluster<br>逐个调用所有的 provider。任何一个 provider 出错则报错（从2.1.0 版本开始支持）。通常用于通知所有提供者更新缓存或日志等本地资源信息。</p>
+</li>
 </ul>
-<h2 id="监视与通知"><a href="#监视与通知" class="headerlink" title="监视与通知"></a>监视与通知</h2><p>轮询通常代价比较大，考虑下面这个例子，第二次调用getChildren /tasks返回了相同的值，也就是一个空的集合，但这个调用其实是没必要的。<br><img src="https://s2.ax1x.com/2019/09/19/nLP6gA.png" alt=""></p>
-<p>因此Zookeeper提供了基于通知（notification）的机制：客户端向Zookeeper对某个znode设置监视点（watch），当该znode发生变更时会触发一个通知。但监视点是单次触发的，触发之后需要重新设置新的监视点。下图是使用监视点的示意图：<br><img src="https://s2.ax1x.com/2019/09/19/nLPHvn.png" alt=""></p>
-<p>客户端可以设置多种监视点：</p>
-<ul>
-<li>监听znode的数据变化</li>
-<li>监听znode子节点的变化</li>
-<li>监听znode的创建或删除</li>
-</ul>
-<p>另外值得注意的是，Zookeeper并没有提供单独设置监视点的API，而是将设置监视点作为可选特性放置在读操作中（例如getData、getChildren、exists等）。</p>
-<h2 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h2><p>每一个znode都有一个版本号，它随着每次数据变化而自增。Zookeeper提供两个条件执行的API操作：setDate和delete。这两个调用可以传入特定版本号，只有传入的版本号与服务器的版本号一致时调用才会成功。当多个Zookeeper客户端对同一个znode进行并发操作时，版本号的使用尤其重要。下图描述了这种并发操作的情况：<br><img src="https://s2.ax1x.com/2019/09/19/nLPjET.png" alt=""></p>
-<h2 id="Zookeeper的架构"><a href="#Zookeeper的架构" class="headerlink" title="Zookeeper的架构"></a>Zookeeper的架构</h2><p>应用通过Zookeeper的客户端库来与Zookeeper的服务端进行交互，如下所示：<br><img src="https://s2.ax1x.com/2019/09/19/nLi929.png" alt=""></p>
-<p>Zookeeper服务器有两种运行模式：独立模式（standalone）和仲裁模式（quorum）。独立模式指只有一个单独的服务器，Zookeeper状态无法复制；而仲裁模式包含一组Zookeeper服务器，称为Zookeeper集合（Zookeeper resemble），它们之间可以进行状态复制，并同时服务于客户端的请求。</p>
-<h2 id="Zookeeper的仲裁"><a href="#Zookeeper的仲裁" class="headerlink" title="Zookeeper的仲裁"></a>Zookeeper的仲裁</h2><p>在仲裁模式下，Zookeeper将状态树复制在集群的所有服务器上。但如果客户端需要等待每个服务器都保存数据后才继续，那么延迟将会无法忍受。因此Zookeeper需要设置仲裁的法定人数，这个数字是Zookeeper集群正常运行的最小有效服务器的数量，也是客户端在更新数据时需要成功保存的服务器个数。例如集群有5台Zookeeper服务器，而法定人数为3，那么任何时候只要3台服务器保存了更新，那么客户端就更新成功。</p>
-<p>如果法定人数小于或等于总数量的一半，那么会出现脑裂的问题。假设有5个服务器并且法定人数为2，现在有一个创建znode（假设路径为/z）的请求，服务器s1和s2保存了这个更新，Zookeeper返回给客户端调用成功；但在s1和s2将更新复制到集群中其他服务器前，s1和s2同时与其他服务器和客户端发生了网络分区。在这个场景下整个服务还是标识为正常的，因为法定人数为2，但这3个服务器将会丢失/z这个znode节点。因此为了正常工作，法定人数需要遵循多数原则，需要设置为超过总数量的一半。为了正常工作，有5台Zookeeper服务器的集合中至少要有3台正常运行的服务器；而且客户端在更新时，必须至少在3台服务器上更新成功。</p>
-<p>有意思的是，Zookeeper集合的数量如无意外都是奇数的。假如集合个数为4，那么遵循多数原则法定人数为3，那么这个集合只能容许1台机器故障，但对于每个请求却需要3台服务器更新成功，也就是说造成更新延迟更大却无法提供更好的故障容忍。也就是说，集合数为4的话，那么还不如减少1台，变成3。</p>
-<h2 id="会话"><a href="#会话" class="headerlink" title="会话"></a>会话</h2><p>会话（session）在Zookeeper中是一个非常重要的概念，当客户端创建一个Zookeeper句柄时，Zookeeper服务就会为其建立一个会话；客户端初始连接到集合中的某一台服务器，如果客户端后续无法连接到该服务器时，会话可能会转移到另一台服务器。当然这个转移是Zookeeper客户端本身完成的。</p>
-<p>会话提供了有序性，也就是说同一个会话中的请求会以先进先出（FIFO）顺序执行。通常客户端只打开一个会话，当然也可以打开多个会话，但需要注意的是，多个并发会话之间的顺序是无法保证的。</p>
-<h2 id="顺序的保障"><a href="#顺序的保障" class="headerlink" title="顺序的保障"></a>顺序的保障</h2><p>在使用Zookeeper实现我们的应用时，我们需要牢记一些很重要的设计顺序性的事项。</p>
-<h3 id="写操作的顺序"><a href="#写操作的顺序" class="headerlink" title="写操作的顺序"></a>写操作的顺序</h3><p>Zookeeper将状态变更复制到集群中所有的服务器，服务器会按照相同的顺序来执行状态变更。例如，一个Zookeeper服务器先执行修改/z这个节点数据的变更，然后执行删除/z节点的变更，那么所有在集合中的服务器都需要按照相同的顺序来执行变更。但是Zookeeper集合的服务器不需要同时执行这些变更，它们只需要按照相同的顺序执行即可。</p>
-<h3 id="读操作的顺序"><a href="#读操作的顺序" class="headerlink" title="读操作的顺序"></a>读操作的顺序</h3><p>Zookeeper客户端总是会观察到相同的更新顺序，即使它们连接到不同的服务端上，但是客户端可能在不同的时间点观察到了更新。</p>
-<h2 id="监视点的羊群效应"><a href="#监视点的羊群效应" class="headerlink" title="监视点的羊群效应"></a>监视点的羊群效应</h2><p>有一个问题需要注意，当znode发生变更时，Zookeeper会触发注册在该znode上的所有监视点。比如，有1000个客户端通过exists操作监听同一个znode，当这个znode创建后Zookeeper就会发送1000个通知。这会导致性能尖峰，可能会导致其他操作被延迟或阻塞。这种现象被称为羊群效应。在使用Zookeeper做监听时时，应尽量避免羊群效应，也就是避免在同一个znode上注册大量的监视点。</p>
-<p>来看一个分布式锁的问题。假设有n个客户端在竞争一个锁，为了获取锁，客户端需要尝试创建/lock节点；如果该节点已经存在，那么客户端监视这个znode节点的删除事件，当/lock被删除时，所有监视/lock节点的客户端会收到通知。这个方案会引起羊群效应，我们可以使用一个更好的方案：客户端可以创建一个有序的节点/lock/lock-，如前所述Zookeeper会在这个znode节点后自动添加一个序列号，成为/lock/lock-xxx，其中xxx为序列号；我们制定一个新的获得锁的策略，那就是序列号最小的客户端获得锁，这样客户端在创建有序节点后，可以通过/getChildren来获取/lock下所有的节点，并判断自己创建的节点是否是序列号最小的节点，如果是则获得锁，否则在序列号序列的前一个节点上设置监视点。例如，我们有三个节点：/lock/lock-001，/lock/lock-002，/lock/lock-003，那么设置监视点的情况如下：</p>
-<ul>
-<li>创建/lock/lock-001的客户端获得锁</li>
-<li>创建/lock/lock-002的客户端监视/lock/lock-001的节点</li>
-<li>创建/lock/lock-003的客户端监视/lock/lock-002的节点</li>
-</ul>
-<p>这样每个节点上最多只有一个监视点。</p>
-<h2 id="故障处理"><a href="#故障处理" class="headerlink" title="故障处理"></a>故障处理</h2><p>故障发生的主要点有三个：Zookeeper服务、网络、应用本身。故障恢复取决于所找到的故障发生的具体位置，不过查找具体位置并不是简单的事情。假设有如下的拓扑结构：</p>
-<p>Zookeeper服务由三台服务器组成，同时有两个客户端c1和c2。如果c1初始连接到s1，但在某一时刻连接断开了，这时候c1无法判断是网络故障还是服务器s1宕机造成的。</p>
-<p>进一步讨论：假设是因为网络故障造成的，并且c1与所有的Zookeeper服务器都无法通信，那么如果网络故障持续足够长的时间，c1与Zookeeper之间的会话将会过期，虽然c1其实还存活，但是Zookeeper还是会因为c1无法与任何服务器通信而声明c1为不活动状态；而c2正在监听c1创建的临时节点的话，那么c2也将确认c1已经终止，虽然在本场景中c1其实还存活着。</p>
-<h3 id="可恢复的故障"><a href="#可恢复的故障" class="headerlink" title="可恢复的故障"></a>可恢复的故障</h3><p>如果客户端与Zookeeper服务的连接丢失，那么就会收到Disconnected事件或者ConnectionLossException异常。当然Zookeeper客户端会积极的尝试，使自己离开这种状况，它会不断尝试重新连接另一个Zookeeper服务器，直到最终重新建立了会话；一旦会话重新建立，Zookeeper会产生一个SyncConnected事件，并开始处理请求，另外客户端也会重新注册之前已经注册过的监视点，并会对失去连接这段时间发生的变更产生监视点事件。</p>
-<p>有一点需要注意的是，当客户端失去连接后就无法收到Zookeeper的更新通知，这也许会导致客户端在会话丢失期间错过了某些重要的状态变化。考虑下图这个例子。<br><img src="https://s2.ax1x.com/2019/09/19/nLiBq0.png" alt=""></p>
-<p>客户端c1初始时作为leader，在t2时刻失去连接，但是并没有关注这个情况，直到t4时刻才声明为终止状态；同时，会话在t2时刻过期，在t3时刻另一个客户端c2成为leader，在t2到t4时刻c1并不知道它自己被声明为终止状态，而另一个客户端已经接管leader的职责。</p>
-<p>如果我们不仔细处理，那么旧的leader和新的leader将会同时存在，它们的操作可能会冲突。因此，当一个客户端收到Disconnected事件时，在重新连接前，建议进程挂起其作为leader的操作。</p>
-<p>下面来考虑另外一个关于监视点的case。</p>
-<p>首先我们需要知道，为了使连接断开与重新建立会话之间更加平滑，Zookeeper客户端会在新的服务器上面重新设置之前存在的监视点。当客户端连接Zookeeper的服务器，客户端会发送监视点列表和最后已知的zxid（最终状态的时间戳），服务器会接受这些监视点，并且检查监视的znode的修改时间戳是否晚于该zxid，如果晚于则触发这个监视点。</p>
-<p>每个Zookeeper的操作都完全符合该逻辑，除了exists。exists操作与其他操作不同，因为这个操作可以在一个不存在的节点上设置监视点，这里有一个需要注意的情况。考虑下图：<br><img src="https://s2.ax1x.com/2019/09/19/nLi4qx.png" alt=""></p>
-<p>客户端监视/event节点的创建事件，但由于网络原因与Zookeeper断开连接，然而就在断开连接的期间，另外的客户端创建了/event，并且又删除了/event，当设置监视点的客户端重新连上了Zookeeper并重新注册了监视点，但由于发现没有/event这个节点，所以就只是注册了这个监视点，最终导致客户端错过了/event的创建事件。因此，我们应该尽量避免监视一个znode节点的创建事件。</p>
-<h3 id="不可恢复的故障"><a href="#不可恢复的故障" class="headerlink" title="不可恢复的故障"></a>不可恢复的故障</h3><p>有时，由于一些更糟糕的事情发生，导致会话无法恢复而必须被关闭。这种情况最常见的原因是会话过期，另一个原因是已认证的会话无法再次与Zookeeper完成认证。这两种情况下，Zookeeper都会丢弃会话的状态。对这种状态丢失最明显的例子就是临时性节点，这种节点在会话关闭时会被删除。</p>
-<p>当客户端无法提供适当的认证信息来完成会话认证，或者发生Disconnected事件后重新连接到已过期的会话，就会发生不可恢复的故障。处理不可恢复故障的最简单的办法就是终止进程并重启，这样可以使进程恢复原状，通过一个新的会话来重新初始化自己的状态。</p>
-<h3 id="群首选举和外部资源"><a href="#群首选举和外部资源" class="headerlink" title="群首选举和外部资源"></a>群首选举和外部资源</h3><p>Zookeeper为所有客户端提供了系统的一致性视图，但需要注意的是，Zookeeper无法保护与外部设备的交互操作。举个例子，当客户端进程的主机过载时可能会发生系统的swap和进程延迟，主机上的本地线程的调度可能会引起问题：一个应用线程认为仍然处于活动状态，并且持有主节点，即使Zookeeper线程有机会运行时才会被通知会话已超时。</p>
-<p>考虑下图一个典型的例子：<br><img src="https://s2.ax1x.com/2019/09/19/nLF1SJ.png" alt=""></p>
-<ul>
-<li>在t1时刻，因为系统超载导致与Zookeeper的通信停止，而此时c1已经将对DB的更新放进待执行队列，但是还没有收到CPU时钟周期来执行这些DB更新；</li>
-<li>在t2时刻，Zookeeper声明c1的会话已终止同时删除c1的会话相关的临时节点；</li>
-<li>在t3时刻，c2成为主节点；</li>
-<li>在t4时刻，c2改变了DB的状态；</li>
-<li>在t5时刻，c1发送已经队列化的更新到DB；</li>
-<li>在t5时刻，c1与Zookeeper重新建立连接，发现其会话已过期，并且丢掉了管理权，但遗憾的是在t5时刻已经对DB进行了更新，导致系统状态损坏。</li>
-</ul>
-<p>我们可以使用一种称为隔离（fencing）的技巧，那就是：只有持有最新隔离符号的客户端才可以访问资源。在我们创建代表群首的节点时，我们可以获得Stat结构的信息，其结构中的czxid表示该节点创建时的zxid，由于zxid为唯一的单调递增的序列号，因此我们可以使用czxid作为隔离的符号。当我们对外部资源进行请求时，我们需要提供这个隔离符号，如果外部资源收到更高版本的隔离符号的请求时，我们的请求就会被拒绝。</p>
-<h2 id="Zookeeper注意事项"><a href="#Zookeeper注意事项" class="headerlink" title="Zookeeper注意事项"></a>Zookeeper注意事项</h2><h3 id="会话恢复"><a href="#会话恢复" class="headerlink" title="会话恢复"></a>会话恢复</h3><p>假如你的Zookeeper客户端崩溃，之后恢复运行，应用程序在恢复运行后需要处理一系列的问题。</p>
-<p>首先，虽然当前应用程序崩溃了，但是其他的客户端还在运行，也许已经修改了Zookeeper中的状态，因此会话恢复后不要使用任何之前本地缓存的状态。例如，在主从实现中，如果主节点崩溃并恢复，而此时集群可能已经完成了备份主节点的故障转移，当旧的主节点恢复后就不能再认为自己是主节点了。</p>
-<p>第二个重要问题是客户端崩溃时，已经提交给Zookeeper的待处理操作可能已经完成了，客户端由于崩溃导致没有收到确认消息。因此客户端在恢复时也许需要进行一些Zookeeper状态的清理操作。</p>
-<h3 id="当znode被重新创建时，版本号会被重置"><a href="#当znode被重新创建时，版本号会被重置" class="headerlink" title="当znode被重新创建时，版本号会被重置"></a>当znode被重新创建时，版本号会被重置</h3><p>这个似乎是显而易见的，但还是需要再次强调，znode节点被删除并重建后，其版本号会被重置。假设客户端获取了一个znode节点的数据，改变该节点的数据并基于版本号为1的条件进行会写，如果在客户端更新该节点数据时，znode节点被删除并重建了，版本号还是会匹配，但其保存的可能是错误的数据。</p>
-<h3 id="连接丢失时的顺序性"><a href="#连接丢失时的顺序性" class="headerlink" title="连接丢失时的顺序性"></a>连接丢失时的顺序性</h3><p>对于连接丢失事件，Zookeeper会取消等待中的请求，对于同步方法的调用会抛出异常，对于异步请求调用，回调函数会返回结果码标识连接丢失。在连接丢失后，Zookeeper客户端不会自动进行请求重新提交，需要应用程序本身来处理取消请求的重新提交操作。</p>
-<p>考虑下面的事件顺序：</p>
-<ul>
-<li>应用程序提交异步请求，执行op1操作；</li>
-<li>客户端检测到连接丢失，取消了op1的请求；</li>
-<li>客户端在会话过期前重新连接；</li>
-<li>应用程序提交异步请求，执行op2操作；</li>
-<li>op2执行成功；</li>
-<li>op1返回CONNECTIONLOSS事件；</li>
-<li>应用程序重新提交op1操作请求。</li>
-</ul>
-<p>在这种情况中，应用程序先后提交了op1和op2请求，但op2却先于op1执行成功。如果op2依赖op1的操作，为了避免op2在op1之前成功执行，我们可以等待op1执行成功之后再提交op2的请求。</p>
-<h3 id="同步调用与多线程的顺序性"><a href="#同步调用与多线程的顺序性" class="headerlink" title="同步调用与多线程的顺序性"></a>同步调用与多线程的顺序性</h3><p>一个同步Zookeeper调用会阻塞运行，直到收到响应消息，如果两个或更多线程向Zookeeper同时提交了同步操作，这些线程会被阻塞，直到收到响应消息。Zookeeper会顺序返回响应消息，但可能因为线程调度原因，后提交的操作的结果可能会先被处理。</p>
-<h3 id="同步与异步混用的顺序性"><a href="#同步与异步混用的顺序性" class="headerlink" title="同步与异步混用的顺序性"></a>同步与异步混用的顺序性</h3><p>假如先后提交了两个异步调用的操作，op1和op2，在op1的回调函数中进行了一个同步调用op3，该同步调用阻塞了Zookeeper客户端的分发线程，这样就会导致应用程序接收到op3的结果之后才能接收到op2的结果，因此应用程序观察到的操作结果顺序为op1，op3，op2，而实际的提交顺序并非如此。</p>
-<h3 id="数据字段和子节点的限制"><a href="#数据字段和子节点的限制" class="headerlink" title="数据字段和子节点的限制"></a>数据字段和子节点的限制</h3><p>Zookeeper限制了请求的数据大小，默认为1M。这个值限制了节点的数据存储的大小，也限制了任何父节点可以拥有的子节点数。当然我们可以把这个值调大，但是这样可能会导致在处理znode节点数据时消耗更多的时间。</p>
-<h3 id="嵌入式Zookeeper服务器"><a href="#嵌入式Zookeeper服务器" class="headerlink" title="嵌入式Zookeeper服务器"></a>嵌入式Zookeeper服务器</h3><p>很多开发人员考虑在应用中嵌入Zookeeper服务器，以此来隐藏对Zookeeper的依赖，这种方法使得应用的用户对Zookeeper的使用透明化。这个注意听起来很诱人，但是并不建议这么做。采取嵌入式的Zookeeper时，如果Zookeeper发生错误，用户将会查看与Zookeeper相关的日志，从这个角度看对用户已经不再是透明化；更糟糕的是，整个应用的可用性和Zookeeper的可用性耦合在一起，如果其中一个退出，另一个也必然退出，者降低了Zookeeper作为高可用服务的最强的优势。</p>
-<h2 id="Zookeeper内部原理"><a href="#Zookeeper内部原理" class="headerlink" title="Zookeeper内部原理"></a>Zookeeper内部原理</h2><p>在Zookeeper的集群环境中，某一个服务器会被选择为群首（leader），其他服务器追随群首，被称为追随者（follower）；群首作为中心点处理处理所有Zookeeper系统变更的请求，并负责建立所有更新的先后顺序，追随者接收群首的更新操作请求并对这些请求进行处理。</p>
-<p>群首和追随者组成了保障状态变化有序的核心实体，同时还存在第三类服务器，称为观察者（observer）。观察者不会参与决策哪些请求可被接受，它只观察决策的结果，观察者的设计只是为了系统的横向扩展性。</p>
-<h3 id="请求、事务和标识符"><a href="#请求、事务和标识符" class="headerlink" title="请求、事务和标识符"></a>请求、事务和标识符</h3><p>Zookeeper服务器会在本地处理只读请求（exists、getData、getChildren）。假如一个服务器接收到客户端的getData请求，服务器读取本地的状态信息，并返回给客户端。因此Zookeeper处理只读请求时性能很高。</p>
-<p>那些改变Zookeeper状态的客户端请求（create、delete和setData）将会被转发到群首，群首执行相应的请求，并形成状态的更新，我们称之为事务。一个事务为一个单位，也就是说事务的变更需要以原子性来执行。以setData的操作为例，变更节点的数据信息和改变版本号是原子性的事务。Zookeeper集群以事务方式运行，并保证所有的变更操作以原子性执行，同时不会被其他事务所干扰。同时一个事务还具有幂等性，也就是说我们可以对同一个事务执行两次，得到的结果还是一样的；我们甚至还可以对多个事务执行多次，同样也会得到一样的结果，但前提是我们确保这些事务的执行顺序每次都是一样的。</p>
-<p>当群首产生一个事务，就会为该事物分配一个标识符，我们称之为Zookeeper事务ID（zxid），通过zxid对事务进行标识，就可以按照群首所指定的顺序在各个服务器中按序执行。服务器之间进行新的群首选举时，也会交换zxid，这样就可以知道哪个服务器接收到更多的事务并同步其状态信息。zxid为一个long型（64位）整数，分为两部分，时间戳（epoch）和计数器（counter），后面我们将会看到它们的具体作用。</p>
-<h3 id="群首选举"><a href="#群首选举" class="headerlink" title="群首选举"></a>群首选举</h3><p>对于Zookeeper集群，之前说到了一个脑裂问题（split brain）：即两个集合的服务器分别独立运行，形成了两个集群。这种情况将会导致集群状态的不一致性，因此在选举过程中有一个仲裁（quorum）的数量，这个数量保证了如果存在多个仲裁，至少有一个服务器是重合的。</p>
-<p>下面来看下群首选举的过程。</p>
-<p>每个Zookeeper服务器启动的时候，都会进入LOOKING状态，如果群首已经存在，那么其他服务器会告知这个服务器哪个为群首，新的服务器将会与群首建立连接并同步状态。如果集群中所有服务器均处于LOOKING状态，这些服务器之间就会进行通信来选举一个群首，选举过程中胜出的服务器将会进入LEADING状态，其他服务器则进入FOLLOWING状态。</p>
-<p>群首选举的协议非常简单，在选举时，每个服务器都会发送它的投票（vote）消息到其他服务器，投票中包含服务器标识符（sid）和其最新执行的事务ID（zxid），比如，一个服务器所发送的投票消息为（1，5），表示该服务器的sid为1，最新执行的zxid为5。当一个服务器收到一个投票消息，该服务器将会根据以下规则修改自己的投票消息：</p>
-<ul>
-<li>假设收到的投票为voteId和voteZxid，而本身的标识符为mySid和myZxid；</li>
-<li>如果（voteZxid &gt; myZxid）或者（voteZxid = myZxid 且 voteId &gt; mySid），那么服务器将投票更新这个投票消息；</li>
-<li>否则不变。</li>
-</ul>
-<p>简而言之，最新的服务器会赢得选举，如果多个服务器拥有相同的zxid那么sid值最大的赢得选举。当一个服务器收到仲裁数量的服务器发来相同的投票时，该服务器会声明群首选举成功，如果被选举的群首为某个服务器自己，那么该服务器将会行使群首角色，否则就成为一个追随者连接群首j进行同步。</p>
-<p>现在通过一个例子来重温选举的过程。下图展示了一个选举的过程。<br><img src="https://s2.ax1x.com/2019/09/19/nLkktO.png" alt=""></p>
-<p>初始时每个服务器都发送自身的sid和zxid到其他两个服务器，在第一轮后服务器s2和s3将会修改其投票值为（1，6）并发送新的投票消息，最后选举出s1为群首。</p>
-<h3 id="Zab：状态更新的广播协议"><a href="#Zab：状态更新的广播协议" class="headerlink" title="Zab：状态更新的广播协议"></a>Zab：状态更新的广播协议</h3><p>在接收到一个写请求后，追随者将该请求转发给群首，群首将尝试执行该请求，并且将执行结果以事务的方式广播给所有追随者。这里Zookeeper定义了原子性广播协议（Zookeeper Atomic Broadcast protocol）：</p>
-<ul>
-<li>群首向所有追随者发送一个PROPOSAL消息p；</li>
-<li>当追随者接收到消息p后，会响应一个ACK消息，通知群首其已接受该提案（proposal）；</li>
-<li>当收到仲裁数量的确认消息后（群首也可以属于仲裁数量的一员），群首就会发送消息通知追随者进行提交（COMMIT）操作。</li>
-</ul>
-<p>在应答提案消息前，追随者需要做些检查操作，追随者将会检查该提案消息是否属于其所追随的群首，并确认群首广播的提案消息和提交事务消息的顺序正确。Zab协议保证如下性质：</p>
-<ul>
-<li>如果群首按顺序广播了事务T和T’，那么每个服务器在提交T’前保证事务T已经提交完成；</li>
-<li>如果某个服务器按照事务T、T’的顺序提交事务，所有其他服务器也必然会在提交事务T’前提交事务T。</li>
-</ul>
-<p>这两个性质保证了事务的顺序而且集群中的服务器不会跳过任何事务。</p>
-<p>由于群首服务器也可能会崩溃，如果发生这种情况，其他服务器需要选举出一个新的群首以保证系统整体仍然可用。Zookeeper使用时间戳（epoch）表示管理权变化情况，一个时间戳表示某个群首行使管理权的这段时间，在一个时间戳内，群首会广播提案消息，并根据计数器（counter）来标识每一个消息。如前所说，zxid第一部分为时间戳，因此每一个zxid可以很容易识别出其创建的时间戳。</p>
-<p>实现这个广播协议最大的困难在于群首并发存在的情况，而且这种情况不一定是脑裂场景。时间问题或者消息丢失都可能会导致这个问题，为了阻止系统中同时出现两个服务器自认为自己是群首是非常困难的。为了解决这个问题，Zab协议提供了以下保障：</p>
-<ul>
-<li>一个被选举的群首确保在提交完所有之前需要被提交的事务，才开始广播新的事务；</li>
-<li>在任何时间点，都不会出现两个被仲裁支持的群首。</li>
-</ul>
-<p>为了实现第一个性质，群首需要确保仲裁数量的服务器认可新群首的初始状态。新群首的初始状态必须包含所有之前已经提交的事务，而且也需要包含已经被接受但未提交的事务（如果存在的话）。</p>
-<p>对于第二个性质，其实Zookeeper并没有完全阻止旧群首的运行。假设，当前群首为l在管理集群并且广播事务。在某个时刻有仲裁数量的服务器Q判断l已经宕机，并且开始选举新的群首l’，假设在仲裁机构Q放弃群首l的同时，有一个事务T正在广播。在群首l’被选举完成的时候，集群中刚好有仲裁数量的服务器确认了事务T，在这种情况下旧群首仍然会发起提交的操作。这里的关键点在于支持新群首的仲裁机器与确认事务T的仲裁机器至少有一台机器是重合的，这样保证了系统状态的正确性，事务不会丢失而且系统状态不会被破坏。</p>
-<p>下面来看一个场景：<br><img src="https://s2.ax1x.com/2019/09/19/nLAp8g.png" alt=""></p>
-<p>服务器s5为旧群首l，s3为新群首l’，支持s3为新群首的仲裁机构由s1到s3组成，事务T的zxid为（1，1）。在收到第二个确认消息后，服务器s5成功向服务器s4发送了提交消息来通知提交事务。其他服务器因追随服务器s3忽略了服务器s5的消息，注意服务器s3所了解的zxid为（1，1），因此它知道获得管理权后的事务点。Zab协议保证新群首l’不会丢失（1，1）。</p>
-<h3 id="观察者"><a href="#观察者" class="headerlink" title="观察者"></a>观察者</h3><p>上面介绍了群首和追随者，还有一类服务器没有介绍：观察者。观察者和追随者一样需要提交来自于群首的提议，但不同的是它不参与投票过程，它仅仅是学习由INFORM消息提交的提议。</p>
-<p>引入观察者的一个主要原因是提高读请求的横向扩展性。通过加入观察者，我们可以在不牺牲写操作的吞吐率的前提下服务更多的读操作。写操作的吞吐率取决于仲裁数量的大小，如果我们加入更多的参与投票的服务器，我们将需要更大的仲裁数量，而这将减少写操作的吞吐率。</p>
-<p>采用观察者的另一个原因是进行跨多个数据中心的部署，由于数据中心之间的延时比较大，将服务器分散于多个数据中心会明显的减低系统的速度。引入观察者后，更新请求能够以高吞吐、低延迟的方式在一个数据中心内执行，然后再传播到异地的数据中心。</p>
-<h2 id="服务器的构成"><a href="#服务器的构成" class="headerlink" title="服务器的构成"></a>服务器的构成</h2><p>群首、追随者和观察者本质上都是服务器，Zookeeper在实现服务器时使用的主要抽象是请求处理器（Request Processor），每个服务器实现了一个请求处理器的序列，一个请求经过服务器流水线上所有处理器的处理后被称为处理完成。</p>
-<p>Zookeeper代码中有一个RequestProcessor的接口，这个接口的主要方法是processRequest，它接受一个Request参数。在一个请求处理器的流水线上，对于相邻处理器的解耦是使用队列来实现解耦合的。</p>
-<h3 id="独立部署的服务器"><a href="#独立部署的服务器" class="headerlink" title="独立部署的服务器"></a>独立部署的服务器</h3><p>Zookeeper中最简单的请求处理器流水线是在独立模式下的Zookeeper服务器，下图展示了它的处理器流水线，可以看到主要有三个请求处理器：PrepRequestProcessor，SyncRequestProcessor和FinalRequestProcessor。</p>
-<p><img src="https://s2.ax1x.com/2019/09/19/nLAkbq.png" alt=""></p>
-<p>PrepRequestProcessor的处理结果是生成一个事务，这个事务是请求操作的结果，它需要作用在Zookeeper数据树上。事务信息会以头部信息和事务记录的方式添加到Request对象中。另外，只有改变Zookeeper状态的操作才会产生事务，对于读请求，Request对象中的事务属性为null。</p>
-<p>下一个请求处理器是SyncRequestProcessor，它负责将事务持久化到磁盘上，也就是将事务追加到事务日志中，并定期的生成快照。</p>
-<p>最后的一个请求处理器是FinalRequestProcessor，如果Request中包含事务则将事务应用到Zookeeper数据树中，否则只是读取数据树的数据并返回。</p>
-<h3 id="群首服务器"><a href="#群首服务器" class="headerlink" title="群首服务器"></a>群首服务器</h3><p>在仲裁模式下，群首的操作流水线如下所示：<br><img src="https://s2.ax1x.com/2019/09/19/nLAURe.png" alt=""></p>
-<p>第一个处理器同样是PrepRequestProcessor，而下一个处理器则是ProposalRequestProcessor，该处理器会准备一个提议，并将提议发送给追随者。ProposalRequestProcessor会将所有的请求传给CommitRequestProcessor，另外也会将写请求传给SyncRequestProcessor。</p>
-<p>SyncRequestProcessor与独立服务器的一样，即将事务持久化到磁盘上。它执行完之后会触发AckRequestProcessor处理器，这个处理器仅仅生成确认消息返回给自己。在仲裁模式下，群首需要收到每个服务器的确认消息，包括自己的，而AckRequestProcessor负责这个确认消息。</p>
-<p>在ProposalRequestProcessor之后是CommitRequestProcessor，它会将收到足够多的确认消息的提议进行提交。</p>
-<p>最后一个处理器是FinalRequestProcessor，它的作用和独立服务器的一样，执行更新以及返回读请求的数据。</p>
-<h3 id="追随者和观察者服务器"><a href="#追随者和观察者服务器" class="headerlink" title="追随者和观察者服务器"></a>追随者和观察者服务器</h3><p>现在来讨论追随者的请求处理器序列，从下图可以看到，追随者的序列并不是单一的序列，由于输入有多种形式（客户端请求、提议、提交事务），因此序列也有不同。<br><img src="https://s2.ax1x.com/2019/09/19/nLAIZq.png" alt=""></p>
-<p>第一个处理器是FollowerRequestProcessor，该处理器接收并处理客户端请求。FollowerRequestProcessor会将所有请求都传给CommitRequestProcessor，同时也会将写请求传给群首服务器。对于读请求，CommitRequestProcessor直接传给FinalRequestProcessor，而对于写请求，CommitRequestProcessor在传给FinalRequestProcessor之前会等待提交事务。</p>
-<p>当群首服务器收到写请求时，会生成一个提议发送给追随者。当追随者收到提议时，会把这个提议传给SyncRequestProcessor。SyncRequestProcessor持久化提议，并传给SendAckRequestProcessor，SendAckRequestProcessor返回提议确认消息给群首服务器。</p>
-<p>当群首服务器收到足够的确认消息，就会发送提交消息来提交这个提议。当接收到提交消息时，追随者就通过CommitRequestProcessor处理器进行处理。</p>
-<p>为了保证顺序性，CommitRequestProcessor收到一个写请求后会暂停后续的请求处理，直该到写请求通过了CommitRequestProcessor。</p>
-<p>观察者服务器的处理器流水线与追随者服务器类似，但因为观察者服务器不需要确认提议消息，因此观察者不需要发送提议确认消息到群首服务器也不需要持久化事务到硬盘。</p>
-<h2 id="本地存储"><a href="#本地存储" class="headerlink" title="本地存储"></a>本地存储</h2><h3 id="日志和磁盘的使用"><a href="#日志和磁盘的使用" class="headerlink" title="日志和磁盘的使用"></a>日志和磁盘的使用</h3><p>上面说到服务器会通过事务日志来持久化事务，服务器会将提议的事务按顺序追加到事务日志中。由于写事务日志是非常关键的，因此Zookeeper本身必须高效的处理写日志问题。一般情况下追加日志到磁盘都会有效完成，但Zookeeper使用了一些策略来使得这个过程更快，那就是组提交（Group Commits）和补白（Padding）。组提交是指一次磁盘写入多个事务，这样对于多个事务写入只需要一次磁盘寻道。补白是指在文件中预分配磁盘存储块，假如需要高速向日志中追加事务而文件中没有预先分配空间，那么每次写入到达文件结尾时都需要分配一个新的存储块。</p>
-<h3 id="快照"><a href="#快照" class="headerlink" title="快照"></a>快照</h3><p>快照是Zookeeper数据树的拷贝副本，每一个服务器都会经常地保存数据树到快照文件中。由于服务器在生成快照时不阻塞请求，因此当快照文件生成的时候数据树可能会变化，因此快照是模糊（fuzzy）的，因为它不能反映出任意一个时间点数据树的一致状态。</p>
-<p>举个例子，一个数据树中只有2个znode节点，/z和/z’，初始时两个节点的数据都是1，现在有如下步骤：</p>
-<ul>
-<li>开始一个快照；</li>
-<li>序列化并将/z=1添加到快照中；</li>
-<li>事务T使/z的数据为2；</li>
-<li>事务T’使/z’的数据为2；</li>
-<li>序列化并将/z’=2添加到快照中。</li>
-</ul>
-<p>这个快照包含了/z=1和/z’=2，然而数据树中任意一个时间点都不是这样的状态。但这个不是问题，每一个快照文件都会以快照开始时最后一个提交的事务作为标记（tag），如果服务器加载快照文件，它会重放这个标记后所有的事务。但这样需要考虑另外一个问题，那就是再次执行相同的事务是否会有问题？就像之前所说的，事务是幂等的，所以我们按相同的顺序再次执行相同的事务也是没问题的。</p>
-<p>这里有个小细节可以讨论下。假如当前有这两个操作：</p>
-<ul>
-<li>setData /z’, 2, -1</li>
-<li>setData /z’, 3, 2</li>
-</ul>
-<p>第一个操作忽略版本号当然可以执行多次，但问题是执行了多次后第二个操作无法匹配版本号，重放失败怎么办？这个问题是通过群首服务器所生成的状态增量（state delta）来解决的。当群首生成一个事务时，它会包括一些在请求中znode节点或它的数据变化的值，并指定一个特定的版本号，这样重放事务时就不会导致不一致的版本号。</p>
-
+<p><strong>动态代理策略</strong><br>默认使用 javassist 动态字节码生成，创建代理类。但是可以通过 spi 扩展机制配置自己的动态代理策略。</p>
+<h2 id="dubbo-spi"><a href="#dubbo-spi" class="headerlink" title="dubbo spi"></a>dubbo spi</h2><p><strong>spi 是啥？</strong><br>spi，简单来说，就是 service provider interface，说白了是什么意思呢，比如你有个接口，现在这个接口有 3 个实现类，那么在系统运行的时候对这个接口到底选择哪个实现类呢？这就需要 spi 了，需要根据指定的配置或者是默认的配置，去找到对应的实现类加载进来，然后用这个实现类的实例对象。</p>
+<p>举个栗子。</p>
+<p>你有一个接口 A。A1/A2/A3 分别是接口A的不同实现。你通过配置 接口 A = 实现 A2，那么在系统实际运行的时候，会加载你的配置，用实现 A2 实例化一个对象来提供服务。</p>
+<p>spi 机制一般用在哪儿？插件扩展的场景，比如说你开发了一个给别人使用的开源框架，如果你想让别人自己写个插件，插到你的开源框架里面，从而扩展某个功能，这个时候 spi 思想就用上了。</p>
+<p><strong>Java spi 思想的体现</strong><br>spi 经典的思想体现，大家平时都在用，比如说 jdbc。</p>
+<p>Java 定义了一套 jdbc 的接口，但是 Java 并没有提供 jdbc 的实现类。</p>
+<p>但是实际上项目跑的时候，要使用 jdbc 接口的哪些实现类呢？一般来说，我们要根据自己使用的数据库，比如 mysql，你就将 mysql-jdbc-connector.jar 引入进来；oracle，你就将 oracle-jdbc-connector.jar 引入进来。</p>
+<p>在系统跑的时候，碰到你使用 jdbc 的接口，他会在底层使用你引入的那个 jar 中提供的实现类。</p>
+<p><strong>dubbo 的 spi 思想</strong><br>dubbo 也用了 spi 思想，不过没有用 jdk 的 spi 机制，是自己实现的一套 spi 机制。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();</span><br></pre></td></tr></table></figure></p>
+<p>Protocol 接口，在系统运行的时候，，dubbo 会判断一下应该选用这个 Protocol 接口的哪个实现类来实例化对象来使用。</p>
+<p>它会去找一个你配置的 Protocol，将你配置的 Protocol 实现类，加载到 jvm 中来，然后实例化对象，就用你的那个 Protocol 实现类就可以了。</p>
+<p>上面那行代码就是 dubbo 里大量使用的，就是对很多组件，都是保留一个接口和多个实现，然后在系统运行的时候动态根据配置去找到对应的实现类。如果你没配置，那就走默认的实现好了，没问题。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SPI</span>(<span class="string">"dubbo"</span>)  </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Protocol</span> </span>&#123;  </span><br><span class="line">      </span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">getDefaultPort</span><span class="params">()</span></span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="meta">@Adaptive</span>  </span><br><span class="line">    &lt;T&gt; <span class="function">Exporter&lt;T&gt; <span class="title">export</span><span class="params">(Invoker&lt;T&gt; invoker)</span> <span class="keyword">throws</span> RpcException</span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="meta">@Adaptive</span>  </span><br><span class="line">    &lt;T&gt; <span class="function">Invoker&lt;T&gt; <span class="title">refer</span><span class="params">(Class&lt;T&gt; type, URL url)</span> <span class="keyword">throws</span> RpcException</span>;  </span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">destroy</span><span class="params">()</span></span>;  </span><br><span class="line">  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在 dubbo 自己的 jar 里，在/META_INF/dubbo/internal/com.alibaba.dubbo.rpc.Protocol文件中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dubbo=com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol</span><br><span class="line">http=com.alibaba.dubbo.rpc.protocol.http.HttpProtocol</span><br><span class="line">hessian=com.alibaba.dubbo.rpc.protocol.hessian.HessianProtocol</span><br></pre></td></tr></table></figure>
+<p>所以说，这就看到了 dubbo 的 spi 机制默认是怎么玩儿的了，其实就是 Protocol 接口，@SPI(“dubbo”) 说的是，通过 SPI 机制来提供实现类，实现类是通过 dubbo 作为默认 key 去配置文件里找到的，配置文件名称与接口全限定名一样的，通过 dubbo 作为 key 可以找到默认的实现类就是 com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol。</p>
+<p>如果想要动态替换掉默认的实现类，需要使用 @Adaptive 接口，Protocol 接口中，有两个方法加了 @Adaptive 注解，就是说那俩接口会被代理实现。</p>
+<p>啥意思呢？</p>
+<p>比如这个 Protocol 接口搞了俩 @Adaptive 注解标注了方法，在运行的时候会针对 Protocol 生成代理类，这个代理类的那俩方法里面会有代理代码，代理代码会在运行的时候动态根据 url 中的 protocol 来获取那个 key，默认是 dubbo，你也可以自己指定，你如果指定了别的 key，那么就会获取别的实现类的实例了。</p>
+<p><strong>扩展 dubbo 中的组件</strong><br>自己写个工程，要是那种可以打成 jar 包的，里面的 src/main/resources 目录下，搞一个 META-INF/services，里面放个文件叫：com.alibaba.dubbo.rpc.Protocol，文件里搞一个my=com.bingo.MyProtocol。自己把 jar 弄到 nexus 私服里去。</p>
+<p>然后自己搞一个 dubbo provider 工程，在这个工程里面依赖你自己搞的那个 jar，然后在 spring 配置文件里给个配置：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:protocol</span> <span class="attr">name</span>=<span class="string">”my”</span> <span class="attr">port</span>=<span class="string">”20000”</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>provider 启动的时候，就会加载到我们 jar 包里的my=com.bingo.MyProtocol 这行配置里，接着会根据你的配置使用你定义好的 MyProtocol 了，这个就是简单说明一下，你通过上述方式，可以替换掉大量的 dubbo 内部的组件，就是扔个你自己的 jar 包，然后配置一下即可。</p>
+<p>dubbo 里面提供了大量的类似上面的扩展点，就是说，你如果要扩展一个东西，只要自己写个 jar，让你的 consumer 或者是 provider 工程，依赖你的那个 jar，在你的 jar 里指定目录下配置好接口名称对应的文件，里面通过 key=实现类。</p>
+<p>然后对于对应的组件，类似 <code>&lt;dubbo:protocol&gt;</code> 用你的那个 key 对应的实现类来实现某个接口，你可以自己去扩展 dubbo 的各种功能，提供你自己的实现。</p>
+<h2 id="dubbo-服务高可用"><a href="#dubbo-服务高可用" class="headerlink" title="dubbo 服务高可用"></a>dubbo 服务高可用</h2><h3 id="服务治理"><a href="#服务治理" class="headerlink" title="服务治理"></a>服务治理</h3><p><strong>1. 调用链路自动生成</strong><br>一个大型的分布式系统，或者说是用现在流行的微服务架构来说吧，分布式系统由大量的服务组成。那么这些服务之间互相是如何调用的？调用链路是啥？说实话，几乎到后面没人搞的清楚了，因为服务实在太多了，可能几百个甚至几千个服务。</p>
+<p>那就需要基于 dubbo 做的分布式系统中，对各个服务之间的调用自动记录下来，然后自动将各个服务之间的依赖关系和调用链路生成出来，做成一张图，显示出来，大家才可以看到对吧。</p>
+<p><strong>2. 服务访问压力以及时长统计</strong><br>需要自动统计各个接口和服务之间的调用次数以及访问延时，而且要分成两个级别。</p>
+<p>一个级别是接口粒度，就是每个服务的每个接口每天被调用多少次，TP50/TP90/TP99，三个档次的请求延时分别是多少；<br>第二个级别是从源头入口开始，一个完整的请求链路经过几十个服务之后，完成一次请求，每天全链路走多少次，全链路请求延时的 TP50/TP90/TP99，分别是多少。<br>这些东西都搞定了之后，后面才可以来看当前系统的压力主要在哪里，如何来扩容和优化啊。</p>
+<p><strong>3. 其它</strong><br>服务分层（避免循环依赖）<br>调用链路失败监控和报警<br>服务鉴权<br>每个服务的可用性的监控（接口调用成功率？几个 9？99.99%，99.9%，99%）</p>
+<h3 id="服务降级"><a href="#服务降级" class="headerlink" title="服务降级"></a>服务降级</h3><p>比如说服务 A 调用服务 B，结果服务 B 挂掉了，服务 A 重试几次调用服务 B，还是不行，那么直接降级，走一个备用的逻辑，给用户返回响应。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">id</span>=<span class="string">"fooService"</span> <span class="attr">interface</span>=<span class="string">"com.test.service.FooService"</span>  <span class="attr">timeout</span>=<span class="string">"10000"</span> <span class="attr">check</span>=<span class="string">"false"</span> <span class="attr">mock</span>=<span class="string">"return null"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dubbo:reference</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>mock 的值也可以修改为 true，然后再跟接口同一个路径下实现一个 Mock 类，命名规则是 “接口名称+Mock” 后缀。然后在 Mock 类里实现自己的降级逻辑。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloServiceMock</span> <span class="keyword">implements</span> <span class="title">HelloService</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sayHello</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 降级逻辑</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="失败重试和超时重试"><a href="#失败重试和超时重试" class="headerlink" title="失败重试和超时重试"></a>失败重试和超时重试</h3><p>所谓失败重试，就是 consumer 调用 provider 要是失败了，比如抛异常了，此时应该是可以重试的，或者调用超时了也可以重试。配置如下：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">id</span>=<span class="string">"xxxx"</span> <span class="attr">interface</span>=<span class="string">"xx"</span> <span class="attr">check</span>=<span class="string">"true"</span> <span class="attr">async</span>=<span class="string">"false"</span> <span class="attr">retries</span>=<span class="string">"3"</span> <span class="attr">timeout</span>=<span class="string">"2000"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
     
   </div>
   <footer class="end-sep">
@@ -307,7 +199,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 11.43px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Structure/" style="font-size: 10px;">Structure</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 11.43px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/English/" style="font-size: 10px;">English</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/Interview/" style="font-size: 10px;">Interview</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Structure/" style="font-size: 10px;">Structure</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -316,6 +208,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/28/my-english-interview/">英文简历速记</a>
+      </li>
     
       <li>
         <a href="/2019/11/28/common-data-structure/">数据结构</a>
@@ -331,10 +227,6 @@
     
       <li>
         <a href="/2019/11/09/distribut-concurrent-programmer-design/">秒杀系统设计</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
       </li>
     
   </ul>
