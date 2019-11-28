@@ -59,56 +59,50 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/11/09/distribut-programmer-design/">
-  <time datetime="2019-11-09T02:52:27.000Z">
+      <a href="/2019/11/09/distribut-concurrent-programmer-design/">
+  <time datetime="2019-11-09T08:03:39.000Z">
     2019-11-09
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a></h1>
+    <h1 class="title"><a href="/2019/11/09/distribut-concurrent-programmer-design/">秒杀系统设计</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <p>分布式系统设计你会考虑哪些策略？</p>
-<h2 id="分布式系统设计理念"><a href="#分布式系统设计理念" class="headerlink" title="分布式系统设计理念"></a>分布式系统设计理念</h2><h3 id="分布式系统对服务器硬件要求很低"><a href="#分布式系统对服务器硬件要求很低" class="headerlink" title="分布式系统对服务器硬件要求很低"></a>分布式系统对服务器硬件要求很低</h3><ul>
-<li>对服务器硬件可靠性不做要求，允许服务器硬件发生故障，硬件的故障由软件来容错。所以分布式系统的高可靠性是由软件来保证</li>
-<li>对服务器的性能不做要求，不要求使用高频 CPU、大容量内存、高性能存储等等。因为分布式系统的性能瓶颈在于节点间通讯带来的网络开销，单台服务器硬件性能再好，也要等待网络 IO</li>
+      <h2 id="秒杀系统特点"><a href="#秒杀系统特点" class="headerlink" title="秒杀系统特点"></a>秒杀系统特点</h2><ul>
+<li>秒杀业务简单，卖家查询，买家下订单减库存。</li>
+<li>秒杀时网站访问流量激增，出现峰值；</li>
+<li>访问请求数量远大于实际需求量。</li>
 </ul>
-<p>一般而言，互联网公司的大型数据中心都是选用大量廉价的 PC 服务器而不是用几台高性能服务器搭建分布式集群，以此来降低数据中心成本。比如，Google 对于数据中心的成本控制做到了极致：所有服务器一律不要机箱；主板完全定制，只要最基本的组件，早期的定制主板连电源开关和 USB 接口都不要；在主板上加装隔离带把 CPU 单独隔出来，让冷风只吹 CPU，不吹内存、硬盘等不需要降温的组件，最大限度降低冷却电力消耗。</p>
-<h3 id="分布式系统强调横向可扩展性"><a href="#分布式系统强调横向可扩展性" class="headerlink" title="分布式系统强调横向可扩展性"></a>分布式系统强调横向可扩展性</h3><p>横向可扩展性（Scale Out）是指通过增加服务器数量来提升集群整体性能。纵向可扩展性（Scale Up）是指提升每台服务器性能进而提升集群整体性能。纵向可扩展性的上限非常明显，单台服务器的性能不可能无限提升，而且跟服务器性能相比，网络开销才是分布式系统最大的瓶颈。横向可扩展性的上限空间比较大，集群总能很方便地增加服务器。而且分布式系统会尽可能保证横向扩展带来集群整体性能的（准）线性提升。比如有 10 台服务器组成的集群，横向扩展为 100 台同样服务器的集群，那么整体分布式系统性能会提升为接近原来的 10 倍。</p>
-<p>互联网公司的数据中心，一般一个分布式系统横向扩展的上限在万台服务器左右。Google 数据中心的基本单元，CELL，由两万台左右服务器组成，每个 CELL 由一套分布式管理系统，BORG，统一管理，每个数据中心都由多个 CELL 组成。</p>
-<h3 id="分布式系统不允许单点失效（No-Single-Point-Failure）（去中心化）"><a href="#分布式系统不允许单点失效（No-Single-Point-Failure）（去中心化）" class="headerlink" title="分布式系统不允许单点失效（No Single Point Failure）（去中心化）"></a>分布式系统不允许单点失效（No Single Point Failure）（去中心化）</h3><p>单点失效是指，某个应用服务只有一份实例运行在某一台服务器上，这台服务器一旦挂掉，那么这个应用服务必然也受影响而挂掉，导致整个服务不可用。例如，某网站后台如果只在某一台服务器上运行一份，那这台服务器一旦宕机，该网站服务必然受影响而不可用。再比如，如果所有数据都存在某一台服务器上，那一旦这台服务器坏了，所有数据都不可访问。</p>
-<p>因为分布式系统的服务器都是廉价的 PC 服务器，硬件不能保证 100% 可靠，所以分布式系统默认每台服务器随时都可能发生故障挂掉。同时分布式系统必须要提供高可靠服务，不允许出现单点失效，因此分布式系统里运行的每个应用服务都有多个运行实例跑在多个节点上，每个数据点都有多个备份存在不同的节点上。这样一来，多个节点同时发生故障，导致某个应用服务的所有实例都挂掉、或某个数据点的多个备份都不可读的概率大大降低，进而有效防止单点失效。</p>
-<p>通常情况，不要让服务器满负荷运行，服务器长时间满负荷运行的话，出故障的概率显著升高。所以分布式系统采用一大堆中低性能的 PC 服务器，尽可能把负载均摊到所有服务器上，让每台服务器的负载都不高，保证集群整体稳定性。</p>
-<h3 id="分布式系统尽可能减少节点间通讯开销"><a href="#分布式系统尽可能减少节点间通讯开销" class="headerlink" title="分布式系统尽可能减少节点间通讯开销"></a>分布式系统尽可能减少节点间通讯开销</h3><p>如前所述，分布式系统的整体性能瓶颈在于内部网络开销。目前网络传输的速度还赶不上 CPU 读取内存或硬盘的速度，所以减少网络通讯开销，让 CPU 尽可能处理内存的数据或本地硬盘的数据，能显著提高分布式系统的性能。典型的例子就是 Hadoop MapReduce，把计算任务分配到要处理的数据所在的节点上运行，从而避免在网络上传输数据。</p>
-<h3 id="分布式系统应用服务最好做成无状态的"><a href="#分布式系统应用服务最好做成无状态的" class="headerlink" title="分布式系统应用服务最好做成无状态的"></a>分布式系统应用服务最好做成无状态的</h3><p>应用服务的状态是指运行时程序因为处理服务请求而存在内存的数据。分布式应用服务最好是设计成无状态。因为如果应用程序是有状态的，那么一旦服务器宕机就会使得应用服务程序受影响而挂掉，那存在内存的数据也就丢失了，这显然不是高可靠的服务。把应用服务设计成无状态的，让程序把需要保存的数据都保存在专门的存储上，这样应用服务程序可以任意重启而不丢失数据，方便分布式系统在服务器宕机后恢复应用服务。</p>
-<p>比如，在设计网站后台的时候，对于用户登陆请求，可以把登陆用户的 session 相关信息保存在 Redis 或 Memcache 等缓存服务中，这样每个网站的后台实例不保存用户登录状态，这样即使重启网站后台程序也不丢失用户的登录状态信息；如果把用户的 session 相关信息保存在网站后台程序的内存里，那一旦受理用户登录的网站后台程序实例挂掉，必然有用户的登录状态信息会丢失。</p>
-<p>总而言之，分布式系统是大数据时代企业级应用的首选平台，它有良好的可扩展性，尤其是横向可扩展性（Scale Out），使得分布式系统非常灵活，能应对千变万化的企业级需求，而且降低了企业客户对服务器硬件的要求，真正能做到应用服务层面的弹性扩展（auto-scaling）。</p>
-<h2 id="关键字"><a href="#关键字" class="headerlink" title="关键字"></a>关键字</h2><ul>
-<li>CAP</li>
-<li>容灾</li>
-<li>监控</li>
-<li>负载均衡</li>
-<li>服务注册&amp;发现</li>
-<li>灰度</li>
-<li>消息队列&amp;解耦</li>
-<li>读写分离</li>
-<li>日志分析</li>
-<li>缓存</li>
-<li>任务调度</li>
-<li>扩展</li>
-<li>无状态节点</li>
-<li>集群高可用</li>
-<li>健康检查</li>
-<li>异常报警</li>
-<li>跟踪</li>
+<h2 id="秒杀系统架构设计优化"><a href="#秒杀系统架构设计优化" class="headerlink" title="秒杀系统架构设计优化"></a>秒杀系统架构设计优化</h2><p>一个常规的秒杀系统从前到后，依次有：</p>
+<blockquote>
+<p>前端浏览器秒杀页面 -&gt; 中间代理服务 -&gt; 后端服务层 -&gt; 数据库层</p>
+</blockquote>
+<p>根据这个流程，一般优化设计思路：<strong>将请求拦截在系统上游，降低下游压力</strong>。在一个并发量大，实际需求小的系统中，应当尽量在前端拦截无效流量，降低下游服务器和数据库的压力，不然很可能造成数据库读写锁冲突，甚至导致死锁，最终请求超时</p>
+<p>整体设计思路和优化点：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">限流：屏蔽掉无用的流量，允许少部分流量流向后端。</span><br><span class="line"></span><br><span class="line">削峰：瞬时大流量峰值容易压垮系统，解决这个问题是重中之重。常用的消峰方法有异步处理、缓存和消息中间件等技术。</span><br><span class="line"></span><br><span class="line">异步处理：秒杀系统是一个高并发系统，采用异步处理模式可以极大地提高系统并发量，其实异步处理就是削峰的一种实现方式。</span><br><span class="line"></span><br><span class="line">内存缓存：秒杀系统最大的瓶颈一般都是数据库读写，由于数据库读写属于磁盘IO，性能很低，如果能够把部分数据或业务逻辑转移到内存缓存，效率会有极大地提升。</span><br><span class="line"></span><br><span class="line">可拓展：当然如果我们想支持更多用户，更大的并发，最好就将系统设计成弹性可拓展的，如果流量来了，拓展机器就好了。像淘宝、京东等双十一活动时会增加大量机器应对交易高峰。</span><br><span class="line"></span><br><span class="line">消息队列：消息队列可以削峰，将拦截大量并发请求，这也是一个异步处理过程，后台业务根据自己的处理能力，从消息队列中主动的拉取请求消息进行业务处理。</span><br><span class="line"></span><br><span class="line">充分利用缓存：利用缓存可极大提高系统读写速度。</span><br></pre></td></tr></table></figure></p>
+<h2 id="详细方案"><a href="#详细方案" class="headerlink" title="详细方案"></a>详细方案</h2><h3 id="前端方案"><a href="#前端方案" class="headerlink" title="前端方案"></a>前端方案</h3><ul>
+<li>静态资源缓存：将活动页面上的所有可以静态的元素全部静态化，尽量减少动态元素；通过CDN缓存静态资源，来抗峰值。 </li>
+<li>禁止重复提交：用户提交之后按钮置灰，禁止重复提交 </li>
+<li>用户限流：在某一时间段内只允许用户提交一次请求，比如可以采取IP限流</li>
 </ul>
-
+<h3 id="中间代理层"><a href="#中间代理层" class="headerlink" title="中间代理层"></a>中间代理层</h3><p>可利用负载均衡（例如反响代理Nginx等）使用多个服务器并发处理请求，减小服务器压力</p>
+<h3 id="后端方案"><a href="#后端方案" class="headerlink" title="后端方案"></a>后端方案</h3><h4 id="控制层-网关层"><a href="#控制层-网关层" class="headerlink" title="控制层(网关层)"></a>控制层(网关层)</h4><p>限制同一UserID访问频率：尽量拦截浏览器请求，但针对某些恶意攻击或其它插件，在服务端控制层需要针对同一个访问uid，限制访问频率。</p>
+<h4 id="服务层"><a href="#服务层" class="headerlink" title="服务层"></a>服务层</h4><p>当用户量非常大的时候，拦截流量后的请求访问量还是非常大，此时仍需进一步优化。</p>
+<ul>
+<li>业务分离<br>将秒杀业务系统和其他业务分离，单独放在高配服务器上，可以集中资源对访问请求抗压。</li>
+<li>采用消息队列缓存请求<br>将大流量请求写到消息队列缓存，利用服务器根据自己的处理能力主动到消息缓存队列中抓取任务处理请求，数据库层订阅消息减库存，减库存成功的请求返回秒杀成功，失败的返回秒杀结束</li>
+<li>利用缓存应对读请求<br>对于读多写少业务，大部分请求是查询请求，所以可以读写分离，利用缓存分担数据库压力</li>
+<li>利用缓存应对写请求<br>缓存也是可以应对写请求的，可把数据库中的库存数据转移到Redis缓存中，所有减库存操作都在Redis中进行，然后再通过后台进程把Redis中的用户秒杀请求同步到数据库中</li>
+</ul>
+<h4 id="数据库层"><a href="#数据库层" class="headerlink" title="数据库层"></a>数据库层</h4><p>数据库层是最脆弱的一层，一般在应用设计时在上游就需要把请求拦截掉，数据库层只承担“能力范围内”的访问请求。所以，上面通过在服务层引入队列和缓存，让最底层的数据库高枕无忧。</p>
+<p>如果不使用缓存来作为中间缓冲而是直接访问数据库的话，可以对数据库进行优化，减少数据库压力。</p>
+<p>对于秒杀系统，直接访问数据库的话，存在一个【事务竞争优化】问题，可使用存储过程（或者触发器）等技术绑定操作，整个事务在MySQL端完成，把整个热点执行放在一个过程当中一次性完成，可以屏蔽掉网络延迟时间，减少行级锁持有时间，提高事务并发访问速度。</p>
+<h2 id="压力测试"><a href="#压力测试" class="headerlink" title="压力测试"></a>压力测试</h2>
     
   </div>
   <footer class="end-sep">
@@ -143,7 +137,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 10px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 11.43px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Structure/" style="font-size: 10px;">Structure</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -152,6 +146,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/28/common-data-structure/">数据结构</a>
+      </li>
     
       <li>
         <a href="/2019/11/27/binary-tree-common/">二叉树</a>
@@ -167,10 +165,6 @@
     
       <li>
         <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
       </li>
     
   </ul>

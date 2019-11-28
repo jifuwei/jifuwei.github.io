@@ -59,46 +59,101 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">
-  <time datetime="2019-11-07T13:32:34.000Z">
-    2019-11-07
+      <a href="/2019/11/08/jvm-optmize-complete-know/">
+  <time datetime="2019-11-08T07:56:56.000Z">
+    2019-11-08
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a></h1>
+    <h1 class="title"><a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <h2 id="相似点"><a href="#相似点" class="headerlink" title="相似点"></a>相似点</h2><p>加锁方式同步，而且都是阻塞式的同步</p>
-<p>如果一个线程获得了对象锁，进入了同步块，其他访问该同步块的线程都必须阻塞在同步块外面等待，而进行线程阻塞和唤醒的代价是比较高的（操作系统需要在用户态与内核态之间来回切换，代价很高，不过可以通过对锁优化进行改善）</p>
-<h2 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h2><h3 id="API层面"><a href="#API层面" class="headerlink" title="API层面"></a>API层面</h3><p>对于Synchronized来说，它是java语言的关键字，是原生语法层面的互斥，需要jvm实现。而ReentrantLock它是JDK 1.5之后提供的API层面的互斥锁，需要lock()和unlock()方法配合try/finally语句块来完成。</p>
-<p>synchronized既可以修饰方法，也可以修饰代码块<br>ReentrantLock只能在代码块中使用，无法修饰方法。</p>
-<h3 id="等待可中断"><a href="#等待可中断" class="headerlink" title="等待可中断"></a>等待可中断</h3><p>等待可中断是指当持有锁的线程长期不释放锁的时候，正在等待的线程可以选择放弃等待，改为处理其他事情。可等待特性对处理执行时间非常长的同步快很有帮助。<br>具体来说，假如业务代码中有两个线程，Thread1 Thread2。假设 Thread1 获取了对象object的锁，Thread2将等待Thread1释放object的锁。</p>
-<p>使用synchronized。如果Thread1不释放，Thread2将一直等待，不能被中断。synchronized也可以说是Java提供的原子性内置锁机制。内部锁扮演了互斥锁（mutual exclusion lock ，mutex）的角色，一个线程引用锁的时候，别的线程阻塞等待。<br>使用ReentrantLock。如果Thread1不释放，Thread2等待了很长时间以后，可以中断等待，转而去做别的事情</p>
-<h3 id="公平锁"><a href="#公平锁" class="headerlink" title="公平锁"></a>公平锁</h3><ul>
-<li>公平锁是指多个线程在等待同一个锁时，必须按照申请的时间顺序来依次获得锁；而非公平锁则不能保证这一点。非公平锁在锁被释放时，任何一个等待锁的线程都有机会获得锁。</li>
-<li>synchronized的锁是非公平锁，ReentrantLock默认情况下也是非公平锁，但可以通过带布尔值的构造函数要求使用公平锁。</li>
+      <h2 id="JVM参数示例"><a href="#JVM参数示例" class="headerlink" title="JVM参数示例"></a>JVM参数示例</h2><p>配置：<br>-Xmx4g –Xms4g –Xmn1200m –Xss512k -XX:NewRatio=4 -XX:SurvivorRatio=8 -XX:PermSize=100m</p>
+<p>-XX:MaxPermSize=256m -XX:MaxTenuringThreshold=15</p>
+<p>解析：<br>-Xmx4g：堆内存最大值为4GB。<br>-Xms4g：初始化堆内存大小为4GB 。<br>-Xmn1200m：设置年轻代大小为1200MB。增大年轻代后，将会减小年老代大小。此值对系统性能影响较大，Sun官方推荐配置为整个堆的3/8。<br>-Xss512k：设置每个线程的堆栈大小。JDK5.0以后每个线程堆栈大小为1MB，以前每个线程堆栈大小为256K。应根据应用线程所需内存大小进行调整。在相同物理内存下，减小这个值能生成更多的线程。但是操作系统对一个进程内的线程数还是有限制的，不能无限生成，经验值在3000~5000左右。<br>-XX:NewRatio=4：设置年轻代（包括Eden和两个Survivor区）与年老代的比值（除去持久代）。设置为4，则年轻代与年老代所占比值为1：4，年轻代占整个堆栈的1/5<br>-XX:SurvivorRatio=8：设置年轻代中Eden区与Survivor区的大小比值。设置为8，则两个Survivor区与一个Eden区的比值为2:8，一个Survivor区占整个年轻代的1/10<br>-XX:PermSize=100m：初始化永久代大小为100MB。<br>-XX:MaxPermSize=256m：设置持久代大小为256MB。<br>-XX:MaxTenuringThreshold=15：设置垃圾最大年龄。如果设置为0的话，则年轻代对象不经过Survivor区，直接进入年老代。对于年老代比较多的应用，可以提高效率。如果将此值设置为一个较大值，则年轻代对象会在Survivor区进行多次复制，这样可以增加对象再年轻代的存活时间，增加在年轻代即被回收的概论。</p>
+<h2 id="何时需要做jvm调优？"><a href="#何时需要做jvm调优？" class="headerlink" title="何时需要做jvm调优？"></a>何时需要做jvm调优？</h2><ul>
+<li>heap 内存（老年代）持续上涨达到设置的最大内存值；</li>
+<li>Full GC 次数频繁；</li>
+<li>GC 停顿时间过长（超过1秒）；</li>
+<li>应用出现OutOfMemory 等内存异常；</li>
+<li>应用中有使用本地缓存且占用大量内存空间；</li>
+<li>系统吞吐量与响应性能不高或下降。</li>
 </ul>
-<p>ReentrantLock 构造器的一个参数是boolean值，它允许您选择想要一个公平（fair）锁，还是一个不公平（unfair）锁。公平锁：使线程按照请求锁的顺序依次获得锁, 但是有成本;不公平锁：则允许讨价还价</p>
-<h3 id="锁绑定多个条件"><a href="#锁绑定多个条件" class="headerlink" title="锁绑定多个条件"></a>锁绑定多个条件</h3><ul>
-<li>ReentrantLock可以同时绑定多个Condition对象，只需多次调用newCondition方法即可。</li>
-<li>synchronized中，锁对象的wait()和notify()或notifyAll()方法可以实现一个隐含的条件。但如果要和多于一个的条件关联的时候，就不得不额外添加一个锁</li>
+<h2 id="JVM调优原则"><a href="#JVM调优原则" class="headerlink" title="JVM调优原则"></a>JVM调优原则</h2><ul>
+<li>多数的Java应用不需要在服务器上进行JVM优化；</li>
+<li>多数导致GC问题的Java应用，都不是因为我们参数设置错误，而是代码问题；</li>
+<li>在应用上线之前，先考虑将机器的JVM参数设置到最优（最适合）；</li>
+<li>减少创建对象的数量；</li>
+<li>减少使用全局变量和大对象；</li>
+<li>JVM优化是到最后不得已才采用的手段；</li>
+<li>在实际使用中，分析GC情况优化代码比优化JVM参数更好；</li>
 </ul>
-<h2 id="什么是线程安全问题"><a href="#什么是线程安全问题" class="headerlink" title="什么是线程安全问题"></a>什么是线程安全问题</h2><p>如果你的代码所在的进程中有多个线程在同时运行，而这些线程可能会同时运行这段代码。如果每次运行结果和单线程运行的结果是一样的，而且其他的变量的值也和预期的是一样的，就是线程安全的，或者说:一个类或者程序所提供的接口对于线程来说是原子操作或者多个线程之间的切换不会导致该接口的执行结果存在二义性,也就是说我们不用考虑同步的问题 。</p>
-<h2 id="Synchronize在编译时如何实现锁机制"><a href="#Synchronize在编译时如何实现锁机制" class="headerlink" title="Synchronize在编译时如何实现锁机制"></a>Synchronize在编译时如何实现锁机制</h2><p>Synchronized进过编译，会在同步块的前后分别形成monitorenter和monitorexit这个两个字节码指令。在执行monitorenter指令时，首先要尝试获取对象锁。如果这个对象没被锁定，或者当前线程已经拥有了那个对象锁，把锁的计算器加1，相应的，在执行monitorexit指令时会将锁计算器就减1，当计算器为0时，锁就被释放了。如果获取对象锁失败，那当前线程就要阻塞，直到对象锁被另一个线程释放为止。</p>
-<h2 id="ReentrantLock使用方法"><a href="#ReentrantLock使用方法" class="headerlink" title="ReentrantLock使用方法"></a>ReentrantLock使用方法</h2><p>ReentrantLock是java.util.concurrent包下提供的一套互斥锁，相比Synchronized，ReentrantLock类提供了一些高级功能，主要有以下3项：</p>
+<h2 id="JVM调优目标"><a href="#JVM调优目标" class="headerlink" title="JVM调优目标"></a>JVM调优目标</h2><ul>
+<li>GC低停顿；</li>
+<li>GC低频率；</li>
+<li>低内存占用； </li>
+<li>高吞吐量;</li>
+</ul>
+<h2 id="VM调优量化目标（示例）："><a href="#VM调优量化目标（示例）：" class="headerlink" title="VM调优量化目标（示例）："></a>VM调优量化目标（示例）：</h2><ul>
+<li>Heap 内存使用率 &lt;= 70%;</li>
+<li>Old generation内存使用率&lt;= 70%;</li>
+<li>avgpause &lt;= 1秒; </li>
+<li>Full gc 次数0 或 avg pause interval &gt;= 24小时 ;</li>
+</ul>
+<p>注意：不同应用，其JVM调优量化目标是不一样的。</p>
+<h2 id="JVM调优经验"><a href="#JVM调优经验" class="headerlink" title="JVM调优经验"></a>JVM调优经验</h2><h3 id="VM调优的一般步骤为："><a href="#VM调优的一般步骤为：" class="headerlink" title="VM调优的一般步骤为："></a>VM调优的一般步骤为：</h3><ul>
+<li>第1步：分析GC日志及dump文件，判断是否需要优化，确定瓶颈问题点；</li>
+<li>第2步：确定JVM调优量化目标；</li>
+<li>第3步：确定JVM调优参数（根据历史JVM参数来调整）；</li>
+<li>第4步：调优一台服务器，对比观察调优前后的差异；</li>
+<li>第5步：不断的分析和调整，直到找到合适的JVM参数配置；</li>
+<li>第6步：找到最合适的参数，将这些参数应用到所有服务器，并进行后续跟踪。</li>
+</ul>
+<h3 id="VM调优重要参数解析"><a href="#VM调优重要参数解析" class="headerlink" title="VM调优重要参数解析"></a>VM调优重要参数解析</h3><p>配置： -server  </p>
+<p>-Xms12g -Xmx12g -XX:PermSize=500m -XX:MaxPermSize=1000m -Xmn2400m -XX:SurvivorRatio=1 -Xss512k  -XX:MaxDirectMemorySize=1G </p>
+<p>-XX:+DisableExplicitGC -XX:CompileThreshold=8000 -XX:+UseConcMarkSweepGC  -XX:+UseParNewGC</p>
+<p>-XX:+UseCompressedOops -XX:CMSInitiatingOccupancyFraction=60  -XX:ConcGCThreads=4</p>
+<p>-XX:MaxTenuringThreshold=10  -XX:ParallelGCThreads=8</p>
+<p>-XX:+ParallelRefProcEnabled  -XX:+CMSClassUnloadingEnabled  -XX:+CMSParallelRemarkEnabled</p>
+<p>-XX:CMSMaxAbortablePrecleanTime=500 -XX:CMSFullGCsBeforeCompaction=4 </p>
+<p>XX:+UseCMSInitiatingOccupancyOnly -XX:+UseCMSCompactAtFullCollection </p>
+<p>-XX:+HeapDumpOnOutOfMemoryError  -verbose:gc  -XX:+PrintGCDetails  -XX:+PrintGCDateStamps  -Xloggc:/weblogic/gc/gc_$$.log</p>
+<p>重要参数（可调优）解析：</p>
+<p>-Xms12g：初始化堆内存大小为12GB。</p>
+<p>-Xmx12g：堆内存最大值为12GB 。</p>
+<p>-Xmn2400m：新生代大小为2400MB，包括 Eden区与2个Survivor区。</p>
+<p>-XX:SurvivorRatio=1：Eden区与一个Survivor区比值为1:1。</p>
+<p>-XX:MaxDirectMemorySize=1G：直接内存。报java.lang.OutOfMemoryError: Direct buffer memory 异常可以上调这个值。</p>
+<p>-XX:+DisableExplicitGC：禁止运行期显式地调用 System.gc() 来触发fulll GC。</p>
+<p>注意: Java RMI的定时GC触发机制可通过配置-Dsun.rmi.dgc.server.gcInterval=86400来控制触发的时间。</p>
+<p>-XX:CMSInitiatingOccupancyFraction=60：老年代内存回收阈值，默认值为68。</p>
+<p>-XX:ConcGCThreads=4：CMS垃圾回收器并行线程线，推荐值为CPU核心数。</p>
+<p>-XX:ParallelGCThreads=8：新生代并行收集器的线程数。</p>
+<p>-XX:MaxTenuringThreshold=10：设置垃圾最大年龄。如果设置为0的话，则年轻代对象不经过Survivor区，直接进入年老代。对于年老代比较多的应用，可以提高效率。如果将此值设置为一个较大值，则年轻代对象会在Survivor区进行多次复制，这样可以增加对象再年轻代的存活时间，增加在年轻代即被回收的概论。</p>
+<p>-XX:CMSFullGCsBeforeCompaction=4：指定进行多少次fullGC之后，进行tenured区 内存空间压缩。</p>
+<p>-XX:CMSMaxAbortablePrecleanTime=500：当abortable-preclean预清理阶段执行达到这个时间时就会结束。</p>
+<h3 id="触发Full-GC的场景及应对策略"><a href="#触发Full-GC的场景及应对策略" class="headerlink" title="触发Full GC的场景及应对策略"></a>触发Full GC的场景及应对策略</h3><p>年轻代空间（包括 Eden 和 Survivor 区域）回收内存被称为 Minor GC，对老年代GC称为MajorGC，而Full GC是对整个堆来说的，在最近几个版本的JDK里默认包括了对永生带即方法区的回收（JDK8中无永生带了），出现Full GC的时候经常伴随至少一次的Minor GC,但非绝对的。MajorGC的速度一般会比Minor GC慢10倍以上。</p>
+<p>触发Full GC的场景及应对策略： </p>
 <ul>
-<li>等待可中断，持有锁的线程长期不释放的时候，正在等待的线程可以选择放弃等待，这相当于Synchronized来说可以避免出现死锁的情况。</li>
-<li>公平锁，多个线程等待同一个锁时，必须按照申请锁的时间顺序获得锁，Synchronized锁非公平锁，ReentrantLock默认的构造函数是创建的非公平锁，可以通过参数true设为公平锁，但公平锁表现的性能不是很好。</li>
-<li>锁绑定多个条件，一个ReentrantLock对象可以同时绑定对个对象。</li>
+<li>System.gc()方法的调用，应对策略：通过-XX:+DisableExplicitGC来禁止调用System.gc ;</li>
+<li>老年代代空间不足，应对策略：让对象在Minor GC阶段被回收，让对象在新生代多存活一段时间，不要创建过大的对象及数组;</li>
+<li>永生区空间不足，应对策略：增大PermGen空间</li>
+<li>GC时出现promotionfailed和concurrent mode failure，应对策略：增大survivor space</li>
+<li>Minor GC后晋升到旧生代的对象大小大于老年代的剩余空间，应对策略：增大Tenured space 或下调CMSInitiatingOccupancyFraction=60</li>
+<li>内存持续增涨达到上限导致Full GC  ，应对策略：通过dumpheap 分析是否存在内存泄漏</li>
 </ul>
-<h2 id="什么时候选择用ReentrantLock"><a href="#什么时候选择用ReentrantLock" class="headerlink" title="什么时候选择用ReentrantLock"></a>什么时候选择用ReentrantLock</h2><p>适用场景：时间锁等候、可中断锁等候、无块结构锁、多个条件变量或者锁投票</p>
-<p>在确实需要一些 synchronized所没有的特性的时候，比如时间锁等候、可中断锁等候、无块结构锁、多个条件变量或者锁投票。 ReentrantLock 还具有可伸缩性的好处，应当在高度争用的情况下使用它，但是请记住，大多数 synchronized 块几乎从来没有出现过争用，所以可以把高度争用放在一边。我建议用 synchronized 开发，直到确实证明 synchronized 不合适，而不要仅仅是假设如果使用 ReentrantLock “性能会更好”。请记住，这些是供高级用户使用的高级工具。（而且，真正的高级用户喜欢选择能够找到的最简单工具，直到他们认为简单的工具不适用为止。）。一如既往，首先要把事情做好，然后再考虑是不是有必要做得更快。</p>
+<h2 id="Gc日志分析工具"><a href="#Gc日志分析工具" class="headerlink" title="Gc日志分析工具"></a>Gc日志分析工具</h2><p>借助GCViewer日志分析工具，可以非常直观地分析出待调优点。</p>
+<p>可从以下几方面来分析：</p>
+<ul>
+<li>Memory,分析Totalheap、Tenuredheap、Youngheap内存占用率及其他指标，理论上内存占用率越小越好；</li>
+<li>Pause  ,分析Gc pause、Fullgc pause、Total pause三个大项中各指标，理论上GC次数越少越好，GC时长越小越好</li>
+</ul>
 
     
   </div>
@@ -134,7 +189,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 10px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 11.43px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Structure/" style="font-size: 10px;">Structure</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -143,6 +198,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/28/common-data-structure/">数据结构</a>
+      </li>
     
       <li>
         <a href="/2019/11/27/binary-tree-common/">二叉树</a>
@@ -158,10 +217,6 @@
     
       <li>
         <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
       </li>
     
   </ul>

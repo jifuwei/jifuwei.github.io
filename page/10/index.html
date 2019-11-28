@@ -59,224 +59,267 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/10/30/spring-complete-know/">
-  <time datetime="2019-10-30T13:26:49.000Z">
-    2019-10-30
+      <a href="/2019/11/05/redis-complete-know/">
+  <time datetime="2019-11-05T08:29:16.000Z">
+    2019-11-05
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/10/30/spring-complete-know/">【精分】Spring 最全最详细分析汇总</a></h1>
+    <h1 class="title"><a href="/2019/11/05/redis-complete-know/">【精分】Redis最全最详细分析汇总</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><ul>
-<li>bean生命周期</li>
-<li>实现InitializingBean和指定init-method比较？</li>
-</ul>
-<h2 id="bean生命周期"><a href="#bean生命周期" class="headerlink" title="bean生命周期"></a>bean生命周期</h2><p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8gjtvw0p3j20ko0e275x.jpg" alt=""></p>
-<h2 id="实现InitializingBean和指定init-method比较？"><a href="#实现InitializingBean和指定init-method比较？" class="headerlink" title="实现InitializingBean和指定init-method比较？"></a>实现InitializingBean和指定init-method比较？</h2><ul>
-<li>spring为bean提供了两种初始化bean的方式，实现InitializingBean接口，实现afterPropertiesSet方法，或者在配置文件中同过init-method指定，两种方式可以同时使用</li>
-<li>实现InitializingBean接口是直接调用afterPropertiesSet方法，<strong>比通过反射调用init-method指定的方法效率相对来说要高点</strong>。但是<strong>init-method方式消除了对spring的依赖</strong></li>
-<li>如果调用afterPropertiesSet方法时出错，则不调用init-method指定的方法。</li>
-</ul>
-<h2 id="Resource-是如何被查找、加载的？"><a href="#Resource-是如何被查找、加载的？" class="headerlink" title="Resource 是如何被查找、加载的？"></a>Resource 是如何被查找、加载的？</h2><p>Resource 接口是 Spring 资源访问策略的抽象，它本身并不提供任何资源访问实现，具体的资源访问由该接口的实现类完成——每个实现类代表一种资源访问策略。 Spring 为 Resource 接口提供了如下实现类：</p>
+      <h2 id="redis数据结构和对象"><a href="#redis数据结构和对象" class="headerlink" title="redis数据结构和对象"></a>redis数据结构和对象</h2><h3 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h3><h4 id="SDS"><a href="#SDS" class="headerlink" title="SDS"></a>SDS</h4><p>SDS 是对 C 字符串的封装，用于表示字符串<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8njhfowsrj20ke03vq2r.jpg" alt=""></p>
+<p>SDS 使用预分配的方式为字符串分配空间，free 字段表示当前未使用的空间，当字符串增长时，会优先使用未使用的空间，如果未使用的空间不足，Redis 会为 SDS 分配额外的空间。分配算法具体为：</p>
 <ul>
-<li>UrlResource：访问网络资源的实现类。</li>
-<li>ClassPathResource：访问类加载路径里资源的实现类。</li>
-<li>FileSystemResource：访问文件系统里资源的实现类。</li>
-<li>ServletContextResource：访问相对于 ServletContext 路径里的资源的实现类：</li>
-<li>InputStreamResource：访问输入流资源的实现类。</li>
-<li>ByteArrayResource：访问字节数组资源的实现类。 这些 Resource 实现类，针对不同的的底层资源，提供了相应的资源访问逻辑，并提供便捷的包装，以利于客户端程序的资源访问。</li>
+<li>如果增长后的字符串长度小于 1MB，Redis 将额外分配等同于增长后的字符串长度的空间，此时 free 和 len 的大小相等；</li>
+<li>如果增长后的字符串长度大于 1MB，Redis 将额外分配 1MB 大小的空间。</li>
 </ul>
-<h2 id="有哪些常用的-Context？"><a href="#有哪些常用的-Context？" class="headerlink" title="有哪些常用的 Context？"></a>有哪些常用的 Context？</h2><p>最常被使用的 ApplicationContext 接口实现：</p>
+<p>分配后的空间不会被回收，如果字符串缩短，缩短的空间会被加入到 free 空间中。</p>
+<h4 id="链表"><a href="#链表" class="headerlink" title="链表"></a>链表</h4><p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8nji8594ij20g705ba9z.jpg" alt=""></p>
+<p>Redis 的链表是一个双向链表，它的特性如下：</p>
 <ul>
-<li>FileSystemXmlApplicationContext<br>该容器从 XML 文件中加载已被定义的 bean。在这里，你需要提供给构造器 XML 文件的完整路径</li>
-<li>ClassPathXmlApplicationContext<br>该容器从 XML 文件中加载已被定义的 bean。在这里，你不需要提供 XML 文件的完整路径，只需正确配置 CLASSPATH 环境变量即可，因为，容器会从 CLASSPATH 中搜索 bean 配置文件。</li>
-<li>WebXmlApplicationContext<br>该容器会在一个 web 应用程序的范围内加载在 XML 文件中已被定义的 bean。</li>
+<li>双端：链表节点带有 prev 和 next 指针，获取某个节点的前置和后置节点的复杂度都是 O(1)。</li>
+<li>无环：表头节点的 prev 和表尾节点的 next 指针都指向 NULL。</li>
+<li>带表头指针和表尾指针：通过 head 和 tail 指针获取表头和表尾节点的复杂度为 O(1)。</li>
+<li>计数器：获取节点个数复杂度为 O(1)</li>
+<li>多态：利用 dup（复制节点保存的值）、free(释放节点保存的值) 和 match（比较节点的值和输入的值是否相等），来实现保存不同的值。</li>
 </ul>
-<h2 id="beanFactory和ApplicationContext的区别"><a href="#beanFactory和ApplicationContext的区别" class="headerlink" title="beanFactory和ApplicationContext的区别"></a>beanFactory和ApplicationContext的区别</h2><p>BeanFacotry是spring中比较原始的Factory。如XMLBeanFactory就是一种典型的BeanFactory。原始的BeanFactory无法支持spring的许多插件，如AOP功能、Web应用等。 </p>
-<p>ApplicationContext接口,它由BeanFactory接口派生而来，因而提供BeanFactory所有的功能。ApplicationContext以一种更向面向框架的方式工作以及对上下文进行分层和实现继承，ApplicationContext包还提供了以下的功能： </p>
+<h4 id="字典"><a href="#字典" class="headerlink" title="字典"></a>字典</h4><p>字典是一个散列表结构，使用 MurmurHash2 算法计算哈希值，使用拉链法保存哈希冲突。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8njnpdutjj20jn0aaglr.jpg" alt=""></p>
+<p>Redis 的字典 dict 中包含两个哈希表 dictht，这是为了方便进行 rehash 操作。在扩容时，将其中一个 dictht 上的键值对 rehash 到另一个 dictht 上面，完成之后释放空间并交换两个 dictht 的角色。</p>
+<p>渐进式 rehash 通过记录 dict 的 rehashidx 完成，它从 0 开始，然后每执行一次 rehash 都会递增。例如在一次 rehash 中，要把 dict[0] rehash 到 dict[1]，这一次会把 dict[0] 上 table[rehashidx] 的键值对 rehash 到 dict[1] 上，dict[0] 的 table[rehashidx] 指向 null，并令 rehashidx++。</p>
+<p>在 rehash 期间，每次对字典执行添加、删除、查找或者更新操作时，都会执行一次渐进式 rehash。</p>
+<p>采用渐进式 rehash 会导致字典中的数据分散在两个 dictht 上，因此对字典的查找操作也需要到对应的 dictht 去执行。</p>
+<h4 id="跳跃表"><a href="#跳跃表" class="headerlink" title="跳跃表"></a>跳跃表</h4><p>跳跃表是有序集合的底层实现之一。</p>
+<p>跳跃表是基于多指针有序链表实现的，可以看成多个有序链表。每个跳跃表节点的层高都是 1-32 之间的随机数。</p>
+<p>跳跃表中的节点按照分数大小排列，当分值相同时，节点按照成员对象的大小进行排序。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8nkjcx7skj20kq04ojra.jpg" alt=""></p>
+<p>在查找时，从上层指针开始查找，找到对应的区间之后再到下一层去查找。下图演示了查找 22 的过程。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8nkjr59boj20ku04va9z.jpg" alt=""></p>
+<p>与红黑树等平衡树相比，跳跃表具有以下优点：</p>
 <ul>
-<li>MessageSource, 提供国际化的消息访问 </li>
-<li>资源访问，如URL和文件 </li>
-<li>事件传播 </li>
-<li>载入多个（有继承关系）上下文 ，使得每一个上下文都专注于一个特定的层次，比如应用的web层 </li>
+<li>插入速度非常快速，因为不需要进行旋转等操作来维护平衡性；</li>
+<li>并发插入时只需锁住少数节点</li>
+<li>支持范围查找</li>
+<li>更容易实现</li>
 </ul>
-<p>1.利用MessageSource进行国际化<br>BeanFactory是不支持国际化功能的，因为BeanFactory没有扩展Spring中MessageResource接口。相反，由于ApplicationContext扩展了MessageResource接口，因而具有消息处理的能力(i18N)，具体spring如何使用国际化，以后章节会详细描述。 </p>
-<p>2.强大的事件机制(Event)<br>基本上牵涉到事件(Event)方面的设计，就离不开观察者模式。不明白观察者模式的朋友，最好上网了解下。因为，这种模式在java开发中是比较常用的，又是比较重要的。<br>ApplicationContext的事件机制主要通过ApplicationEvent和ApplicationListener这两个接口来提供的，和java swing中的事件机制一样。即当ApplicationContext中发布一个事件的时，所有扩展了ApplicationListener的Bean都将会接受到这个事件，并进行相应的处理。 </p>
-<p>Spring提供了部分内置事件，主要有以下几种： </p>
+<p>跳跃表的缺点：</p>
 <ul>
-<li>ContextRefreshedEvent ：ApplicationContext发送该事件时，表示该容器中所有的Bean都已经被装载完成，此ApplicationContext已就绪可用 </li>
-<li>ContextStartedEvent：生命周期 beans的启动信号 </li>
-<li>ContextStoppedEvent: 生命周期 beans的停止信号 </li>
-<li>ContextClosedEvent：ApplicationContext关闭事件，则context不能刷新和重启，从而所有的singleton bean全部销毁(因为singleton bean是存在容器缓存中的) </li>
+<li>重复存储分层节点，消耗内存</li>
 </ul>
-<p>虽然，spring提供了许多内置事件，但用户也可根据自己需要来扩展spriong中的事物。注意，要扩展的事件都要实现ApplicationEvent接口。 </p>
-<p>3.底层资源的访问<br>ApplicationContext扩展了ResourceLoader(资源加载器)接口，从而可以用来加载多个Resource，而BeanFactory是没有扩展ResourceLoader </p>
-<p>4.对Web应用的支持<br>与BeanFactory通常以编程的方式被创建不同的是，ApplicationContext能以声明的方式创建，如使用ContextLoader。当然你也可以使用ApplicationContext的实现之一来以编程的方式创建ApplicationContext实例 。 </p>
-<p>5.其它区别<br>1).BeanFactroy采用的是延迟加载形式来注入Bean的，即只有在使用到某个Bean时(调用getBean())，才对该Bean进行加载实例化，这样，我们就不能发现一些存在的Spring的配置问题。而ApplicationContext则相反，它是在容器启动时，一次性创建了所有的Bean。这样，在容器启动时，我们就可以发现Spring中存在的配置错误。 </p>
-<p>2).BeanFactory和ApplicationContext都支持BeanPostProcessor、BeanFactoryPostProcessor的使用，但两者之间的区别是：BeanFactory需要手动注册，而ApplicationContext则是自动注册</p>
-<h2 id="spring启动死锁问题"><a href="#spring启动死锁问题" class="headerlink" title="spring启动死锁问题"></a>spring启动死锁问题</h2><p>spring在初始化singleton bean的时候,需要锁两个地方,第一个是<br>DefaultSingletonBeanRegistry中的singletonObjects:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** Cache of singleton objects: bean name --&gt; bean instance */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Map singletonObjects = CollectionFactory.createConcurrentMapIfPossible(<span class="number">16</span>);</span><br><span class="line">        ...</span><br><span class="line">        <span class="keyword">synchronized</span> (<span class="keyword">this</span>.singletonObjects) &#123;</span><br><span class="line">            Object singletonObject = <span class="keyword">this</span>.singletonObjects.get(beanName);</span><br><span class="line">            <span class="keyword">if</span> (singletonObject == <span class="keyword">null</span>) &#123;</span><br><span class="line">                ...</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    singletonObject = singletonFactory.getObject();</span><br><span class="line">                &#125;</span><br></pre></td></tr></table></figure></p>
-<p>singletonObjects是DefaultSingletonBeanRegistry中的并发Map.</p>
-<p>第二步需要锁DefaultListableBeanFactory中的beanDefinitionMap:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** Map of bean definition objects, keyed by bean name */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> Map beanDefinitionMap = CollectionFactory.createConcurrentMapIfPossible(<span class="number">16</span>);</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">public</span> String[] getBeanDefinitionNames() &#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (<span class="keyword">this</span>.beanDefinitionMap) &#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.frozenBeanDefinitionNames != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">this</span>.frozenBeanDefinitionNames;</span><br><span class="line">            &#125;</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
-<p>如果在应用启动时只有一个线程进入spring初始化bean时是没问题的, 但这里应用代码在spring的容器启动的同时,有另外一个main方法同时开始运行调用spring的DefaultListableBeanFactory.preInstantiateSingletons方法,两个线程两把锁,是有可能造成饥饿竞争的.</p>
-<p>在spring容器外自行调用spring的创建bean方法要注意线程问题.</p>
-<h2 id="AOP初始化步骤"><a href="#AOP初始化步骤" class="headerlink" title="AOP初始化步骤"></a>AOP初始化步骤</h2><p>创建一个Bean，TestBean。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdeul227j20my0eyjsw.jpg" alt=""></p>
-<p>创建AOP的Aspect。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdf6wzaxj20za0m07cl.jpg" alt=""></p>
-<h3 id="示例解析与AOP术语概念"><a href="#示例解析与AOP术语概念" class="headerlink" title="示例解析与AOP术语概念"></a>示例解析与AOP术语概念</h3><p>看到上面的结果，很容易猜想到，LogAspect作用了在TestBean上，使得每次执行TestBean上的方法时，都会执行对应的方法（before/after）。</p>
-<p>LogAspect中带注解@Pointcut的allMethod()，是用来扫描程序中的连接点。当执行一个方法时，命中了连接点，则会根据不同的通知，执行对应的织入代码。在上面例子中，执行getStr()前会执行LogAspect中的before()，执行getStr()后会执行LogAspect中的after()。</p>
-<p>具体的通知包含</p>
+<h4 id="整数集合"><a href="#整数集合" class="headerlink" title="整数集合"></a>整数集合</h4><p>整数集合是集合键的底层实现之一，它的底层是一个数组，这个数组以有序、无重复的方式保存集合元素。元素的类型可以为 int16_t,int32_t 或者 int64_t。程序会根据新添加元素的类型，改变数组中元素的类型。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8nklt0d78j20g5060wer.jpg" alt=""></p>
+<p>encoding 表示元素的类型，数组中所有元素的类型是一样的。当有更大的数加入进来的时候，数组会进行升级操作，比如从 int16_t 升级到 int32_t。</p>
+<p>整数集合只能升级，不能降级。</p>
+<h4 id="压缩列表"><a href="#压缩列表" class="headerlink" title="压缩列表"></a>压缩列表</h4><p>压缩列表被用作列表和哈希的底层实现之一，是一种为节约内存而开发的，由任意多个节点组成的顺序数据结构。每个节点可以保存一个字节数组或一个整数值。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8nko0oyucj20ng01sglf.jpg" alt=""></p>
+<p>entry1、entry2…是实际存储数据的节点，除此之外还有些字段记录列表的信息：zlbytes 记录整个压缩列表占用的内存字节数，zltail 指向压缩列表表尾节点，zllen 记录包含的节点数量，zlend 是个特殊值字段（0xFF）用于标记末端。</p>
+<p>每个节点由 previous_entry_length、encoding、content 三部分组成。previous_entry_length 保存了前一个节点的长度，由此可以实现从表尾向表头的遍历。encoding 是个复用字段，记录了 content 的编码和长度。下图的 encoding 最高两位 00 表示节点保存的是一个字节数组，后六位 001011 记录了字节数组长度 11。content 保存着节点的值”hello world”。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8nkpy903tj20fv01zweb.jpg" alt=""></p>
+<h3 id="对象"><a href="#对象" class="headerlink" title="对象"></a>对象</h3><p>Redis 并没有使用以上的数据结构来实现键值对数据库，而是基于这些数据结构创建了一个对象系统。</p>
+<table>
+<thead>
+<tr>
+<th>对象类型</th>
+<th>底层实现</th>
+<th>可以存储的值</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>STRING</td>
+<td>int，sds</td>
+<td>字符串、整数或者浮点数</td>
+<td>对整个字符串或者字符串的其中一部分执行操作，对整数和浮点数执行自增或者自减操作</td>
+</tr>
+<tr>
+<td>LIST</td>
+<td>链表，压缩列表</td>
+<td>列表</td>
+<td>从两端压入或者弹出元素，对单个或者多个元素，进行修剪，只保留一个范围内的元素</td>
+</tr>
+<tr>
+<td>HASH</td>
+<td>字典，压缩列表</td>
+<td>包含键值对的无序散列表</td>
+<td>添加、获取、移除单个键值对，获取所有键值对，检查某个键是否存在</td>
+</tr>
+<tr>
+<td>SET</td>
+<td>整数集合，字典</td>
+<td>无序集合</td>
+<td>添加、获取、移除单个元素，检查一个元素是否存在于集合中，计算交集、并集、差集，从集合里面随机获取元素</td>
+</tr>
+<tr>
+<td>ZSET</td>
+<td>（字典+跳跃表），压缩列表</td>
+<td>有序集合</td>
+<td>添加、获取、删除元素，根据分值范围或者成员来获取元素，计算一个键的排名</td>
+</tr>
+</tbody>
+</table>
+<p>SET 对象使用整数集合保存只包含整数的集合，使用字典保存含有字符串的集合。使用字典保存集合时，字典的键是一个元素的成员，字典的值为 NULL。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8nkx8an4cj20fn06l74b.jpg" alt=""></p>
+<p>ZSET 对象同时使用字典和跳跃表保存有序集合，使用字典保存有序集合时，字典的键保存了元素的成员，字典的值保存了元素的分值。ZSET 集合元素会同时共享在字典和跳跃表中（保存的是指针，不会造成数据的重复）<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8nkywpm3zj20r90evjry.jpg" alt=""></p>
+<p><strong>为什么有序集合需要同时使用字典和跳跃表来实现？</strong></p>
+<blockquote>
+<p>在理论上，有序集合可以单独使用字典或者跳跃表来实现。但两者都有不可替代的地方：字典可以在 O(1) 时间复杂度查找成员的分值，跳跃表可以执行范围型操作。因此为了同时获得这两个特性，Redis 使用了字典和跳跃表来实现有序集合。</p>
+</blockquote>
+<h2 id="Redis-持久化和过期机制"><a href="#Redis-持久化和过期机制" class="headerlink" title="Redis 持久化和过期机制"></a>Redis 持久化和过期机制</h2><h3 id="RDB"><a href="#RDB" class="headerlink" title="RDB"></a>RDB</h3><p>RDB 是 Redis 持久化的第一种方式。有两个 Redis 命令可以用于生成 RDB 文件，一个是 SAVE，另一个是 BGSAVE。<br>SAVE 会阻塞 Redis 服务器进程，执行时 Redis 服务器会阻塞所有客户端发送的命令。</p>
+<p>BGSAVE 会派生出一个子进程执行，执行时仍可继续处理客户端的命令，但会拒绝客户端 SAVE 和 BGSAVE 的命令，延迟 BGREWRITEAOF 命令。</p>
+<h4 id="执行条件"><a href="#执行条件" class="headerlink" title="执行条件"></a>执行条件</h4><p>SAVE 命令会阻塞服务器，所以只能手动执行。BGSAVE 可以在不阻塞的情况下执行，所以可以配置 save 选项让服务器每隔一段时间自动执行一次。</p>
+<p>比如我们可以向服务器提供以下配置：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">save  900  1</span><br><span class="line">save  300  10</span><br><span class="line">save  60  10000</span><br></pre></td></tr></table></figure></p>
+<p>那么只要满足以下三个条件中的任意一个即可被执行：</p>
 <ul>
-<li>@Before，前置通知，执行方法前执行</li>
-<li>@AfterReturn，返回通知，正常返回方法后执行</li>
-<li>@After，后置通知，方法最终结束后执行，相当于finaly</li>
-<li>@Around，环绕通知，围绕整个方法</li>
-<li>@AfterThrowing，异常通知，抛出异常后执行</li>
+<li>服务器在 900 秒之内对数据库进行了至少 1 次修改。</li>
+<li>服务器在 300 秒之内对数据库进行了至少 10 次修改。</li>
+<li>服务器在 60 秒之内对数据库进行了至少 10000 次修改。</li>
 </ul>
-<p>开发者在命中连接点时，可以通过以上不同的通知，执行对应方法。这就是AOP中的Advisor。</p>
-<p>以上的内容其实已经把AOP核心的概念都已经点出来了，我们再深入具体的认识下其中的术语，</p>
+<p>为了实现这一功能，服务器会维持一个记录距离上次保存之后修改的次数的 dirty 计数器和一个记录上次保存时间的 lastsave 属性。</p>
+<p>周期操作函数 serverCron 默认每个 100 毫秒就会执行一次，它的其中一项工作就是检查 save 选项设置的条件是否满足，如果满足的话就会执行 BGSAVE 命令。</p>
+<blockquote>
+<p>执行 BGSAVE 命令或者 BGREWRITEAOF 命令的过程中，Redis 需要创建当前服务器进程的子进程，而大多数操作系统都采用写时复制（copy-on-write）来优化子进程的使用效率，所以在子进程存在期间，服务器会提高负载因子的阈值，从而避免在子进程存在期间进行哈希表扩展操作，避免不必要的内存写入操作，最大限度地节约内存。</p>
+</blockquote>
+<h4 id="文件内容"><a href="#文件内容" class="headerlink" title="文件内容"></a>文件内容</h4><p>RDB 文件有多个部分，包括握手字段 ‘REDIS’ 字符串，版本号，数据库，’EOF’ 和校验字段。</p>
+<p>核心部分是数据库字段，数据库字段包括了握手字段 ‘SELECTDB’，数据库编号和键值对，数据库编号指示了这是第几个数据库，而键值对则保存了各项数据。</p>
+<p>键值对中除了类型和数据，还可能会有过期时间。对于不同类型的键值对，RDB 文件会用不同的方式来保存它们。</p>
+<p>RDB 文件本身是一个经过压缩的二进制文件，每次 SAVE 或者 BGSAVE 都会创建一个新的 RDB 文件，不支持追加操作。</p>
+<h3 id="AOF"><a href="#AOF" class="headerlink" title="AOF"></a>AOF</h3><p>AOF 是 Redis 持久化的第二种方式，在 AOF 和 RDB 同时开启时，服务器会优先考虑从 AOF 恢复数据，因为 AOF 每次记录间隔的时间更短。</p>
+<p>和 RDB 直接记录键值对不同，AOF 记录的是命令。服务器在执行完一个写命令以后，会把这条命令追加到服务器 aof_buf 缓冲区的末尾，并在一个适当的时候写入文件。重建时服务器会创建一个伪客户端，依次执行文件中的命令即可完成数据的载入。</p>
+<h4 id="文件的写入与同步"><a href="#文件的写入与同步" class="headerlink" title="文件的写入与同步"></a>文件的写入与同步</h4><p>AOF 的持久化发生在每次事件循环结束之前，会阻塞服务器。在持久化时会调用操作系统的 write 函数，但通常该函数会把数据保存在一个内存缓冲区里面而不是立刻刷入磁盘。这就带来一个安全问题。为了避免这个问题操作系统又提供了 fsync 和 fdatasync 两个强制刷盘的同步函数。我们把 write 称为写入，把 fsync 和 fdatasync 称为同步。</p>
+<p>服务器会在每次事件循环结束之前根据 appendfsync 选项写入和同步 aof_buf 中的数据：</p>
 <ul>
-<li>Aspect，切面，一个关注点的模块。<br>例子中，LogAspect就是切面。</li>
-<li>JoinPoint， 连接点，程序执行中的某个点，某个位置。<br>例子中，testBean.getStr()是连接点。</li>
-<li>PointCut，切点，切面匹配连接点的点，一般与切点表达式相关，就是切面如何切点。<br>例子中，@PointCut注解就是切点表达式，匹配对应的连接点</li>
-<li>Advice，通知，指在切面的某个特定的连接点上执行的动作。<br>例子中，before()与after()方法中的代码。</li>
-<li>TargetObject，目标对象，指被切入的对象。<br>例子中，从ctx中取出的testBean则是目标对象。</li>
-<li>Weave，织入，将Advice作用在JoinPoint的过程。</li>
+<li>always：写入并同步</li>
+<li>everysec：写入，如果距离上次同步超过 1 秒，则同步</li>
+<li>no：只写入，何时同步由操作系统决定</li>
 </ul>
-<h3 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h3><p>上面的例子之所以能完成AOP的代理，只因为Spring的xml配置里面加了这一句<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt; <span class="attr">aop</span> <span class="attr">:</span> <span class="attr">aspectj-autoproxy</span> / &gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>加上了这一个配置，使得整个Spring项目拥有了AOP的功能。全局搜索下aspectj-autoproxy这个字段，可以发现，是这个类AspectJAutoProxyBeanDefinitionParser解析了这个元素。</p>
-<p>其中的parse方法调用的是AopNamespaceUtils类中的registerAspectJAnnotationAutoProxyCreatorIfNecessary。这个方法作用是初始化一个AOP专用的Bean，并且注册到Spring容器中。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdhvdb60j21c408wdi6.jpg" alt=""></p>
-<p>解析这三个操作，</p>
+<h4 id="AOF-重写"><a href="#AOF-重写" class="headerlink" title="AOF 重写"></a>AOF 重写</h4><p>随着服务器运行时间的流逝，AOF 文件中的内容会越来越多，文件的体积也会越来越大，不仅会对宿主计算机造成影响，也拖慢了数据恢复所需要的时间。</p>
+<p>AOF 重写是指重新生成一个 AOF 文件替换原来的 AOF 文件。但这里的重写不会对原有的文件进行读取、分析或者写入，而是把数据库中的键值对折算成命令，重新写入新的文件。</p>
+<p>重写是一个耗时的操作，因此 Redis 把它放到后台去操作，对应的指令是 BGREWRITEAOF。在重写过程中服务器还可能接收新的指令，因此 Redis 会维护一个 AOF 重写缓冲区，记录重写期间的写命令，在重写完成后追加到 AOF 文件末尾。</p>
+<h3 id="RDB-和-AOF-对比"><a href="#RDB-和-AOF-对比" class="headerlink" title="RDB 和 AOF 对比"></a>RDB 和 AOF 对比</h3><p>RDB 的优点：</p>
 <ul>
-<li>第一句，注册一个AnnotationAwareAspectJAutoProxyCreator（称它为自动代理器），这个Creator是AOP的操作核心，也是扫描Bean，代理Bean的操作所在。</li>
-<li>第二句，解析配置元素，决定代理的模式。其中有JDK动态代理，还有CGLIB代理，这部分后续会再细讲。</li>
-<li>第三句，作为系统组件，把Creator这个Bean，放到Spring容器中。让Spring实例化，启动这个Creator。</li>
+<li>RDB 是一个非常紧凑的文件，它的体积更小，且可以选择持久化的时间，适合做备份的文件。比如每天的备份，每月的备份。</li>
+<li>RDB 对主进程更友好，父进程只需要 fork 出一个子进程，无须执行任何磁盘 I/O 操作。</li>
+<li>RDB 在恢复大数据集时的速度比 AOF 的恢复速度要快。</li>
 </ul>
-<h4 id="自动代理器"><a href="#自动代理器" class="headerlink" title="自动代理器"></a>自动代理器</h4><p>AnnotationAwareAspectJAutoProxyCreator的父类AbstractAutoProxyCreator，<strong>里面实现了BeanPostProceesor接口的postProcessAfterInitialization方法（该方法在一个Bean加载到Spring后会执行）</strong>。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdmniq86j21b60fi14k.jpg" alt=""></p>
-<p>关联注释描述可知，当一个bean加载完后，执行了该方法，会生成一个新的代理对象，返回context中加载。</p>
-<p>下面重点看其中的wrapIfNecessary方法。讲述了整个AOP的核心流程，是Spring AOP最最最核心的代码所在。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdn2nalsj21h00w87ou.jpg" alt=""></p>
-<p>看到红框的两个核心方法，可以知道，先从刚加载的Bean中扫描出所有的advice和advisor，然后用它来创建一个代理对象。</p>
-<h4 id="获取Advisor"><a href="#获取Advisor" class="headerlink" title="获取Advisor"></a>获取Advisor</h4><p>先看如何扫描出advice和advisor。</p>
-<p>一步步Debug getAdvicesAndAdvisorsForBean()，找到BeanFactoryAspectJAdvisorsBuilder中的buildAspectJAdvisors方法。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdo8bb8uj20zi0c80uy.jpg" alt=""></p>
-<p>该方法就是找出Spring容器中存在的AspectBean，然后返回所有AspectBean中的Advisor。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdp2qotij21ao0cegwv.jpg" alt=""></p>
-<p>示例中，LogAspect就是AspectBean，然后LogAspect中的before和after方法就是Advisor。<br>所以最终返回了LogAspect中的Advisor（before和after）。</p>
-<h4 id="创建代理"><a href="#创建代理" class="headerlink" title="创建代理"></a>创建代理</h4><p>拿到了所有的Advisor后，就进入了创建代理的流程了createProxy()。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdptyuejj20yu0de0vf.jpg" alt=""></p>
-<p>这些入参，对比上一篇讲过的动态代理，其实非常相似。</p>
+<p>RDB 的缺点：</p>
 <ul>
-<li>beanClass，加载到Spring，触发AOP的bean类</li>
-<li>targetSource，目标对象，示例中则是从ctx中取出的testBean</li>
-<li>specificInterceptors，指定Advisor，示例中则是before和after的方法。</li>
+<li>因为 RDB 文件需要保存整个数据集的状态， 所以它并不是一个轻松的操作。 因此你可能会至少 5 分钟才保存一次 RDB 文件，间隔时间比较长。</li>
+<li>RDB 虽然会把持久化的操作交给子进程，但每次都会从头开始，在数据集比较庞大时， fork() 可能会非常耗时，造成服务器在某某毫秒内停止处理客户端； 如果数据集非常巨大，并且 CPU 时间非常紧张的话，那么这种停止时间甚至可能会长达整整一秒。</li>
 </ul>
-<p>下面来具体看下代理的过程<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdqnv7exj21fk0ywh99.jpg" alt=""></p>
-<p>代码可以概括为，创建一个proxyFactory对象，然后把上面的参数都丢到这个这个工厂里，最后从proxyFactory获取一个代理对象。</p>
-<p>来看看ProxyFactory的getProxy方法是怎么生成代理对象的。</p>
-<p>Debug该方法，可以在DefaultAopProxyFactory中createAopProxy看到<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hdrpcx0cj21680kkdti.jpg" alt=""></p>
-<p>工厂会根据配置与目标对象的类型，选择用JDK动态代理</p>
-<p>代理后的对象放回ctx中，然后当程序执行的时候，会直接调用这个代理类。</p>
-<p>至此整个AOP的代理流程就结束了。下面来了解下CGLIG代理与JDK代理的不同</p>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>回顾下Spring AOP的流程</p>
+<p>AOF 的优点：</p>
 <ul>
-<li>Spring加载自动代理器AnnotationAwareAspectJAutoProxyCreator，当作一个系统组件。</li>
-<li>当一个bean加载到Spring中时，会触发自动代理器中的bean后置处理</li>
-<li>bean后置处理，会先扫描bean中所有的Advisor</li>
-<li>然后用这些Adviosr和其他参数构建ProxyFactory</li>
-<li>ProxyFactory会根据配置和目标对象的类型寻找代理的方式（JDK动态代理或CGLIG代理）</li>
-<li>然后代理出来的对象放回context中，完成Spring AOP代理</li>
+<li>AOF 使用追加的方式，每次写入时间很短，因此可以允许更短间隔的持久化操作，比如 1 秒。</li>
+<li>AOF 文件的可读性比较好，如果你不小心执行了一条命令，只要 AOF 文件未被重写，那么只要停止服务器，移除 AOF 文件里的该条命令然后重启 Redis 即可。</li>
 </ul>
-<h2 id="spring-事务"><a href="#spring-事务" class="headerlink" title="spring 事务"></a>spring 事务</h2><h3 id="关于事务"><a href="#关于事务" class="headerlink" title="关于事务"></a>关于事务</h3><p>事务控制就是将一系列操作当成一个不可拆分的逻辑单元，保证这些操作要么都成功，要么都失败。在关系数据库中，一个事务可以是一条SQL语句，一组SQL语句或整个程序。</p>
-<p>事务应该具有4个属性：原子性、一致性、隔离性、持续性。这四个属性通常称为ACID特性。</p>
-<p>原子性（atomicity）。一个事务是一个不可分割的工作单位，事务中包括的诸操作要么都做，要么都不做。<br>一致性（consistency）。事务必须是使数据库从一个一致性状态变到另一个一致性状态。一致性与原子性是密切相关的。<br>隔离性（isolation）。一个事务的执行不能被其他事务干扰。即一个事务内部的操作及使用的数据对并发的其他事务是隔离的，并发执行的各个事务之间不能互相干扰。<br>持久性（durability）。一旦事务完成，无论发生什么系统错误，它的结果都不应该受到影响，这样就能从任何系统崩溃中恢复过来。通常，事务的结果被写到持久化存储器中。<br>事务有两种操作：提交，回滚</p>
-<h3 id="spring-事务核心接口"><a href="#spring-事务核心接口" class="headerlink" title="spring 事务核心接口"></a>spring 事务核心接口</h3><p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hezyc1j0j20xc0ejt95.jpg" alt=""></p>
-<h4 id="事务管理器"><a href="#事务管理器" class="headerlink" title="事务管理器"></a>事务管理器</h4><p>Spring并不直接管理事务，而是提供了多种事务管理器，他们将事务管理的职责委托给Hibernate或者JTA等持久化机制所提供的相关平台框架的事务来实现。<br>Spring事务管理器的接口是org.springframework.transaction.PlatformTransactionManager，通过这个接口，Spring为各个平台如JDBC、Hibernate等都提供了对应的事务管理器，但是具体的实现就是各个平台自己的事情了。接口内容如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Public interface <span class="title">PlatformTransactionManager</span><span class="params">()</span>...</span>&#123;  </span><br><span class="line">    <span class="comment">// 由TransactionDefinition得到TransactionStatus对象</span></span><br><span class="line">    <span class="function">TransactionStatus <span class="title">getTransaction</span><span class="params">(TransactionDefinition definition)</span> <span class="keyword">throws</span> TransactionException</span>; </span><br><span class="line">    <span class="comment">// 提交</span></span><br><span class="line">    <span class="function">Void <span class="title">commit</span><span class="params">(TransactionStatus status)</span> <span class="keyword">throws</span> TransactionException</span>;  </span><br><span class="line">    <span class="comment">// 回滚</span></span><br><span class="line">    <span class="function">Void <span class="title">rollback</span><span class="params">(TransactionStatus status)</span> <span class="keyword">throws</span> TransactionException</span>;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>从这里可知具体的具体的事务管理机制对Spring来说是透明的，它并不关心那些，那些是对应各个平台需要关心的，所以Spring事务管理的一个优点就是为不同的事务API提供一致的编程模型，如JTA、JDBC、Hibernate、JPA。下面分别介绍各个平台框架实现事务管理的机制。</p>
-<h4 id="JDBC事务"><a href="#JDBC事务" class="headerlink" title="JDBC事务"></a>JDBC事务</h4><p>如果应用程序中直接使用JDBC来进行持久化，DataSourceTransactionManager会为你处理事务边界。为了使用DataSourceTransactionManager，你需要使用如下的XML将其装配到应用程序的上下文定义中<br><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;bean id=<span class="string">"transactionManager"</span> <span class="class"><span class="keyword">class</span></span>=<span class="string">"org.springframework.jdbc.datasource.DataSourceTransactionManager"</span>&gt;</span><br><span class="line">    &lt;property name=<span class="string">"dataSource"</span> ref=<span class="string">"dataSource"</span> /&gt;</span><br><span class="line">&lt;/bean&gt;</span><br></pre></td></tr></table></figure></p>
-<p>实际上，DataSourceTransactionManager是通过调用java.sql.Connection来管理事务，而后者是通过DataSource获取到的。通过调用连接的commit()方法来提交事务，同样，事务失败则通过调用rollback()方法进行回滚。</p>
-<h3 id="基本事务属性的定义"><a href="#基本事务属性的定义" class="headerlink" title="基本事务属性的定义"></a>基本事务属性的定义</h3><p>上面讲到的事务管理器接口PlatformTransactionManager通过getTransaction(TransactionDefinition definition)方法来得到事务，这个方法里面的参数是TransactionDefinition类，这个类就定义了一些基本的事务属性。<br>那么什么是事务属性呢？事务属性可以理解成事务的一些基本配置，描述了事务策略如何应用到方法上。事务属性包含了5个方面，如图所示：</p>
-<p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8hf1tiv5kj20ck0a6jrb.jpg" alt=""></p>
-<p>而TransactionDefinition接口内容如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">TransactionDefinition</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">getPropagationBehavior</span><span class="params">()</span></span>; <span class="comment">// 返回事务的传播行为</span></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">getIsolationLevel</span><span class="params">()</span></span>; <span class="comment">// 返回事务的隔离级别，事务管理器根据它来控制另外一个事务可以看到本事务内的哪些数据</span></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">getTimeout</span><span class="params">()</span></span>;  <span class="comment">// 返回事务必须在多少秒内完成</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isReadOnly</span><span class="params">()</span></span>; <span class="comment">// 事务是否只读，事务管理器能够根据这个返回值进行优化，确保事务是只读的</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>我们可以发现TransactionDefinition正好用来定义事务属性，下面详细介绍一下各个事务属性。</p>
+<p>AOF 的缺点：</p>
 <ul>
-<li>propagation_required：表示当前方法必须运行在事务中，如果事务存在，方法在事务中运行；否则，启动一个新的事务</li>
-<li>propagation_supports：表示当前方法不需要事务上下文，但是如果存在当前事务的话，那么该方法会在这个事务中运行</li>
-<li>propagation_mandatory：表示该方法必须在事务中运行，如果当前事务不存在，则会抛出一个异常</li>
-<li>propagation_required_new：在该方法执行期间，当前事务会被挂起。如果使用JTATransactionManager的话，则需要访问TransactionManager</li>
-<li>propagation_not_supproted:表示该方法不应该运行在事务中。如果存在当前事务，在该方法运行期间，当前事务将被挂起。如果使用JTATransactionManager的话，则需要访问TransactionManager.</li>
-<li>propagation_never:表示当前方法不应该运行在事务上下文中。如果当前正有一个事务在运行，则会抛出异常</li>
-<li>propagation_nested:表示如果当前已经存在一个事务，那么该方法将会在嵌套事务中运行。嵌套的事务可以独立于当前事务进行单独地提交或回滚。如果当前事务不存在，那么其行为与- PROPAGATION_REQUIRED一样。注意各厂商对这种传播行为的支持是有所差异的。可以参考资源管理器的文档来确认它们是否支持嵌套事务</li>
+<li>对于相同的数据集来说，AOF 文件的体积通常要大于 RDB 文件的体积。</li>
+<li>使用 fsync 会降低 Redis 的性能，导致 AOF 的速度可能会慢于 RDB 。</li>
 </ul>
-<p>PROPAGATION_REQUIRED 如果存在一个事务，则支持当前事务。如果没有事务则开启一个新的事务。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//事务属性 PROPAGATION_REQUIRED</span></span><br><span class="line">methodA&#123;</span><br><span class="line">    ……</span><br><span class="line">    methodB();</span><br><span class="line">    ……</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//事务属性 PROPAGATION_REQUIRED</span></span><br><span class="line">methodB&#123;</span><br><span class="line">   ……</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>使用spring声明式事务，spring使用AOP来支持声明式事务，会根据事务属性，自动在方法调用之前决定是否开启一个事务，并在方法执行之后决定事务提交或回滚事务。</p>
-<p>单独调用methodB方法：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">main&#123; </span><br><span class="line">    metodB(); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>相当于<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">Main&#123; </span><br><span class="line">    Connection con=<span class="keyword">null</span>; </span><br><span class="line">    <span class="keyword">try</span>&#123; </span><br><span class="line">        con = getConnection(); </span><br><span class="line">        con.setAutoCommit(<span class="keyword">false</span>); </span><br><span class="line"></span><br><span class="line">        <span class="comment">//方法调用</span></span><br><span class="line">        methodB(); </span><br><span class="line"></span><br><span class="line">        <span class="comment">//提交事务</span></span><br><span class="line">        con.commit(); </span><br><span class="line">    &#125; Catch(RuntimeException ex) &#123; </span><br><span class="line">        <span class="comment">//回滚事务</span></span><br><span class="line">        con.rollback();   </span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123; </span><br><span class="line">        <span class="comment">//释放资源</span></span><br><span class="line">        closeCon(); </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>Spring保证在methodB方法中所有的调用都获得到一个相同的连接。在调用methodB时，没有一个存在的事务，所以获得一个新的连接，开启了一个新的事务。<br>单独调用MethodA时，在MethodA内又会调用MethodB.</p>
-<p>执行效果相当于：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">main&#123; </span><br><span class="line">    Connection con = <span class="keyword">null</span>; </span><br><span class="line">    <span class="keyword">try</span>&#123; </span><br><span class="line">        con = getConnection(); </span><br><span class="line">        methodA(); </span><br><span class="line">        con.commit(); </span><br><span class="line">    &#125; <span class="keyword">catch</span>(RuntimeException ex) &#123; </span><br><span class="line">        con.rollback(); </span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;    </span><br><span class="line">        closeCon(); </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>调用MethodA时，环境中没有事务，所以开启一个新的事务.当在MethodA中调用MethodB时，环境中已经有了一个事务，所以methodB就加入当前事务。</p>
-<p>PROPAGATION_SUPPORTS 如果存在一个事务，支持当前事务。如果没有事务，则非事务的执行。但是对于事务同步的事务管理器，PROPAGATION_SUPPORTS与不使用事务有少许不同。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//事务属性 PROPAGATION_REQUIRED</span></span><br><span class="line">methodA()&#123;</span><br><span class="line">  methodB();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//事务属性 PROPAGATION_SUPPORTS</span></span><br><span class="line">methodB()&#123;</span><br><span class="line">  ……</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>单纯的调用methodB时，methodB方法是非事务的执行的。当调用methdA时,methodB则加入了methodA的事务中,事务地执行。</p>
-<p>PROPAGATION_MANDATORY 如果已经存在一个事务，支持当前事务。如果没有一个活动的事务，则抛出异常。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//事务属性 PROPAGATION_REQUIRED</span></span><br><span class="line">methodA()&#123;</span><br><span class="line">    methodB();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//事务属性 PROPAGATION_MANDATORY</span></span><br><span class="line">    methodB()&#123;</span><br><span class="line">    ……</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>当单独调用methodB时，因为当前没有一个活动的事务，则会抛出异常throw new IllegalTransactionStateException(“Transaction propagation ‘mandatory’ but no existing transaction found”);当调用methodA时，methodB则加入到methodA的事务中，事务地执行。</p>
-<p>PROPAGATION_REQUIRES_NEW 总是开启一个新的事务。如果一个事务已经存在，则将这个存在的事务挂起。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//事务属性 PROPAGATION_REQUIRED</span></span><br><span class="line">methodA()&#123;</span><br><span class="line">    doSomeThingA();</span><br><span class="line">    methodB();</span><br><span class="line">    doSomeThingB();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//事务属性 PROPAGATION_REQUIRES_NEW</span></span><br><span class="line">methodB()&#123;</span><br><span class="line">    ……</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>调用A方法：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">main()&#123;</span><br><span class="line">    methodA();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">相当于</span><br><span class="line">```java</span><br><span class="line">main()&#123;</span><br><span class="line">    TransactionManager tm = null;</span><br><span class="line">    try&#123;</span><br><span class="line">        //获得一个JTA事务管理器</span><br><span class="line">        tm = getTransactionManager();</span><br><span class="line">        tm.begin();//开启一个新的事务</span><br><span class="line">        Transaction ts1 = tm.getTransaction();</span><br><span class="line">        doSomeThing();</span><br><span class="line">        tm.suspend();//挂起当前事务</span><br><span class="line">        try&#123;</span><br><span class="line">            tm.begin();//重新开启第二个事务</span><br><span class="line">            Transaction ts2 = tm.getTransaction();</span><br><span class="line">            methodB();</span><br><span class="line">            ts2.commit();//提交第二个事务</span><br><span class="line">        &#125; Catch(RunTimeException ex) &#123;</span><br><span class="line">            ts2.rollback();//回滚第二个事务</span><br><span class="line">        &#125; finally &#123;</span><br><span class="line">            //释放资源</span><br><span class="line">        &#125;</span><br><span class="line">        //methodB执行完后，恢复第一个事务</span><br><span class="line">        tm.resume(ts1);</span><br><span class="line">        doSomeThingB();</span><br><span class="line">        ts1.commit();//提交第一个事务</span><br><span class="line">    &#125; catch(RunTimeException ex) &#123;</span><br><span class="line">        ts1.rollback();//回滚第一个事务</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">        //释放资源</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在这里，我把ts1称为外层事务，ts2称为内层事务。从上面的代码可以看出，ts2与ts1是两个独立的事务，互不相干。Ts2是否成功并不依赖于 ts1。如果methodA方法在调用methodB方法后的doSomeThingB方法失败了，而methodB方法所做的结果依然被提交。而除了 methodB之外的其它代码导致的结果却被回滚了。使用PROPAGATION_REQUIRES_NEW,需要使用 JtaTransactionManager作为事务管理器。</p>
-<p>（5）PROPAGATION_NOT_SUPPORTED 总是非事务地执行，并挂起任何存在的事务。使用PROPAGATION_NOT_SUPPORTED,也需要使用JtaTransactionManager作为事务管理器。（代码示例同上，可同理推出）</p>
-<p>（6）PROPAGATION_NEVER 总是非事务地执行，如果存在一个活动事务，则抛出异常。</p>
-<p>（7）PROPAGATION_NESTED如果一个活动的事务存在，则运行在一个嵌套的事务中. 如果没有活动事务, 则按TransactionDefinition.PROPAGATION_REQUIRED 属性执行。这是一个嵌套事务,使用JDBC 3.0驱动时,仅仅支持DataSourceTransactionManager作为事务管理器。需要JDBC 驱动的java.sql.Savepoint类。有一些JTA的事务管理器实现可能也提供了同样的功能。使用PROPAGATION_NESTED，还需要把PlatformTransactionManager的nestedTransactionAllowed属性设为true;而 nestedTransactionAllowed属性值默认为false。</p>
-<p>//事务属性 PROPAGATION_REQUIRED<br>methodA(){<br>    doSomeThingA();<br>    methodB();<br>    doSomeThingB();<br>}</p>
-<p>//事务属性 PROPAGATION_NESTED<br>methodB(){<br>    ……<br>}<br>如果单独调用methodB方法，则按REQUIRED属性执行。如果调用methodA方法，相当于下面的效果：</p>
-<p>main(){<br>    Connection con = null;<br>    Savepoint savepoint = null;<br>    try{<br>        con = getConnection();<br>        con.setAutoCommit(false);<br>        doSomeThingA();<br>        savepoint = con2.setSavepoint();<br>        try{<br>            methodB();<br>        } catch(RuntimeException ex) {<br>            con.rollback(savepoint);<br>        } finally {<br>            //释放资源<br>        }<br>        doSomeThingB();<br>        con.commit();<br>    } catch(RuntimeException ex) {<br>        con.rollback();<br>    } finally {<br>        //释放资源<br>    }<br>}<br>当methodB方法调用之前，调用setSavepoint方法，保存当前的状态到savepoint。如果methodB方法调用失败，则恢复到之前保存的状态。但是需要注意的是，这时的事务并没有进行提交，如果后续的代码(doSomeThingB()方法)调用失败，则回滚包括methodB方法的所有操作。</p>
-<p>嵌套事务一个非常重要的概念就是内层事务依赖于外层事务。外层事务失败时，会回滚内层事务所做的动作。而内层事务操作失败并不会引起外层事务的回滚。</p>
-<p>PROPAGATION_NESTED 与PROPAGATION_REQUIRES_NEW的区别:它们非常类似,都像一个嵌套事务，如果不存在一个活动的事务，都会开启一个新的事务。使用 PROPAGATION_REQUIRES_NEW时，内层事务与外层事务就像两个独立的事务一样，一旦内层事务进行了提交后，外层事务不能对其进行回滚。两个事务互不影响。两个事务不是一个真正的嵌套事务。同时它需要JTA事务管理器的支持。</p>
-<p>使用PROPAGATION_NESTED时，外层事务的回滚可以引起内层事务的回滚。而内层事务的异常并不会导致外层事务的回滚，它是一个真正的嵌套事务。DataSourceTransactionManager使用savepoint支持PROPAGATION_NESTED时，需要JDBC 3.0以上驱动及1.4以上的JDK版本支持。其它的JTA TrasactionManager实现可能有不同的支持方式。</p>
-<p>PROPAGATION_REQUIRES_NEW 启动一个新的, 不依赖于环境的 “内部” 事务. 这个事务将被完全 commited 或 rolled back 而不依赖于外部事务, 它拥有自己的隔离范围, 自己的锁, 等等. 当内部事务开始执行时, 外部事务将被挂起, 内务事务结束时, 外部事务将继续执行。</p>
-<p>另一方面, PROPAGATION_NESTED 开始一个 “嵌套的” 事务, 它是已经存在事务的一个真正的子事务. 潜套事务开始执行时, 它将取得一个 savepoint. 如果这个嵌套事务失败, 我们将回滚到此 savepoint. 潜套事务是外部事务的一部分, 只有外部事务结束后它才会被提交。</p>
-<p>由此可见, PROPAGATION_REQUIRES_NEW 和 PROPAGATION_NESTED 的最大区别在于, PROPAGATION_REQUIRES_NEW 完全是一个新的事务, 而 PROPAGATION_NESTED 则是外部事务的子事务, 如果外部事务 commit, 嵌套事务也会被 commit, 这个规则同样适用于 roll back.</p>
-<p>PROPAGATION_REQUIRED应该是我们首先的事务传播行为。它能够满足我们大多数的事务需求。</p>
-<h3 id="隔离级别"><a href="#隔离级别" class="headerlink" title="隔离级别"></a>隔离级别</h3><p>事务的第二个维度就是隔离级别（isolation level）。隔离级别定义了一个事务可能受其他并发事务影响的程度。</p>
-<p>在典型的应用程序中，多个事务并发运行，经常会操作相同的数据来完成各自的任务。并发虽然是必须的，但可能会导致一下的问题。</p>
+<p>RDB 和 AOF 各有所长，RDB 体积小，恢复速度快，而且可以生成快照；AOF 频率更高，可以保存更新的数据。一般来说，推荐同时使用。</p>
+<h2 id="Redis-过期机制"><a href="#Redis-过期机制" class="headerlink" title="Redis 过期机制"></a>Redis 过期机制</h2><p>Redis 采取的是惰性删除和定期删除配合使用的方式。</p>
+<p>惰性删除是指 Redis 会在访问某个键的时候检查该键是否过期，如果过期，就会将输入键从数据库中删除。但惰性删除不能及时清理内存，因此 Redis 还有定期删除的机制。</p>
+<p>定期删除是另一种过期键删除方式。Redis 会维护一个过期字典（如下图所示），所有声明了过期时间的键都会被添加进这个字典中。周期操作函数 serverCron 执行时，会在规定时间内随机检查一部分键的过期时间，并删除其中的过期键。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8o4bfdu4gj20gu0cijsu.jpg" alt=""></p>
+<h2 id="RDB、AOF-和复制功能对过期键的处理"><a href="#RDB、AOF-和复制功能对过期键的处理" class="headerlink" title="RDB、AOF 和复制功能对过期键的处理"></a>RDB、AOF 和复制功能对过期键的处理</h2><h3 id="RDB-对过期键的处理"><a href="#RDB-对过期键的处理" class="headerlink" title="RDB 对过期键的处理"></a>RDB 对过期键的处理</h3><p>RDB 文件在生成时会检查每个键的过期时间，过期键不会被添加进 RDB 文件里。</p>
+<p>载入 RDB 文件时，如果该服务器是主服务器，则不会载入文件中过期的键；如果该服务器是从服务器，则不论过期与否都会被载入。不过，因为主从服务器在同步的时候，从服务器的数据库会被清空，所以一般来讲，过期键对载入 RDB 文件的从服务器不会造成影响。</p>
+<h3 id="AOF-对过期键的处理"><a href="#AOF-对过期键的处理" class="headerlink" title="AOF 对过期键的处理"></a>AOF 对过期键的处理</h3><p>AOF 文件写入时，如果数据库中的某个键已过期，但它还没被删除，那么 AOF 文件不会因为这个键产生任何影响。当它被惰性删除或者定期删除之后，程序会向 AOF 文件追加一条 DEL 命令显示记录该键已被删除。</p>
+<p>AOF 重写时，和生成 RDB 文件一样，会过滤掉已经过期的键。</p>
+<h3 id="复制功能对过期键的处理"><a href="#复制功能对过期键的处理" class="headerlink" title="复制功能对过期键的处理"></a>复制功能对过期键的处理</h3><p>主服务器在删除一个过期键后，会显式地向所有从服务器发送一个 DEL 命令，告知从服务器删除这个过期键。</p>
+<p>Redis 3.2 前，为了保持主从一致性，从服务器在执行客户端发送的读命令时，即使碰到过期键也不会将过期键删除，而是继续像处理未过期键一样处理过期键。从服务器只有在接到主服务器发来的 DEL 命令之后，才会删除过期键。Redis 3.2 后，从节点在读取数据时，增加了对数据是否过期的判断：如果该数据已过期，则不返回给客户端。</p>
+<h2 id="Redis-事件、事务和-pipelin"><a href="#Redis-事件、事务和-pipelin" class="headerlink" title="Redis 事件、事务和 pipelin"></a>Redis 事件、事务和 pipelin</h2><h3 id="事件"><a href="#事件" class="headerlink" title="事件"></a>事件</h3><p>Redis 服务器是一个事件驱动程序。Redis 的事件有两类：</p>
 <ul>
-<li>脏读（Dirty reads）<br>脏读发生在一个事务读取了另一个事务改写但尚未提交的数据时。如果改写在稍后被回滚了，那么第一个事务获取的数据就是无效的。</li>
-<li>不可重复读（Nonrepeatable read）<br>不可重复读发生在一个事务执行相同的查询两次或两次以上，但是每次都得到不同的数据时。这通常是因为另一个并发事务在两次查询期间进行了更新。</li>
-<li>幻读（Phantom read）<br>幻读与不可重复读类似。它发生在一个事务（T1）读取了几行数据，接着另一个并发事务（T2）插入了一些数据时。在随后的查询中，第一个事务（T1）就会发现多了一些原本不存在的记录。</li>
+<li>文件事件：服务器通过套接字与客户端连接，文件事件就是服务器对套接字操作的抽象。</li>
+<li>时间事件：服务器对定时操作的抽象。</li>
 </ul>
-<p><strong>不可重复读与幻读的区别</strong><br>不可重复读的重点是修改: 同样的条件, 你读取过的数据, 再次读取出来发现值不一样了<br>幻读的重点在于新增或者删除： 同样的条件, 第1次和第2次读出来的记录数不一样<br>对于前者, 只需要锁住满足条件的记录。<br>对于后者, 要锁住满足条件及其相近的记录。</p>
-<p>隔离级别</p>
+<h4 id="文件事件"><a href="#文件事件" class="headerlink" title="文件事件"></a>文件事件</h4><p>Redis 包装了底层的 select、epoll 等来实现自己的网络事件处理器。它使用 I/O 多路复用程序来同时监听多个套接字，并将到达的事件传送给文件事件分派器，分派器会根据套接字产生的事件类型调用相应的事件处理器。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8o4isaewjj20cm098t8n.jpg" alt=""></p>
+<h4 id="时间事件"><a href="#时间事件" class="headerlink" title="时间事件"></a>时间事件</h4><p>服务器有一些操作需要在给定的时间点执行，时间事件是对这类定时操作的抽象。</p>
+<p>时间事件又分为：</p>
 <ul>
-<li>isolation_default:使用后端数据库默认的隔离级别</li>
-<li>ioslation_read_uncommitted:最低的隔离级别，允许读取尚未提交的数据变更，可能会导致脏读、幻读或不可重复读</li>
-<li>isolation_read_committed:允许读取并发事务已经提交的数据，可以阻止脏读，但是幻读或不可重复读仍有可能发生</li>
-<li>ioslation_serializable:最高的隔离级别，完全服从ACID的隔离级别，确保阻止脏读、不可重复读以及幻读，也是最慢的事务隔离级别，因为它通常是通过完全锁定事务相关的数据库表来实现的</li>
+<li>定时事件：是让一段程序在指定的时间之内执行一次；</li>
+<li>周期性事件：是让一段程序每隔指定时间就执行一次。</li>
 </ul>
-<h3 id="只读"><a href="#只读" class="headerlink" title="只读"></a>只读</h3><p>事务的第三个特性是它是否为只读事务。如果事务只对后端的数据库进行该操作，数据库可以利用事务的只读特性来进行一些特定的优化。通过将事务设置为只读，你就可以给数据库一个机会，让它应用它认为合适的优化措施。</p>
-<h3 id="事务超时"><a href="#事务超时" class="headerlink" title="事务超时"></a>事务超时</h3><p>为了使应用程序很好地运行，事务不能运行太长的时间。因为事务可能涉及对后端数据库的锁定，所以长时间的事务会不必要的占用数据库资源。事务超时就是事务的一个定时器，在特定时间内事务如果没有执行完毕，那么就会自动回滚，而不是一直等待其结束。</p>
-<h3 id="回滚规则"><a href="#回滚规则" class="headerlink" title="回滚规则"></a>回滚规则</h3><p>上面讲到的调用PlatformTransactionManager接口的getTransaction()的方法得到的是TransactionStatus接口的一个实现，这个接口的内容如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">TransactionStatus</span></span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isNewTransaction</span><span class="params">()</span></span>; <span class="comment">// 是否是新的事物</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">hasSavepoint</span><span class="params">()</span></span>; <span class="comment">// 是否有恢复点</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">setRollbackOnly</span><span class="params">()</span></span>;  <span class="comment">// 设置为只回滚</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isRollbackOnly</span><span class="params">()</span></span>; <span class="comment">// 是否为只回滚</span></span><br><span class="line">    <span class="keyword">boolean</span> isCompleted; <span class="comment">// 是否已完成</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>可以发现这个接口描述的是一些处理事务提供简单的控制事务执行和查询事务状态的方法，在回滚或提交的时候需要应用对应的事务状态。</p>
-<h3 id="编程式和声明式事务的区别"><a href="#编程式和声明式事务的区别" class="headerlink" title="编程式和声明式事务的区别"></a>编程式和声明式事务的区别</h3><p>Spring提供了对编程式事务和声明式事务的支持，编程式事务允许用户在代码中精确定义事务的边界，而声明式事务（基于AOP）有助于用户将操作与事务规则进行解耦。</p>
-<p>简单地说，编程式事务侵入到了业务代码里面，但是提供了更加详细的事务管理；而声明式事务由于基于AOP，所以既能起到事务管理的作用，又可以不影响业务代码的具体实现。</p>
-<p>如何实现编程式事务？</p>
-<p>Spring提供两种方式的编程式事务管理，分别是：使用ransactionTemplate和直接使用PlatformTransactionManager。</p>
-<h2 id="Spring-MVC-启动流程"><a href="#Spring-MVC-启动流程" class="headerlink" title="Spring MVC 启动流程"></a>Spring MVC 启动流程</h2><p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8ib3ojn53j20m80gogm8.jpg" alt=""></p>
-<p>SpringMVC 的 web.xml配置<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version="1.0" encoding="UTF-8"?&gt;  </span><br><span class="line"><span class="tag">&lt;<span class="name">web-app</span> <span class="attr">version</span>=<span class="string">"2.5"</span> <span class="attr">xmlns</span>=<span class="string">"http://java.sun.com/xml/ns/javaee"</span>  </span></span><br><span class="line"><span class="tag">         <span class="attr">xmlns:xsi</span>=<span class="string">"http://www.w3.org/2001/XMLSchema-instance"</span>  </span></span><br><span class="line"><span class="tag">         <span class="attr">xsi:schemaLocation</span>=<span class="string">"http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"</span>&gt;</span>  </span><br><span class="line">   </span><br><span class="line">    <span class="tag">&lt;<span class="name">context-param</span>&gt;</span>  </span><br><span class="line">        <span class="tag">&lt;<span class="name">param-name</span>&gt;</span>contextConfigLocation<span class="tag">&lt;/<span class="name">param-name</span>&gt;</span>  </span><br><span class="line">        <span class="tag">&lt;<span class="name">param-value</span>&gt;</span>classpath:applicationContext.xml<span class="tag">&lt;/<span class="name">param-value</span>&gt;</span>  </span><br><span class="line">    <span class="tag">&lt;/<span class="name">context-param</span>&gt;</span>  </span><br><span class="line">  </span><br><span class="line">    <span class="tag">&lt;<span class="name">listener</span>&gt;</span>  </span><br><span class="line">        <span class="tag">&lt;<span class="name">listener-class</span>&gt;</span>org.springframework.web.context.ContextLoaderListener<span class="tag">&lt;/<span class="name">listener-class</span>&gt;</span>  </span><br><span class="line">    <span class="tag">&lt;/<span class="name">listener</span>&gt;</span>  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    <span class="tag">&lt;<span class="name">servlet</span>&gt;</span>  </span><br><span class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>mvc-dispatcher<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span>  </span><br><span class="line">        <span class="tag">&lt;<span class="name">servlet-class</span>&gt;</span>  </span><br><span class="line">            org.springframework.web.servlet.DispatcherServlet  </span><br><span class="line">        <span class="tag">&lt;/<span class="name">servlet-class</span>&gt;</span>  </span><br><span class="line">        <span class="tag">&lt;<span class="name">load-on-startup</span>&gt;</span>1<span class="tag">&lt;/<span class="name">load-on-startup</span>&gt;</span>  </span><br><span class="line">    <span class="tag">&lt;/<span class="name">servlet</span>&gt;</span>  </span><br><span class="line">                                                                                                                                           </span><br><span class="line">    <span class="tag">&lt;<span class="name">servlet-mapping</span>&gt;</span>  </span><br><span class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>mvc-dispatcher<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span>  </span><br><span class="line">        <span class="tag">&lt;<span class="name">url-pattern</span>&gt;</span>/<span class="tag">&lt;/<span class="name">url-pattern</span>&gt;</span>  </span><br><span class="line">    <span class="tag">&lt;/<span class="name">servlet-mapping</span>&gt;</span>  </span><br><span class="line">  </span><br><span class="line"><span class="tag">&lt;/<span class="name">web-app</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>时间事件中的属性 when 会记录下次执行的时间，周期性事件在执行后会更新 when 的值，而定时事件会被删除。</p>
+<p>Redis 将所有时间事件都放在一个无序链表中，由时间事件执行器通过遍历整个链表查找出已到达的时间事件，并调用相应的事件处理器。</p>
+<h4 id="事件的调度与执行"><a href="#事件的调度与执行" class="headerlink" title="事件的调度与执行"></a>事件的调度与执行</h4><p>服务器需要不断监听文件事件的套接字才能得到待处理的文件事件，但是不能一直监听，否则时间事件无法在规定的时间内执行，因此监听时间应该根据距离现在最近的时间事件来决定。</p>
+<p>事件调度与执行由 aeProcessEvents 函数负责，伪代码如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">aeProcessEvents</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="comment"># 获取到达时间离当前时间最接近的时间事件</span></span><br><span class="line">    time_event = aeSearchNearestTimer()</span><br><span class="line">    <span class="comment"># 计算最接近的时间事件距离到达还有多少毫秒</span></span><br><span class="line">    remaind_ms = time_event.when - unix_ts_now()</span><br><span class="line">    <span class="comment"># 如果事件已到达，那么 remaind_ms 的值可能为负数，将它设为 0</span></span><br><span class="line">    <span class="keyword">if</span> remaind_ms &lt; <span class="number">0</span>:</span><br><span class="line">        remaind_ms = <span class="number">0</span></span><br><span class="line">    <span class="comment"># 根据 remaind_ms 的值，创建 timeval</span></span><br><span class="line">    timeval = create_timeval_with_ms(remaind_ms)</span><br><span class="line">    <span class="comment"># 阻塞并等待文件事件产生，最大阻塞时间由传入的 timeval 决定</span></span><br><span class="line">    aeApiPoll(timeval)</span><br><span class="line">    <span class="comment"># 处理所有已产生的文件事件</span></span><br><span class="line">    procesFileEvents()</span><br><span class="line">    <span class="comment"># 处理所有已到达的时间事件</span></span><br><span class="line">    processTimeEvents()</span><br></pre></td></tr></table></figure></p>
+<p>将 aeProcessEvents 函数置于一个循环里面，加上初始化和清理函数，就构成了 Redis 服务器的主函数，伪代码如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="comment"># 初始化服务器</span></span><br><span class="line">    init_server()</span><br><span class="line">    <span class="comment"># 一直处理事件，直到服务器关闭为止</span></span><br><span class="line">    <span class="keyword">while</span> server_is_not_shutdown():</span><br><span class="line">        aeProcessEvents()</span><br><span class="line">    <span class="comment"># 服务器关闭，执行清理操作</span></span><br><span class="line">    clean_server()</span><br></pre></td></tr></table></figure></p>
+<p>从事件处理的角度来看，服务器运行流程如下：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8o4o488j6j20fg0hi0t8.jpg" alt=""></p>
+<h3 id="事务"><a href="#事务" class="headerlink" title="事务"></a>事务</h3><p>Redis 通过 MULTI、EXEC、WATCH 等命令来实现事务功能。事务提供了一种将多个命令请求打包，然后一次性、按顺序地执行多个命令的机制，并且在事务执行期间，服务器不会中断事务而改去执行其他客户端的命令请求，它会将事务中的所有命令都执行完毕，然后才去处理其他客户端的命令请求。</p>
+<p>一个事务包括三个步骤：</p>
 <ul>
-<li><code>&lt;listener&gt;</code>标签中定义了spring容器加载器</li>
-<li><code>&lt;servlet&gt;</code>标签中定义了spring前端控制器</li>
+<li>事务开始：事务以 MULTI 开始，返回 OK 命令。</li>
+<li>命令入队：每个事务命令成功进入队列后，返回 QUEUED。</li>
+<li>事务执行：EXEC 执行事务。</li>
 </ul>
-<p><strong>在 Servlet API中有一个ServletContextListener接口，它能够监听ServletContext对象的生命周期，实际上就是监听Web应用的生命周期。当Servlet容器启动或终止Web应用时，会触发ServletContextEvent事件，该事件由ServletContextListener来处理。在ServletContextListener接口中定义了处理ServletContextEvent 事件的两个方法contextInitialized()和contextDestroyed()。</strong></p>
-<p>ContextLoaderListener监听器的作用就是启动Web容器时，自动装配ApplicationContext的配置信息。因为它实现了ServletContextListener这个接口，在web.xml配置了这个监听器，启动容器时，就会默认执行它实现的方法。由于在ContextLoaderListener中关联了ContextLoader这个类，所以整个加载配置过程由ContextLoader来完成。</p>
-<h3 id="DispatchServlet初始化"><a href="#DispatchServlet初始化" class="headerlink" title="DispatchServlet初始化"></a>DispatchServlet初始化</h3><p>在SpringMVC架构中，DispatchServlet负责请求分发，起到控制器的作用。下面详细来解释说明：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8ib70e4nyj20m80bq3za.jpg" alt=""></p>
+<p>Redis 不支持事务回滚功能，事务中的一个 Redis 命令执行失败以后，会继续执行后续的命令。</p>
+<h3 id="pipeline"><a href="#pipeline" class="headerlink" title="pipeline"></a>pipeline</h3><p>多个命令被一次性发送给服务器，而不是一条一条发送，这种方式被称为流水线，它可以减少客户端与服务器之间的网络通信次数从而提升性能。</p>
+<p>可以通过redis-cli –pipe的方式批量发送命令。如cat commands.txt | redis-cli –pipe，commands.txt 中的命令会被以 RESP 协议（这是一个 Redis 自行规定的协议，用于命令的批量执行）的格式发给服务器，服务器也会返回一个 RESP 格式的结果。</p>
+<h2 id="Redis-复制、哨兵和集群"><a href="#Redis-复制、哨兵和集群" class="headerlink" title="Redis 复制、哨兵和集群"></a>Redis 复制、哨兵和集群</h2><p>Redis 可以单机部署，但会带来单点问题和性能瓶颈。为此 Redis 提供了主从复制、哨兵和集群的方式来解决这些问题。</p>
+<h3 id="主从复制"><a href="#主从复制" class="headerlink" title="主从复制"></a>主从复制</h3><p>主从复制可以将两台或者多台服务器之间的数据同步，这样在主服务器下线后，从服务器可以继续对外提供服务，保证了系统的高可用；另外主从复制也可以进行读写分离，主服务器只提供写操作或少量的读，把多余读请求通过负载均衡算法分流到单个或多个从服务器上。</p>
+<p>Redis 的复制功能分为同步和命令传播两个操作，同步操作用于将从服务器的状态更新至主服务器当前的状态；命令传播操作用于在主服务状态被修改时，让主从状态重新保持一致。</p>
+<h4 id="同步"><a href="#同步" class="headerlink" title="同步"></a>同步</h4><p>可以通过使用SLAVEOF <host> <port>命令来让一个服务器成为另一个服务器的从服务器。此时从服务器会自动向主服务器发送 SYNC 的命令进行同步操作，步骤如下：</port></host></p>
 <ul>
-<li>DispatchServlet名如其义，它的本质上是一个Servlet，子类不断的对HttpServlet父类进行方法扩展</li>
-<li>HttpServlet有两大核心方法：init()和service()方法。HttpServletBean重写了init()方法，在这部分，我们可以看到其实现思路：公共的部分统一来实现，变化的部分统一来抽象，交给其子类来实现，故用了abstract class来修饰类名。此外，HttpServletBean提供了一个HttpServlet的抽象实现，使的Servlet不再关心init-param部分的赋值，让servlet更关注于自身Bean初始化的实现</li>
-<li>FrameworkServlet提供了整合web javabean和spring application context的整合方案。在源码中可以看到通过执行initWebApplicationContext()方法和initFrameworkServlet()方法实现</li>
-<li>DispatchServlet是HTTP请求的中央调度处理器，它将web请求转发给controller层处理，它提供了敏捷的映射和异常处理机制，DispatchServlet转发请求的核心代码在doService()方法中实现</li>
+<li>主服务器收到 SYNC 命令后执行 BGSAVE 命令，在后台生成一个 RDB 快照文件，并用一个缓冲区记录从现在开始执行的所有写命令。</li>
+<li>从服务器从主服务器接收到 RDB 文件后，丢弃所有旧数据，载入主服务器发来的快照文件。</li>
+<li>主服务器把记录在缓冲区的命令发送给从服务器，从服务器执行这些命令，同步完成。</li>
 </ul>
-<p>DispatchServlet类和ContextLoaderListener类的关系图：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8ibcskj4wj20m80byq3q.jpg" alt=""></p>
-<h2 id="spring-boot-初始化"><a href="#spring-boot-初始化" class="headerlink" title="spring boot 初始化"></a>spring boot 初始化</h2><p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8icuf61kvj20lc0rqadu.jpg" alt=""><br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8ykkuwnxfj20rm0rngrc.jpg" alt=""></p>
+<p>但是这种同步方式会带来一个断线后重复值效率低的问题：如果从服务器短暂掉线后重连主服务器，主从之间不得不重新同步所有数据，这是没有必要的，因为从服务器仍然保留了大部分数据。Redis 2.8 推出了部分重同步的方式解决了这个问题。</p>
+<h4 id="部分重同步（2-8）"><a href="#部分重同步（2-8）" class="headerlink" title="部分重同步（2.8）"></a>部分重同步（2.8）</h4><p>部分重同步用于处理断线后复制的情况。Redis 部分重同步的实现由以下三个部分构成：</p>
+<ul>
+<li>复制偏移量 (offset)：复制偏移量表示当前从服务器从主服务器中接收了多少字节的数据。</li>
+<li>复制积压缓冲区：复制积压缓冲区以 FIFO 的形式保存了最近的写命令。</li>
+<li>服务器 id (runid)：用于唯一标识服务器。</li>
+</ul>
+<p>当 slave 初次复制 master 时，master 会将自己的 runid 发给 slave 进行保存，而当 slave 断线重连之后，会向 master 发送一个PSYNC <runid> <offset>的命令，offset 即当前 slave 的复制偏移量，runid 是 slave 记录的掉线之前的 master 的 runid。master 在收到 PSYNC 后，会首先对比自己的 runid 和传过来的 runid 是否一致，如果一致，说明这个 slave 之前和自己同步过数据，然后根据 offset 的差值把复制积压缓冲区的数据同步给 slave。这样就实现了增量更新。</offset></runid></p>
+<h4 id="部分重同步（4-0）"><a href="#部分重同步（4-0）" class="headerlink" title="部分重同步（4.0）"></a>部分重同步（4.0）</h4><p>2.8 版本推出的部分重同步我们称为 psync1，它解决了网络闪断的问题。但它无法解决 master 更替和 slave 重启的问题：1）当 master 更替以后，主节点的 runid 会发生变化，其它 slave 切换过去时，由于 runid 不同，无法进行部分重同步；2）slave 重启时之后，原先保存的 runid 和复制偏移量都会丢失，无法进行部分重同步。针对以上两个问题，redis 在 4.0 版本优化了部分重同步的策略，称为 psync2。</p>
+<p>psync2 把 psync1 中由 slave 保存的 master 节点的 id 记为 replid，同时又增加了一个 replid2 字段，这个字段表示这个节点关联的上一个 master 的 id。对于从节点来说，replid 和 replid2 分别代表上一个和当前关联的主节点的 id，而对于主节点来说，replid 是自己的 id，而 replid2 是上一个主节点的 id。当主节点切换以后，原先主节点的从节点切换到新的主节点上时，新的主节点会判断从节点的 replid 是否等于自己的 replid2，如果相等，说明这两个节点曾经属于同一个主节点，那么就可以尝试部分重同步（当然还需要新的 master 在还是 slave 的时候就开启了复制积压缓冲区功能）。</p>
+<p>对于 slave 重启的问题，psync2 也做了优化。当 redis 关闭时，replid 和复制偏移量会被保存进 rdb 文件，重启时，redis 会读取这两个值，然后和主节点进行部分重同步。</p>
+<h4 id="命令传播"><a href="#命令传播" class="headerlink" title="命令传播"></a>命令传播</h4><p>在同步完成之后，主从服务器就进入了命令传播阶段。在这个阶段，主服务器发生写操作后，会把相应的命令发送给从服务器执行，这样主从之间就保持了数据一致性。</p>
+<p>从服务器也会向主服务器发送命令REPLCONF ACK &lt;replication_offset&gt;，这是一个心跳检测命令，每隔 1 秒就会发一次，它有以下两个作用：</p>
+<ul>
+<li>检测主从服务器的网络连接状态：主服务器会记录从服务器上次心跳检测的时间，如果超过 1 秒，就说明连接出了故障。如果主服务器和大量从服务器之间的连接出了故障，比如有 3 台以上的从服务器超过 10 秒没有心跳检测，则会拒绝执行写命令。</li>
+<li>检测命令丢失：和部分重同步类似，心跳检测也会发送从服务器的当前复制偏移量（replication_offset），主服务器在接收到心跳检测后会检查这个偏移量是否和自己的一致，如果不一致会补发缺失的数据。</li>
+</ul>
+<h3 id="Sentinel（哨兵）"><a href="#Sentinel（哨兵）" class="headerlink" title="Sentinel（哨兵）"></a>Sentinel（哨兵）</h3><p>Sentinel（哨兵）是 Redis 高可用的解决方案：由一个或多个 Sentinel 实例组成的 Sentinel 系统可以监视任意多个主服务器以及这些服务器下的所有从服务器。在主服务器进入下线状态时，自动将下线服务器下的某个从服务器升级成主服务器。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8o58bu23fj20cr08v74f.jpg" alt=""></p>
+<p>Sentinel 系统是由 Sentinel 实例组成的，彼此间通过命令连接相互通信：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8o58pvpj2j209r08cwej.jpg" alt=""></p>
+<p>Sentinel 实例会以每秒一次的频率向自己监控的主服务器发送 PING 命令，主服务器会回复该命令，以此来监控主服务器的在线状态。当 Sentinel 实例发送 PING 命令之后等待超过配置指定时间之后，Sentinel 实例会判定该主服务器处于主观下线状态。</p>
+<p>当一个 Sentinel 实例判定自己监控的某个主服务器为主观下线之后，它会询问其它监控该服务器的 Sentinel 实例，当超过配置指定数量的 Sentinel 实例也认为该服务器已下线时，Sentinel 实例会判定该服务器为客观下线。</p>
+<p>当有超过配置指定数量的 Sentinel 实例认为该服务器客观下线之后，监视该服务器的各个 Sentinel 会进行协商，通过 Raft 算法选举出一个领头 Sentinel 对下线主服务器执行故障转移操作。</p>
+<p>故障转移操作包括三个部分：</p>
+<ul>
+<li>在已下线主服务器属下的所有从服务器中挑选一个从服务器，将其转换为主服务器。</li>
+<li>让其它从服务器改为复制新的主服务器（发送 SLAVEOF 命令）。</li>
+<li>将原来的主服务器设置为从服务器。</li>
+</ul>
+<h3 id="集群"><a href="#集群" class="headerlink" title="集群"></a>集群</h3><p>Redis 集群是 Redis 提供的分布式数据库方案，集群通过分片的方式进行数据共享，并提供复制和转移功能。</p>
+<p>集群中的节点可以通过向其它节点发送CLUSTER MEET <ip> <port>命令邀请其它节点加入集群。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8o5bl6c9nj207s074jrc.jpg" alt=""></port></ip></p>
+<p>集群的整个数据库被分为 16384 个槽，数据库中的每一个键都属于这 16384 个槽中的一个，<strong>只有当集群中的每个槽都有节点在处理时，集群才处于上线状态</strong>。</p>
+<p>我们可以通过CLUSTER ADDSLOTS [slot…]命令将一个或多个槽指派给节点。每个节点会记录自己和集群中其它节点被指派的槽。</p>
+<p>节点在接到一个命令请求时，会先检查这个命令请求要处理的键所在的槽是否由自己负责，如果不是的话，节点将向客户端返回一个 MOVED 错误，MOVED 错误携带的信息可以指引客户端转向正确的节点。</p>
+<p>除了可以指派槽以外，我们还可以通过 redis-trib 这个软件将槽重新分片。重新分片的关键是将属于某个槽的所有键值对从一个节点转移至另一个节点。</p>
+<p>在重新分片期间，如果客户端向原来的节点请求键 k，而 k 已经被转移到另一个节点时，节点会返回一个 ASK 错误，指引客户端到新的节点。</p>
+<p>MOVED 错误表示槽的负责权已经永远转移了，而 ASK 错误只是两个节点在槽迁移时的临时措施。</p>
+<h3 id="故障转移"><a href="#故障转移" class="headerlink" title="故障转移"></a>故障转移</h3><p>为了集群的高可用，集群中的节点也分主节点和从节点，从节点复制主节点的数据。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8o5homef2j208a08cmxv.jpg" alt=""></p>
+<p>主节点之间通过 PING 消息来互相确认对方的在线状态，如果没有在规定时间内收到对方的 PONG，则会把对方标记为疑似下线状态，并将这个消息告知给集群中的其它主节点。当某个主节点发现集群中有超过半数主节点认为某个主节点疑似下线，它就会把这个主节点标记为下线，并广播给集群中其它的节点（主节点+从节点）。</p>
+<p>当从节点发现自己正在复制的主节点已下线时，会通过 raft 算法选举出新的主节点。选举的候选节点是已下线主节点的所有从节点，投票节点是其它所有主节点。最后一个从节点会被推选为新的主节点，接管由已下线节点负责处理的槽。</p>
+<h2 id="深入分析-Redis-Lua-脚本运行原理"><a href="#深入分析-Redis-Lua-脚本运行原理" class="headerlink" title="深入分析 Redis Lua 脚本运行原理"></a>深入分析 Redis Lua 脚本运行原理</h2><p>Redis 提供了非常丰富的指令集，但是用户依然不满足，希望可以自定义扩充若干指令来完成一些特定领域的问题。Redis 为这样的用户场景提供了 lua 脚本支持，用户可以向服务器发送 lua 脚本来执行自定义动作，获取脚本的响应数据。Redis 服务器会单线程原子性执行 lua 脚本，保证 lua 脚本在处理的过程中不会被任意其它请求打断。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8o63cxyk9j20fi05cq2q.jpg" alt=""></p>
+<p>比如在分布式锁小节，我们提到了 del_if_equals 伪指令，它可以将匹配 key 和删除 key 合并在一起原子性执行，Redis 原生没有提供这样功能的指令，它可以使用 lua 脚本来完成。<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> redis.call(<span class="string">"get"</span>,KEYS[<span class="number">1</span>]) == ARGV[<span class="number">1</span>] <span class="keyword">then</span></span><br><span class="line">    <span class="keyword">return</span> redis.call(<span class="string">"del"</span>,KEYS[<span class="number">1</span>])</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure></p>
+<p>那上面这个脚本如何执行呢？使用 EVAL 指令<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; set foo bar</span><br><span class="line">OK</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; eval <span class="string">'if redis.call("get",KEYS[1]) == ARGV[1] then return redis.call("del",KEYS[1]) else return 0 end'</span> <span class="number">1</span> foo bar</span><br><span class="line">(integer) <span class="number">1</span></span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; eval <span class="string">'if redis.call("get",KEYS[1]) == ARGV[1] then return redis.call("del",KEYS[1]) else return 0 end'</span> <span class="number">1</span> foo bar</span><br><span class="line">(integer) <span class="number">0</span></span><br></pre></td></tr></table></figure></p>
+<p>EVAL 指令的第一个参数是脚本内容字符串，上面的例子我们将 lua 脚本压缩成一行以单引号围起来是为了方便命令行执行。然后是 key 的数量以及每个 key 串，最后是一系列附加参数字符串。附加参数的数量不需要和 key 保持一致，可以完全没有附加参数。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">EVAL SCRIPT KEY_NUM KEY1 KEY2 ... KEYN ARG1 ARG2 ....</span><br></pre></td></tr></table></figure></p>
+<p>上面的例子中只有 1 个 key，它就是 foo，紧接着 bar 是唯一的附加参数。在 lua 脚本中，数组下标是从 1 开始，所以通过 KEYS[1] 就可以得到 第一个 key，通过 ARGV[1] 就可以得到第一个附加参数。redis.call  函数可以让我们调用 Redis 的原生指令，上面的代码分别调用了 get 指令和 del 指令。return 返回的结果将会返回给客户端。</p>
+<h4 id="SCRIPT-LOAD-和-EVALSHA-指令"><a href="#SCRIPT-LOAD-和-EVALSHA-指令" class="headerlink" title="SCRIPT LOAD 和 EVALSHA 指令"></a>SCRIPT LOAD 和 EVALSHA 指令</h4><p>在上面的例子中，脚本的内容很短。如果脚本的内容很长，而且客户端需要频繁执行，那么每次都需要传递冗长的脚本内容势必比较浪费网络流量。所以 Redis 还提供了 SCRIPT LOAD 和 EVALSHA 指令来解决这个问题。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8o65f0q28j20g506nt8k.jpg" alt=""></p>
+<p>SCRIPT LOAD 指令用于将客户端提供的 lua 脚本传递到服务器而不执行，但是会得到脚本的唯一 ID，这个唯一 ID 是用来唯一标识服务器缓存的这段 lua 脚本，它是由 Redis 使用 sha1 算法揉捏脚本内容而得到的一个很长的字符串。有了这个唯一 ID，后面客户端就可以通过 EVALSHA 指令反复执行这个脚本了。<br>我们知道 Redis 有 incrby 指令可以完成整数的自增操作，但是没有提供自乘这样的指令。<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">incrby key value  ==&gt; $key = $key + value</span><br><span class="line">mulby key value ==&gt; $key = $key * value</span><br></pre></td></tr></table></figure></p>
+<p>下面我们使用 SCRIPT LOAD 和 EVALSHA 指令来完成自乘运算。<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">local</span> curVal = redis.call(<span class="string">"get"</span>, KEYS[<span class="number">1</span>])</span><br><span class="line"><span class="keyword">if</span> curVal == <span class="literal">false</span> <span class="keyword">then</span></span><br><span class="line">  curVal = <span class="number">0</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">  curVal = <span class="built_in">tonumber</span>(curVal)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line">curVal = curVal * <span class="built_in">tonumber</span>(ARGV[<span class="number">1</span>])</span><br><span class="line">redis.call(<span class="string">"set"</span>, KEYS[<span class="number">1</span>], curVal)</span><br><span class="line"><span class="keyword">return</span> curVal</span><br></pre></td></tr></table></figure></p>
+<p>先将上面的脚本单行化，语句之间使用分号隔开<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">local</span> curVal = redis.call(<span class="string">"get"</span>, KEYS[<span class="number">1</span>]); <span class="keyword">if</span> curVal == <span class="literal">false</span> <span class="keyword">then</span> curVal = <span class="number">0</span> <span class="keyword">else</span> curVal = <span class="built_in">tonumber</span>(curVal) <span class="keyword">end</span>; curVal = curVal * <span class="built_in">tonumber</span>(ARGV[<span class="number">1</span>]); redis.call(<span class="string">"set"</span>, KEYS[<span class="number">1</span>], curVal); <span class="keyword">return</span> curVal</span><br></pre></td></tr></table></figure></p>
+<p>加载脚本<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; script <span class="built_in">load</span> <span class="string">'local curVal = redis.call("get", KEYS[1]); if curVal == false then curVal = 0 else curVal = tonumber(curVal) end; curVal = curVal * tonumber(ARGV[1]); redis.call("set", KEYS[1], curVal); return curVal'</span></span><br><span class="line"><span class="string">"be4f93d8a5379e5e5b768a74e77c8a4eb0434441"</span></span><br></pre></td></tr></table></figure></p>
+<p>命令行输出了很长的字符串，它就是脚本的唯一标识，下面我们使用这个唯一标识来执行指令<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; evalsha be4f93d8a5379e5e5b768a74e77c8a4eb0434441 <span class="number">1</span> notexistskey <span class="number">5</span></span><br><span class="line">(integer) <span class="number">0</span></span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; evalsha be4f93d8a5379e5e5b768a74e77c8a4eb0434441 <span class="number">1</span> notexistskey <span class="number">5</span></span><br><span class="line">(integer) <span class="number">0</span></span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; set foo <span class="number">1</span></span><br><span class="line">OK</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; evalsha be4f93d8a5379e5e5b768a74e77c8a4eb0434441 <span class="number">1</span> foo <span class="number">5</span></span><br><span class="line">(integer) <span class="number">5</span></span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; evalsha be4f93d8a5379e5e5b768a74e77c8a4eb0434441 <span class="number">1</span> foo <span class="number">5</span></span><br><span class="line">(integer) <span class="number">25</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="错误处理"><a href="#错误处理" class="headerlink" title="错误处理"></a>错误处理</h4><p>上面的脚本参数要求传入的附加参数必须是整数，如果没有传递整数会怎样呢？<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; evalsha be4f93d8a5379e5e5b768a74e77c8a4eb0434441 <span class="number">1</span> foo bar</span><br><span class="line">(<span class="built_in">error</span>) ERR Error <span class="built_in">running</span> script (call to f_be4f93d8a5379e5e5b768a74e77c8a4eb0434441): @user_script:<span class="number">1</span>: user_script:<span class="number">1</span>: attempt to perform arithmetic on a <span class="literal">nil</span> value</span><br></pre></td></tr></table></figure></p>
+<p>可以看到客户端输出了服务器返回的通用错误消息，注意这是一个动态抛出的异常，Redis 会保护主线程不会因为脚本的错误而导致服务器崩溃，近似于在脚本的外围有一个很大的 try catch 语句包裹。在 lua 脚本执行的过程中遇到了错误，同 redis 的事务一样，那些通过  redis.call  函数已经执行过的指令对服务器状态产生影响是无法撤销的，在编写 lua 代码时一定要小心，避免没有考虑到的判断条件导致脚本没有完全执行。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8o683kfmoj20as05gq2q.jpg" alt=""></p>
+<p>如果读者对 lua 语言有所了解就知道 lua 原生没有提供 try catch 语句，那上面提到的异常包裹语句究竟是用什么来实现的呢？lua 的替代方案是内置了 pcall(f) 函数调用。pcall 的意思是 protected call，它会让 f 函数运行在保护模式下，f 如果出现了错误，pcall 调用会返回 false 和错误信息。而普通的 call(f) 调用在遇到错误时只会向上抛出异常。在 Redis 的源码中可以看到 lua 脚本的执行被包裹在 pcall 函数调用中。</p>
+<h4 id="脚本死循环怎么办？"><a href="#脚本死循环怎么办？" class="headerlink" title="脚本死循环怎么办？"></a>脚本死循环怎么办？</h4><p>Redis 的指令执行是个单线程，这个单线程还要执行来自客户端的 lua 脚本。如果 lua 脚本中来一个死循环，是不是 Redis 就完蛋了？Redis 为了解决这个问题，它提供了 script kill 指令用于动态杀死一个执行时间超时的 lua 脚本。不过 script kill 的执行有一个重要的前提，那就是当前正在执行的脚本没有对 Redis 的内部数据状态进行修改，因为 Redis 不允许 script kill 破坏脚本执行的原子性。比如脚本内部使用了 redis.call(“set”, key, value) 修改了内部的数据，那么 script kill 执行时服务器会返回错误。下面我们来尝试以下 script kill 指令。<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; eval <span class="string">'while(true) do print("hello") end'</span> <span class="number">0</span></span><br></pre></td></tr></table></figure></p>
+<p>eval 指令执行后，可以明显看出来 redis 卡死了，死活没有任何响应，如果去观察 Redis 服务器日志可以看到日志在疯狂输出 hello 字符串。这时候就必须重新开启一个 redis-cli 来执行 script kill 指令。<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; script kill</span><br><span class="line">OK</span><br><span class="line">(<span class="number">2.58</span>s)</span><br></pre></td></tr></table></figure></p>
+<h4 id="Script-Kill-的原理"><a href="#Script-Kill-的原理" class="headerlink" title="Script Kill 的原理"></a>Script Kill 的原理</h4><p>下面我就要开始揭秘 kill 的原理了，lua 脚本引擎功能太强大了，它提供了各式各样的钩子函数，它允许在内部虚拟机执行指令时运行钩子代码。比如每执行 N 条指令执行一次某个钩子函数，Redis 正是使用了这个钩子函数。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8o6ac4wlzj20ef09vwea.jpg" alt=""></p>
 
     
   </div>
@@ -312,7 +355,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 10px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 11.43px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Structure/" style="font-size: 10px;">Structure</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -321,6 +364,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/28/common-data-structure/">数据结构</a>
+      </li>
     
       <li>
         <a href="/2019/11/27/binary-tree-common/">二叉树</a>
@@ -336,10 +383,6 @@
     
       <li>
         <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
       </li>
     
   </ul>

@@ -1,0 +1,339 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>数据结构 | 无知是天堂</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="jifuwei">
+  
+  
+    <meta name="description" content="为什么我们需要数据结构？数据是程序的核心要素，因此数据结构的价值不言而喻。无论你在写什么程序，你都需要与数据打交道，比如员工工资、股票价格、杂货清单或者电话本。在不同场景下，数据需要以特定的方式存储，我们有不同的数据结构可以满足我们的需求。
+8 种常用数据结构
+数组
+栈
+队列
+链表
+图
+树
+前缀树
+哈希表
+
+数组数组(Array)大概是最简单，也是最常用的数据结构了。其他数据结构，比如栈和队列都是">
+  
+  <meta name="description" content="为什么我们需要数据结构？数据是程序的核心要素，因此数据结构的价值不言而喻。无论你在写什么程序，你都需要与数据打交道，比如员工工资、股票价格、杂货清单或者电话本。在不同场景下，数据需要以特定的方式存储，我们有不同的数据结构可以满足我们的需求。 8 种常用数据结构 数组 栈 队列 链表 图 树 前缀树 哈希表  数组数组(Array)大概是最简单，也是最常用的数据结构了。其他数据结构，比如栈和队列都是">
+<meta name="keywords" content="Structure,Arithmetic">
+<meta property="og:type" content="article">
+<meta property="og:title" content="数据结构">
+<meta property="og:url" content="http://yoursite.com/2019/11/28/common-data-structure/index.html">
+<meta property="og:site_name" content="无知是天堂">
+<meta property="og:description" content="为什么我们需要数据结构？数据是程序的核心要素，因此数据结构的价值不言而喻。无论你在写什么程序，你都需要与数据打交道，比如员工工资、股票价格、杂货清单或者电话本。在不同场景下，数据需要以特定的方式存储，我们有不同的数据结构可以满足我们的需求。 8 种常用数据结构 数组 栈 队列 链表 图 树 前缀树 哈希表  数组数组(Array)大概是最简单，也是最常用的数据结构了。其他数据结构，比如栈和队列都是">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g9dk90ev74j208c03cdfo.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g9drngo6hej208c05qa9y.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g9dsaz89r0j208c0baq37.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g9du0v73e3j20jg03l74i.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g9duf7xr20g20go0glngd.gif">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g9dv5t5jt4j20dw07eaad.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g9dw49imrgj20jg08kmy0.jpg">
+<meta property="og:updated_time" content="2019-11-28T09:54:31.415Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="数据结构">
+<meta name="twitter:description" content="为什么我们需要数据结构？数据是程序的核心要素，因此数据结构的价值不言而喻。无论你在写什么程序，你都需要与数据打交道，比如员工工资、股票价格、杂货清单或者电话本。在不同场景下，数据需要以特定的方式存储，我们有不同的数据结构可以满足我们的需求。 8 种常用数据结构 数组 栈 队列 链表 图 树 前缀树 哈希表  数组数组(Array)大概是最简单，也是最常用的数据结构了。其他数据结构，比如栈和队列都是">
+<meta name="twitter:image" content="http://ww1.sinaimg.cn/large/bb901a77gy1g9dk90ev74j208c03cdfo.jpg">
+  
+  
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  <!--[if lt IE 9]><script src="//cdn.bootcss.com/html5shiv/3.7.0/html5shiv.min.js"></script><![endif]-->
+  
+  
+</head>
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">无知是天堂</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2019/11/28/common-data-structure/">
+  <time datetime="2019-11-28T02:42:28.000Z">
+    2019-11-28
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">数据结构</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h2 id="为什么我们需要数据结构？"><a href="#为什么我们需要数据结构？" class="headerlink" title="为什么我们需要数据结构？"></a>为什么我们需要数据结构？</h2><p>数据是程序的核心要素，因此数据结构的价值不言而喻。无论你在写什么程序，你都需要与数据打交道，比如员工工资、股票价格、杂货清单或者电话本。在不同场景下，数据需要以特定的方式存储，我们有不同的数据结构可以满足我们的需求。</p>
+<h2 id="8-种常用数据结构"><a href="#8-种常用数据结构" class="headerlink" title="8 种常用数据结构"></a>8 种常用数据结构</h2><ul>
+<li>数组</li>
+<li>栈</li>
+<li>队列</li>
+<li>链表</li>
+<li>图</li>
+<li>树</li>
+<li>前缀树</li>
+<li>哈希表</li>
+</ul>
+<h2 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h2><p>数组(Array)大概是最简单，也是最常用的数据结构了。其他数据结构，比如栈和队列都是由数组衍生出来的。</p>
+<p>下图展示了 1 个数组，它有 4 个元素：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g9dk90ev74j208c03cdfo.jpg" alt=""></p>
+<p>每一个数组元素的位置由数字编号，称为下标或者索引(index)。大多数编程语言的数组第一个元素的下标是 0。</p>
+<p>根据维度区分，有 2 种不同的数组：</p>
+<ul>
+<li>一维数组(如上图所示)</li>
+<li>多维数组(数组的元素为数组)</li>
+</ul>
+<h3 id="数组的基本操作"><a href="#数组的基本操作" class="headerlink" title="数组的基本操作"></a>数组的基本操作</h3><ul>
+<li>Insert - 在某个索引处插入元素</li>
+<li>Get - 读取某个索引处的元素</li>
+<li>Delete - 删除某个索引处的元素</li>
+<li>Size - 获取数组的长度</li>
+</ul>
+<h3 id="常见数组代码面试题"><a href="#常见数组代码面试题" class="headerlink" title="常见数组代码面试题"></a>常见数组代码面试题</h3><ul>
+<li>查找数组中第二小的元素<br>在一次遍历中找到最小的两个数，时间复杂度为O(n)</li>
+<li>查找第一个没有重复的数组元素<br>map计数+queue排队</li>
+<li>合并 2 个排序好的数组<br>初始化 nums1 和 nums2 的元素数量分别为 m 和 n。<br>你可以假设 nums1 有足够的空间（空间大小大于或等于 m + n）来保存 nums2 中的元素。<br>由于合并后A数组的大小必定是m+n，所以从最后面开始往前赋值，先比较A和B中最后一个元素的大小，把较大的那个插入到m+n-1的位置上，再依次向前推。如果A中所有的元素都比B小，那么前m个还是A原来的内容，没有改变。如果A中的数组比B大的，当A循环完了，B中还有元素没加入A，直接用个循环把B中所有的元素覆盖到A剩下的位置。</li>
+<li>重新排列数组中的正数和负数</li>
+</ul>
+<h2 id="栈"><a href="#栈" class="headerlink" title="栈"></a>栈</h2><p>撤回，即 Ctrl+Z，是我们最常见的操作之一，大多数应用都会支持这个功能。你知道它是怎么实现的吗？答案是这样的：把之前的应用状态(限制个数)保存到内存中，最近的状态放到第一个。这时，我们需要栈(stack)来实现这个功能。</p>
+<p>栈中的元素采用 LIFO (Last In First Out)，即后进先出。</p>
+<p>下图的栈有 3 个元素，3 在最上面，因此它会被第一个移除：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g9drngo6hej208c05qa9y.jpg" alt=""></p>
+<h3 id="栈的基本操作"><a href="#栈的基本操作" class="headerlink" title="栈的基本操作"></a>栈的基本操作</h3><ul>
+<li>Push —  在栈的最上方插入元素</li>
+<li>Pop — 返回栈最上方的元素，并将其删除</li>
+<li>isEmpty —  查询栈是否为空</li>
+<li>Top —  返回栈最上方的元素，并不删除</li>
+</ul>
+<h3 id="常见的栈代码面试题"><a href="#常见的栈代码面试题" class="headerlink" title="常见的栈代码面试题"></a>常见的栈代码面试题</h3><ul>
+<li>使用栈计算后缀表达式</li>
+<li>使用栈为栈中的元素排序</li>
+<li>检查字符串中的括号是否匹配正确</li>
+</ul>
+<h2 id="队列"><a href="#队列" class="headerlink" title="队列"></a>队列</h2><p>队列(Queue)与栈类似，都是采用线性结构存储数据。它们的区别在于，栈采用 LIFO 方式，而队列采用先进先出，即FIFO(First in First Out)。</p>
+<p>下图展示了一个队列，1 是最上面的元素，它会被第一个移除：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g9dsaz89r0j208c0baq37.jpg" alt=""></p>
+<h3 id="队列的基本操作"><a href="#队列的基本操作" class="headerlink" title="队列的基本操作"></a>队列的基本操作</h3><ul>
+<li>Enqueue —  在队列末尾插入元素</li>
+<li>Dequeue —  将队列第一个元素删除</li>
+<li>isEmpty —  查询队列是否为空</li>
+<li>Top —  返回队列的第一个元素</li>
+<li>常见的队列代码面试题</li>
+</ul>
+<h3 id="常见的队列代码面试题"><a href="#常见的队列代码面试题" class="headerlink" title="常见的队列代码面试题"></a>常见的队列代码面试题</h3><ul>
+<li>使用队列实现栈</li>
+<li>倒转队列的前 K 个元素</li>
+<li>使用队列将 1 到 n 转换为二进制</li>
+</ul>
+<h2 id="链表"><a href="#链表" class="headerlink" title="链表"></a>链表</h2><p>链表(Linked List)也是线性结构，它与数组看起来非常像，但是它们的内存分配方式、内部结构和插入删除操作方式都不一样。</p>
+<p>链表是一系列节点组成的链，每一个节点保存了数据以及指向下一个节点的指针。链表头指针指向第一个节点，如果链表为空，则头指针为空或者为 null。</p>
+<p>链表可以用来实现文件系统、哈希表和邻接表。</p>
+<p>下图展示了一个链表，它有 3 个节点：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g9du0v73e3j20jg03l74i.jpg" alt=""></p>
+<p>链表分为 2 种：</p>
+<ul>
+<li>单向链表</li>
+<li>双向链表</li>
+</ul>
+<h3 id="链表的基本操作"><a href="#链表的基本操作" class="headerlink" title="链表的基本操作"></a>链表的基本操作</h3><ul>
+<li>InsertAtEnd —  在链表结尾插入元素</li>
+<li>InsertAtHead —  在链表开头插入元素</li>
+<li>Delete —  删除链表的指定元素</li>
+<li>DeleteAtHead —  删除链表第一个元素</li>
+<li>Search —  在链表中查询指定元素</li>
+<li>isEmpty —  查询链表是否为空</li>
+</ul>
+<h3 id="常见的队列代码面试题-1"><a href="#常见的队列代码面试题-1" class="headerlink" title="常见的队列代码面试题"></a>常见的队列代码面试题</h3><ul>
+<li><p>倒转 1 个链表<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g9duf7xr20g20go0glngd.gif" alt=""></p>
+</li>
+<li><p>检查链表中是否存在循环</p>
+</li>
+<li>返回链表倒数第 N 个元素</li>
+<li>移除链表中的重复元素</li>
+</ul>
+<h2 id="图"><a href="#图" class="headerlink" title="图"></a>图</h2><p>图(graph)由多个节点(vertex)构成，节点之间阔以互相连接组成一个网络。(x, y)表示一条边(edge)，它表示节点 x 与 y 相连。边可能会有权值(weight/cost)。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g9dv5t5jt4j20dw07eaad.jpg" alt=""></p>
+<p>图分为两种:</p>
+<ul>
+<li>无向图</li>
+<li>有向图</li>
+</ul>
+<p>在编程语言中，图有可能有以下两种形式表示：</p>
+<ul>
+<li>邻接矩阵(Adjacency Matrix)</li>
+<li>邻接表(Adjacency List)</li>
+</ul>
+<p>遍历图有两周算法</p>
+<ul>
+<li>广度优先搜索(Breadth First Search)</li>
+<li>深度优先搜索(Depth First Search)</li>
+</ul>
+<h3 id="常见的图代码面试题"><a href="#常见的图代码面试题" class="headerlink" title="常见的图代码面试题"></a>常见的图代码面试题</h3><ul>
+<li>实现广度优先搜索</li>
+<li>实现深度优先搜索</li>
+<li>检查图是否为树</li>
+<li>统计图中边的个数</li>
+<li>使用 Dijkstra 算法查找两个节点之间的最短距离</li>
+</ul>
+<h2 id="树"><a href="#树" class="headerlink" title="树"></a>树</h2><p>树(Tree)是一个分层的数据结构，由节点和连接节点的边组成。树是一种特殊的图，它与图最大的区别是没有循环。</p>
+<p>树被广泛应用在人工智能和一些复杂算法中，用来提供高效的存储结构。</p>
+<p>下图是一个简单的树以及与树相关的术语：<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g9dw49imrgj20jg08kmy0.jpg" alt=""></p>
+<p>树有很多分类：</p>
+<ul>
+<li>N 叉树(N-ary Tree)</li>
+<li>平衡树(Balanced Tree)</li>
+<li>二叉树(Binary Tree)</li>
+<li>二叉查找树(Binary Search Tree)</li>
+<li>平衡二叉树(AVL Tree)</li>
+<li>红黑树(Red Black Tree)</li>
+<li>2-3 树(2–3 Tree)</li>
+<li>其中，二叉树和二叉查找树是最常用的树。</li>
+</ul>
+<h3 id="常见的树代码面试题"><a href="#常见的树代码面试题" class="headerlink" title="常见的树代码面试题"></a>常见的树代码面试题</h3><ul>
+<li>计算树的高度</li>
+<li>查找二叉平衡树中第 K 大的元素</li>
+<li>查找树中与根节点距离为 k 的节点</li>
+<li>查找二叉树中某个节点所有祖先节点</li>
+</ul>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-link" href="/tags/Arithmetic/">Arithmetic</a>, <a class="tags-link" href="/tags/Structure/">Structure</a>
+  </div>
+
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  
+  <div id="sidebar" class="widgets-right">
+  
+
+  
+<div class="widget tagcloud">
+  <h3 class="title">tagcloud</h3>
+  <div class="entry">
+    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 11.43px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Structure/" style="font-size: 10px;">Structure</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+  </div>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">recent_posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/28/common-data-structure/">数据结构</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/27/binary-tree-common/">二叉树</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/17/sort-algorithm-common/">常见排序算法总结</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/09/distribut-concurrent-programmer-design/">秒杀系统设计</a>
+      </li>
+    
+      <li>
+        <a href="/2019/11/09/distribut-programmer-design/">分布式系统设计浅谈</a>
+      </li>
+    
+  </ul>
+</div>
+
+</div>
+  
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2019 <a href="/">jifuwei</a>
+  
+</div>
+<!-- 
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://blog.dafengning.com/" target="_blank">Chong Zi</a>
+</div>
+-->
+<div class="clearfix"></div>
+</footer>
+  <script src="//lib.sinaapp.com/js/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+<div id="rightfix" style="display:none;">
+
+
+<a href="javascript:void(0)" id="gotop" class="fix_btn" onclick="gotop();" title="回到顶部"><i></i></a>
+<script>
+  function gotop(){
+    $('html,body').animate({
+        scrollTop : '0px'
+      }, 800);
+  }
+  $(function(){
+    _rightfix = $('#rightfix');
+    $(window).scroll(function(){
+      $sollTop = document.documentElement.scrollTop + document.body.scrollTop;
+      if($sollTop > 350){
+        _rightfix.show();
+      }else{
+        _rightfix.hide();
+      }
+    });
+  });
+</script>
+
+</div>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>
