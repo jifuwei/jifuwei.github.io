@@ -59,196 +59,46 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2019/11/06/dubbo-complete-know/">
-  <time datetime="2019-11-06T06:37:31.000Z">
-    2019-11-06
+      <a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">
+  <time datetime="2019-11-07T13:32:34.000Z">
+    2019-11-07
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2019/11/06/dubbo-complete-know/">【精分】Dubbo最全最详细分析汇总</a></h1>
+    <h1 class="title"><a href="/2019/11/07/question-concurrent-lock-synchronize-reentrancelock-compare/">Synchronize &amp; ReentrantLock 区别</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <h2 id="什么是-RPC-RPC原理是什么"><a href="#什么是-RPC-RPC原理是什么" class="headerlink" title="什么是 RPC?RPC原理是什么?"></a>什么是 RPC?RPC原理是什么?</h2><p>RPC(Remote Produce Call)指的是进程间通信。就是允许程序调用另一个地址空间（通常是共享网络的另一台机器上）的过程或函数，且不需要显式编码这个远程调用的细节。</p>
-<p>因为如今大公司内部系统由大大小小的许多服务组成，服务部署在不同的机器上，如果服务间的调用都是走网络通信，未免也太过复杂，服务消费方没调用一个服务都要写一部分网络通信的代码，太过繁琐且容易出错。如果能像本地调用一个去调用远程连接这样该多好啊，这种方式就是RPC远程调用。</p>
-<p>那么问题又来了。</p>
-<p>远程问题如何通信？</p>
-<p>客户端如何寻址服务端？</p>
-<p>客户端服务端之间以何种形式传输的信息？</p>
-<p>客户端与服务端建立TCP链接，相比于HTTP通信协议少去应用层的许多东西。数据的传输就是通过这个TCP的链接。</p>
-<p>客户端寻址主要是通过事先写入地址，也就类似于服务注册，注册服务后，调用对应的方法也就是自动通过TCP链接传输到对应的地址。</p>
-<p>客户端服务端传输信息首先都是通过网络二进制，那么也就是涉及到序列化和反序列化的问题。</p>
-<p>RPC远程调用目的：通过像调用本地服务一样远程调用另一台服务器上的服务来完成需求。</p>
-<p>最终问题：如何才能不需要显式编码远程调用的细节去远程调用服务呢？</p>
-<p>这就得说说RPC框架的原理了。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8obqp0y24j20dv08t77k.jpg" alt=""></p>
-<p>Client：服务消费方</p>
-<p>Server：服务提供方</p>
-<p>(1).Client以调用本地服务方式调用远程API</p>
-<p>(2).Client Stub负责接收参数，方法等，将其封装（编码）成能够进行网络传输的消息体</p>
-<p>(3).Client Stub负责网络寻址，将消息体发送对应的服务端</p>
-<p>(4).Server Stub负责接收消息，并解码成服务端能够识别的信息，调用对应的服务端方法</p>
-<p>(5).Server本地服务将调用结果发送给Server Stub</p>
-<p>(6).Server Stub将返回结果包装成消息体返回给Client Stub</p>
-<p>(7).Client Stub接收消息并进行解码</p>
-<p>(8).Client获取到最终调用结果</p>
-<p>整个RPC框架就是把(2)~(7)步骤封装起来，让用户对这些细节透明。</p>
-<p>这样的方式，简单，高效，通用。</p>
-<h2 id="为什么要用-Dubbo"><a href="#为什么要用-Dubbo" class="headerlink" title="为什么要用 Dubbo?"></a>为什么要用 Dubbo?</h2><p>如果你要开发分布式程序，你也可以直接基于 HTTP 接口进行通信，但是为什么要用 Dubbo呢？</p>
-<p>我觉得主要可以从 Dubbo 提供的下面四点特性来说为什么要用 Dubbo：</p>
+      <h2 id="相似点"><a href="#相似点" class="headerlink" title="相似点"></a>相似点</h2><p>加锁方式同步，而且都是阻塞式的同步</p>
+<p>如果一个线程获得了对象锁，进入了同步块，其他访问该同步块的线程都必须阻塞在同步块外面等待，而进行线程阻塞和唤醒的代价是比较高的（操作系统需要在用户态与内核态之间来回切换，代价很高，不过可以通过对锁优化进行改善）</p>
+<h2 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h2><h3 id="API层面"><a href="#API层面" class="headerlink" title="API层面"></a>API层面</h3><p>对于Synchronized来说，它是java语言的关键字，是原生语法层面的互斥，需要jvm实现。而ReentrantLock它是JDK 1.5之后提供的API层面的互斥锁，需要lock()和unlock()方法配合try/finally语句块来完成。</p>
+<p>synchronized既可以修饰方法，也可以修饰代码块<br>ReentrantLock只能在代码块中使用，无法修饰方法。</p>
+<h3 id="等待可中断"><a href="#等待可中断" class="headerlink" title="等待可中断"></a>等待可中断</h3><p>等待可中断是指当持有锁的线程长期不释放锁的时候，正在等待的线程可以选择放弃等待，改为处理其他事情。可等待特性对处理执行时间非常长的同步快很有帮助。<br>具体来说，假如业务代码中有两个线程，Thread1 Thread2。假设 Thread1 获取了对象object的锁，Thread2将等待Thread1释放object的锁。</p>
+<p>使用synchronized。如果Thread1不释放，Thread2将一直等待，不能被中断。synchronized也可以说是Java提供的原子性内置锁机制。内部锁扮演了互斥锁（mutual exclusion lock ，mutex）的角色，一个线程引用锁的时候，别的线程阻塞等待。<br>使用ReentrantLock。如果Thread1不释放，Thread2等待了很长时间以后，可以中断等待，转而去做别的事情</p>
+<h3 id="公平锁"><a href="#公平锁" class="headerlink" title="公平锁"></a>公平锁</h3><ul>
+<li>公平锁是指多个线程在等待同一个锁时，必须按照申请的时间顺序来依次获得锁；而非公平锁则不能保证这一点。非公平锁在锁被释放时，任何一个等待锁的线程都有机会获得锁。</li>
+<li>synchronized的锁是非公平锁，ReentrantLock默认情况下也是非公平锁，但可以通过带布尔值的构造函数要求使用公平锁。</li>
+</ul>
+<p>ReentrantLock 构造器的一个参数是boolean值，它允许您选择想要一个公平（fair）锁，还是一个不公平（unfair）锁。公平锁：使线程按照请求锁的顺序依次获得锁, 但是有成本;不公平锁：则允许讨价还价</p>
+<h3 id="锁绑定多个条件"><a href="#锁绑定多个条件" class="headerlink" title="锁绑定多个条件"></a>锁绑定多个条件</h3><ul>
+<li>ReentrantLock可以同时绑定多个Condition对象，只需多次调用newCondition方法即可。</li>
+<li>synchronized中，锁对象的wait()和notify()或notifyAll()方法可以实现一个隐含的条件。但如果要和多于一个的条件关联的时候，就不得不额外添加一个锁</li>
+</ul>
+<h2 id="什么是线程安全问题"><a href="#什么是线程安全问题" class="headerlink" title="什么是线程安全问题"></a>什么是线程安全问题</h2><p>如果你的代码所在的进程中有多个线程在同时运行，而这些线程可能会同时运行这段代码。如果每次运行结果和单线程运行的结果是一样的，而且其他的变量的值也和预期的是一样的，就是线程安全的，或者说:一个类或者程序所提供的接口对于线程来说是原子操作或者多个线程之间的切换不会导致该接口的执行结果存在二义性,也就是说我们不用考虑同步的问题 。</p>
+<h2 id="Synchronize在编译时如何实现锁机制"><a href="#Synchronize在编译时如何实现锁机制" class="headerlink" title="Synchronize在编译时如何实现锁机制"></a>Synchronize在编译时如何实现锁机制</h2><p>Synchronized进过编译，会在同步块的前后分别形成monitorenter和monitorexit这个两个字节码指令。在执行monitorenter指令时，首先要尝试获取对象锁。如果这个对象没被锁定，或者当前线程已经拥有了那个对象锁，把锁的计算器加1，相应的，在执行monitorexit指令时会将锁计算器就减1，当计算器为0时，锁就被释放了。如果获取对象锁失败，那当前线程就要阻塞，直到对象锁被另一个线程释放为止。</p>
+<h2 id="ReentrantLock使用方法"><a href="#ReentrantLock使用方法" class="headerlink" title="ReentrantLock使用方法"></a>ReentrantLock使用方法</h2><p>ReentrantLock是java.util.concurrent包下提供的一套互斥锁，相比Synchronized，ReentrantLock类提供了一些高级功能，主要有以下3项：</p>
 <ul>
-<li>负载均衡<br>同一个服务部署在不同的机器时该调用那一台机器上的服务。</li>
-<li>服务调用链路生成<br>随着系统的发展，服务越来越多，服务间依赖关系变得错踪复杂，甚至分不清哪个应用要在哪个应用之前启动，架构师都不能完整的描述应用的架构关系。Dubbo 可以为我们解决服务之间互相是如何调用的。</li>
-<li>服务访问压力以及时长统计、资源调度和治理<br>基于访问压力实时管理集群容量，提高集群利用率。</li>
-<li>服务降级<br>某个服务挂掉之后调用备用服务。</li>
+<li>等待可中断，持有锁的线程长期不释放的时候，正在等待的线程可以选择放弃等待，这相当于Synchronized来说可以避免出现死锁的情况。</li>
+<li>公平锁，多个线程等待同一个锁时，必须按照申请锁的时间顺序获得锁，Synchronized锁非公平锁，ReentrantLock默认的构造函数是创建的非公平锁，可以通过参数true设为公平锁，但公平锁表现的性能不是很好。</li>
+<li>锁绑定多个条件，一个ReentrantLock对象可以同时绑定对个对象。</li>
 </ul>
-<p>另外，Dubbo 除了能够应用在分布式系统中，也可以应用在现在比较火的微服务系统中。不过，由于 Spring Cloud 在微服务中应用更加广泛，所以，我觉得一般我们提 Dubbo 的话，大部分是分布式系统的情况。</p>
-<h2 id="什么是分布式"><a href="#什么是分布式" class="headerlink" title="什么是分布式?"></a>什么是分布式?</h2><p>分布式或者说 SOA 分布式重要的就是面向服务，说简单的分布式就是我们把整个系统拆分成不同的服务然后将这些服务放在不同的服务器上减轻单体服务的压力提高并发量和性能。比如电商系统可以简单地拆分成订单系统、商品系统、登录系统等等，拆分之后的每个服务可以部署在不同的机器上，如果某一个服务的访问量比较大的话也可以将这个服务同时部署在多台机器上。</p>
-<h2 id="为什么要分布式"><a href="#为什么要分布式" class="headerlink" title="为什么要分布式?"></a>为什么要分布式?</h2><p>从开发角度来讲单体应用的代码都集中在一起，而分布式系统的代码根据业务被拆分。所以，每个团队可以负责一个服务的开发，这样提升了开发效率。另外，代码根据业务拆分之后更加便于维护和扩展。</p>
-<p>另外，我觉得将系统拆分成分布式之后不光便于系统扩展和维护，更能提高整个系统的性能</p>
-<h2 id="Dubbo-的架构图解"><a href="#Dubbo-的架构图解" class="headerlink" title="Dubbo 的架构图解"></a>Dubbo 的架构图解</h2><p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8obws86nlj20d308tq4t.jpg" alt=""></p>
-<p>上述节点简单说明：</p>
-<ul>
-<li>Provider： 暴露服务的服务提供方</li>
-<li>Consumer： 调用远程服务的服务消费方</li>
-<li>Registry： 服务注册与发现的注册中心</li>
-<li>Monitor： 统计服务的调用次数和调用时间的监控中心</li>
-<li>Container： 服务运行容器</li>
-</ul>
-<p>调用关系说明：</p>
-<ul>
-<li>服务容器负责启动，加载，运行服务提供者。</li>
-<li>服务提供者在启动时，向注册中心注册自己提供的服务。</li>
-<li>服务消费者在启动时，向注册中心订阅自己所需的服务。</li>
-<li>注册中心返回服务提供者地址列表给消费者，如果有变更，注册中心将基于长连接推送变更数据给消费者。</li>
-<li>服务消费者，从提供者地址列表中，基于软负载均衡算法，选一台提供者进行调用，如果调用失败，再选另一台调用。</li>
-<li>服务消费者和提供者，在内存中累计调用次数和调用时间，定时每分钟发送一次统计数据到监控中心。</li>
-</ul>
-<p><strong>重要知识点总结：</strong></p>
-<ul>
-<li>注册中心负责服务地址的注册与查找，相当于目录服务，服务提供者和消费者只在启动时与注册中心交互，注册中心不转发请求，压力较小</li>
-<li>监控中心负责统计各服务调用次数，调用时间等，统计先在内存汇总后每分钟一次发送到监控中心服务器，并以报表展示</li>
-<li>注册中心，服务提供者，服务消费者三者之间均为长连接，监控中心除外</li>
-<li>注册中心通过长连接感知服务提供者的存在，服务提供者宕机，注册中心将立即推送事件通知消费者</li>
-<li>注册中心和监控中心全部宕机，不影响已运行的提供者和消费者，消费者在本地缓存了提供者列表</li>
-<li>注册中心和监控中心都是可选的，服务消费者可以直连服务提供者</li>
-<li>服务提供者无状态，任意一台宕掉后，不影响使用</li>
-<li>服务提供者全部宕掉后，服务消费者应用将无法使用，并无限次重连等待服务提供者恢复</li>
-</ul>
-<h2 id="dubbo工作原理"><a href="#dubbo工作原理" class="headerlink" title="dubbo工作原理"></a>dubbo工作原理</h2><p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8oc5jli3yj20p00iqjx2.jpg" alt=""></p>
-<p>图中从下至上分为十层，各层均为单向依赖，右边的黑色箭头代表层之间的依赖关系，每一层都可以剥离上层被复用，其中，Service 和 Config 层为 API，其它各层均为 SPI。</p>
-<p>各层说明：</p>
-<ul>
-<li>第一层：service层，接口层，给服务提供者和消费者来实现的</li>
-<li>第二层：config层，配置层，主要是对dubbo进行各种配置的</li>
-<li>第三层：proxy层，服务接口透明代理，生成服务的客户端 Stub 和服务器端 Skeleton</li>
-<li>第四层：registry层，服务注册层，负责服务的注册与发现</li>
-<li>第五层：cluster层，集群层，封装多个服务提供者的路由以及负载均衡，将多个实例组合成一个服务</li>
-<li>第六层：monitor层，监控层，对rpc接口的调用次数和调用时间进行监控</li>
-<li>第七层：protocol层，远程调用层，封装rpc调用</li>
-<li>第八层：exchange层，信息交换层，封装请求响应模式，同步转异步</li>
-<li>第九层：transport层，网络传输层，抽象mina和netty为统一接口</li>
-<li>第十层：serialize层，数据序列化层，网络传输需要</li>
-</ul>
-<h2 id="Dubbo-提供的负载均衡策略"><a href="#Dubbo-提供的负载均衡策略" class="headerlink" title="Dubbo 提供的负载均衡策略"></a>Dubbo 提供的负载均衡策略</h2><p>在集群负载均衡时，Dubbo 提供了多种均衡策略，默认为 random 随机调用。</p>
-<h3 id="Random-LoadBalance-默认，基于权重的随机负载均衡机制"><a href="#Random-LoadBalance-默认，基于权重的随机负载均衡机制" class="headerlink" title="Random LoadBalance(默认，基于权重的随机负载均衡机制)"></a>Random LoadBalance(默认，基于权重的随机负载均衡机制)</h3><ul>
-<li>随机，按权重设置随机概率。</li>
-<li>在一个截面上碰撞的概率高，但调用量越大分布越均匀，而且按概率使用权重后也比较均匀，有利于动态调整提供者权重。</li>
-</ul>
-<p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8ocann52qj20jr0bwaaf.jpg" alt=""></p>
-<h3 id="RoundRobin-LoadBalance-不推荐，基于权重的轮询负载均衡机制"><a href="#RoundRobin-LoadBalance-不推荐，基于权重的轮询负载均衡机制" class="headerlink" title="RoundRobin LoadBalance(不推荐，基于权重的轮询负载均衡机制)"></a>RoundRobin LoadBalance(不推荐，基于权重的轮询负载均衡机制)</h3><ul>
-<li>轮循，按公约后的权重设置轮循比率。</li>
-<li>存在慢的提供者累积请求的问题，比如：第二台机器很慢，但没挂，当请求调到第二台时就卡在那，久而久之，所有请求都卡在调到第二台上。</li>
-</ul>
-<p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8ocd41ocaj20l80bk0sy.jpg" alt=""></p>
-<h3 id="LeastActive-LoadBalance"><a href="#LeastActive-LoadBalance" class="headerlink" title="LeastActive LoadBalance"></a>LeastActive LoadBalance</h3><ul>
-<li>最少活跃调用数，相同活跃数的随机，活跃数指调用前后计数差。</li>
-<li>使慢的提供者收到更少请求，因为越慢的提供者的调用前后计数差会越大。</li>
-</ul>
-<h3 id="ConsistentHash-LoadBalance"><a href="#ConsistentHash-LoadBalance" class="headerlink" title="ConsistentHash LoadBalance"></a>ConsistentHash LoadBalance</h3><ul>
-<li>一致性 Hash，相同参数的请求总是发到同一提供者。(如果你需要的不是随机负载均衡，是要一类请求都到一个节点，那就走这个一致性hash策略。)</li>
-<li>当某一台提供者挂时，原本发往该提供者的请求，基于虚拟节点，平摊到其它提供者，不会引起剧烈变动。</li>
-<li>算法参见：<a href="http://en.wikipedia.org/wiki/Consistent_hashing" target="_blank" rel="noopener">http://en.wikipedia.org/wiki/Consistent_hashing</a></li>
-<li>缺省只对第一个参数 Hash，如果要修改，请配置 &lt;dubbo:parameter key=”hash.arguments” value=”0,1” /&gt;</li>
-<li>缺省用 160 份虚拟节点，如果要修改，请配置 &lt;dubbo:parameter key=”hash.nodes” value=”320” /&gt;</li>
-</ul>
-<h3 id="配置方式"><a href="#配置方式" class="headerlink" title="配置方式"></a>配置方式</h3><p>xml 配置方式</p>
-<p>服务端服务级别<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:service</span> <span class="attr">interface</span>=<span class="string">"..."</span> <span class="attr">loadbalance</span>=<span class="string">"roundrobin"</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>客户端服务级别<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">interface</span>=<span class="string">"..."</span> <span class="attr">loadbalance</span>=<span class="string">"roundrobin"</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>服务端方法级别<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:service</span> <span class="attr">interface</span>=<span class="string">"..."</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dubbo:method</span> <span class="attr">name</span>=<span class="string">"..."</span> <span class="attr">loadbalance</span>=<span class="string">"roundrobin"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dubbo:service</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>客户端方法级别<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">interface</span>=<span class="string">"..."</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dubbo:method</span> <span class="attr">name</span>=<span class="string">"..."</span> <span class="attr">loadbalance</span>=<span class="string">"roundrobin"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dubbo:reference</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>注解配置方式：</p>
-<p>消费方基于基于注解的服务级别配置方式：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Reference</span>(loadbalance = <span class="string">"roundrobin"</span>)</span><br><span class="line">HelloService helloService;</span><br></pre></td></tr></table></figure></p>
-<h2 id="zookeeper宕机与dubbo直连的情况"><a href="#zookeeper宕机与dubbo直连的情况" class="headerlink" title="zookeeper宕机与dubbo直连的情况"></a>zookeeper宕机与dubbo直连的情况</h2><p>zookeeper宕机与dubbo直连的情况在面试中可能会被经常问到，所以要引起重视。</p>
-<p>在实际生产中，假如zookeeper注册中心宕掉，一段时间内服务消费方还是能够调用提供方的服务的，实际上它使用的本地缓存进行通讯，这只是dubbo健壮性的一种体现。</p>
-<p>dubbo的健壮性表现：</p>
-<ul>
-<li>监控中心宕掉不影响使用，只是丢失部分采样数据</li>
-<li>数据库宕掉后，注册中心仍能通过缓存提供服务列表查询，但不能注册新服务</li>
-<li>注册中心对等集群，任意一台宕掉后，将自动切换到另一台</li>
-<li>注册中心全部宕掉后，服务提供者和服务消费者仍能通过本地缓存通讯</li>
-<li>服务提供者无状态，任意一台宕掉后，不影响使用</li>
-<li>服务提供者全部宕掉后，服务消费者应用将无法使用，并无限次重连等待服务提供者恢复</li>
-<li>我们前面提到过：注册中心负责服务地址的注册与查找，相当于目录服务，服务提供者和消费者只在启动时与注册中心交互，注册中心不转发请求，压力较小。所以，我们可以完全可以绕过注册中心——采用 dubbo 直连 ，即在服务消费方配置服务提供方的位置信息。</li>
-</ul>
-<p>xml配置方式：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">id</span>=<span class="string">"userService"</span> <span class="attr">interface</span>=<span class="string">"com.zang.gmall.service.UserService"</span> <span class="attr">url</span>=<span class="string">"dubbo://localhost:20880"</span> /&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>注解方式：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Reference</span>(url = <span class="string">"127.0.0.1:20880"</span>)   </span><br><span class="line">HelloService helloService;</span><br></pre></td></tr></table></figure></p>
-<h2 id="http和rpcd的区别？"><a href="#http和rpcd的区别？" class="headerlink" title="http和rpcd的区别？"></a>http和rpcd的区别？</h2><p>目前有很多Java的RPC框架，有基于Json的，有基于XML，也有基于二进制对象的。</p>
-<p>论复杂度，RPC框架肯定是高于简单的HTTP接口的。但毋庸置疑，HTTP接口由于受限于HTTP协议，需要带HTTP请求头，导致传输起来效率或者说安全性不如RPC。</p>
-<p>现在问题是，遇到怎样的瓶颈了才需要或者说更适合用RPC（比如像阿里这么大的请求并发量，简单的HTTP肯定达不到预期），但问题是大家所在的公司，要有像阿里这么大的量是比较少的，甚至说1/1000的量可能都没有，那我们还需要使用RPC吗？</p>
-<p>技术应该不是为了使用新技术而去使用，而应该是旧技术存在某些瓶颈，存在难以支撑或者扩展性越老越差等问题暴露出来之后，用新技术来进行解决。</p>
-<p>那RPC最大的优点，或者说它相比简单的HTTP接口，它的优势、更适合它的业务场景是怎样呢？简单的HTTP又哪里不足，哪些场景明显不太适合呢？</p>
-<p>RPC=Remote Produce Call 是一种技术的概念名词. HTTP是一种协议,RPC可以通过HTTP来实现,也可以通过Socket自己实现一套协议来实现.所以楼主可以换一个问法,为何RPC还有除HTTP 之外的实现法,有何必要.毕竟除了HTTP实现外,私有协议不具备通用性.那么我想唯一的答案就在于HTTP不能满足其业务场景的地方,所以这个就要具体 案例具体分析了.</p>
-<p><br><br>http接口是在接口不多、系统与系统交互较少的情况下，解决信息孤岛初期常使用的一种通信手段；优点就是简单、直接、开发方便。利用现成的http协议 进行传输。但是如果是一个大型的网站，内部子系统较多、接口非常多的情况下，RPC框架的好处就显示出来了，首先就是长链接，不必每次通信都要像http 一样去3次握手什么的，减少了网络开销；其次就是RPC框架一般都有注册中心，有丰富的监控管理；发布、下线接口、动态扩展等，对调用方来说是无感知、统 一化的操作。第三个来说就是安全性。最后就是最近流行的服务化架构、服务化治理，RPC框架是一个强力的支撑</p>
-<p><br><br>rpc是一种概念，http也是rpc实现的一种方式。论复杂度，dubbo/hessian用起来是超级简单的。最近用dubbo和hessian比较多，http的几乎都被废弃了。</p>
-<p>至于为什么用，其实很简单，业务场景不一样。我最早的单位所有的代码都在一个工程里，一次要发布几百m的代码。这种架构是非常有利于小程序的。但是我们为什么要应用rpc层呢，一个功能，一套代码下来不就解决了么？我觉得有几个好处：</p>
-<p>1 灵活部署 2 解耦 至于为什么，当你用到的时候，你会体会。</p>
-<p>系统做大了，肯定是需要做微服务的。 现在我们做电商就是这样，单独有一个订单系统，支付系统，商品系统，用户系统。都是分开部署，单独上线的。 但我们交互是用HTTP接口来交互的，我想转用RPC，但问题是我现在还没发现为什么需要用RPC，我还没能理解它的作用和意义。</p>
-<p>用http交互其实就已经属于rpc了。</p>
-<p><br><br>RPC:远程过程调用。RPC的核心并不在于使用什么协议。RPC的目的是让你在本地调用远程的方法，而对你来说这个调用是透明的，你并不知道这个调用的方法是部署哪里。通过RPC能解耦服务，这才是使用RPC的真正目的。RPC的原理主要用到了动态代理模式，至于http协议，只是传输协议而已。简单的实现可以参考spring remoting，复杂的实现可以参考dubbo。</p>
-<p><br><br>RPC是一个软件结构概念，是构建分布式应用的理论基础。就好比为啥你家可以用到发电厂发出来的电？是因为电是可以传输的。至于用铜线还是用铁丝还是其他 种类的导线，也就是用http还是用其他协议的问题了。这个要看什么场景，对性能要求怎么样。比如在java中的最基本的就是RMI技术，它是java原 生的应用层分布式技术。我们可以肯定的是在传输性能方面，RMI的性能是优于HTTP的。那为啥很少用到这个技术？那是因为用这个有很多局限性，首先它要 保证传输的两端都要要用java实现，且两边需要有相同的对象类型和代理接口，不需要容器，但是加大了编程的难度，在应用内部的各个子系统之间还是会看到 他的身影，比如EJB就是基于rmi技术的。这就与目前的bs架构的软件大相径庭。用http必须要服务端位于http容器里面，这样减少了网络传输方面 的开发，只需要关注业务开发即可。所以在架构一个软件的时候，不能一定根据需求选定技术。</p>
-<h3 id="tcp-http-socket-rpc-区别及联系"><a href="#tcp-http-socket-rpc-区别及联系" class="headerlink" title="tcp http socket rpc 区别及联系"></a>tcp http socket rpc 区别及联系</h3><p>TPC/IP协议是传输层协议，主要解决数据如何在网络中传输，而HTTP是应用层协议，主要解决如何包装数据。</p>
-<p>关于TCP/IP和HTTP协议的关系，网络有一段比较容易理解的介绍：“我们在传输数据时，可以只使用（传输层）TCP/IP协议，但是那样的话，如果没有应用层，便无法识别数据内容，如果想要使传输的数据有意义，则必须使用到应用层协议，应用层协议有很多，比如HTTP、FTP、TELNET等，也可以自己定义应用层协议。WEB使用HTTP协议作应用层协议，以封装HTTP 文本信息，然后使用TCP/IP做传输层协议将它发到网络上。</p>
-<p><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8ohmhwestj21320ksgsr.jpg" alt=""></p>
-<p>tcpip和http都是协议是约定好的规范，他们位于网络5层模型的传输层（tcp）和应用层（http），tcpip表示的是一系列协议，不过与本题没有太大关系。规定好的协议总要操作系统实现了才能使用，而socket就是操作系统实现的，tcpip协议族的接口，用于创建一个套接字，可以理解为，通过网络读写的文件描述符，socket、bind、listen、accept、connect一系列都是操作系统提供的接口用于实现tcp协议相关的功能。tcp协议可以让两个进程通过三次握手建立稳定的通信信道，发送字节流，而http协议建立在tcp协议之上，也就是说tcp协议可以让两个程序说话，而http协议定义了说话的规则。</p>
-<p>例如：<br>A想要B左边口袋的糖，A和B通过tcp连接后，A发送给B：我想要你左边口袋的糖，这时进程B如果没和A做过任何约定，理解这句话是很困难的，想要理解就要和A提前做约定，比如：你发给我的话我会按以下格式理解：“动作：位置/资源”，那么约定好了后，A就必须发送“获取：左边口袋/糖”，B就可以理解这句话，返回给A糖了，但是互联网上数以亿计的节点，是不可能互相都两两约定好的，为了让大家都能顺畅的交流、http协议出世，他说：发送方都按我规定的格式说话，接收方都按我规定的格式理解，就互相都明白了不是？</p>
-<h2 id="Dubbo支持哪些协议，每种协议的应用场景，优缺点？"><a href="#Dubbo支持哪些协议，每种协议的应用场景，优缺点？" class="headerlink" title="Dubbo支持哪些协议，每种协议的应用场景，优缺点？"></a>Dubbo支持哪些协议，每种协议的应用场景，优缺点？</h2><ul>
-<li>dubbo<br>单一长连接和NIO异步通讯，适合<strong>大并发 小数据量</strong>的服务调用，以及<strong>消费者远大于提供者</strong>。传输协议TCP，异步，Hessian序列化；</li>
-<li>rmi<br>采用JDK标准的rmi协议实现，传输参数和返回参数对象需要实现Serializable接口，使用java标准序列化机制，使用阻塞式短连接，传输数据包大小混合，消费者和提供者个数差不多，可传文件，传输协议TCP。<br>多个短连接，TCP协议传输，同步传输，适用常规的远程服务调用和rmi互操作。在依赖低版本的Common-Collections包，java序列化存在安全漏洞；</li>
-<li>webservice<br>基于WebService的远程调用协议，集成CXF实现，提供和原生WebService的互操作。多个短连接，基于HTTP传输，同步传输，适用系统集成和跨语言调用；</li>
-<li>http<br>基于Http表单提交的远程调用协议，使用Spring的HttpInvoke实现。多个短连接，传输协议HTTP，传入参数大小混合，提供者个数多于消费者，需要给应用程序和浏览器JS调用；</li>
-<li>hessian<br>集成Hessian服务，基于HTTP通讯，采用Servlet暴露服务，Dubbo内嵌Jetty作为服务器时默认实现，提供与Hession服务互操作。多个短连接，同步HTTP传输，Hessian序列化，传入参数较大，提供者大于消费者，提供者压力较大，可传文件；</li>
-<li>memcache<br>基于memcached实现的RPC协议</li>
-<li>redis<br>基于redis实现的RPC协议</li>
-</ul>
-<h2 id="Dubbo有些哪些注册中心？"><a href="#Dubbo有些哪些注册中心？" class="headerlink" title="Dubbo有些哪些注册中心？"></a>Dubbo有些哪些注册中心？</h2><ul>
-<li>Multicast注册中心： Multicast注册中心不需要任何中心节点，只要广播地址，就能进行服务注册和发现。基于网络中组播传输实现；</li>
-<li>Zookeeper注册中心： 基于分布式协调系统Zookeeper实现，采用Zookeeper的watch机制实现数据变更；</li>
-<li>redis注册中心： 基于redis实现，采用key/Map存储，住key存储服务名和类型，Map中key存储服务URL，value服务过期时间。基于redis的发布/订阅模式通知数据变更；</li>
-<li>Simple注册中心</li>
-</ul>
-<h2 id="Dubbo使用的是什么通信框架"><a href="#Dubbo使用的是什么通信框架" class="headerlink" title="Dubbo使用的是什么通信框架?"></a>Dubbo使用的是什么通信框架?</h2><p>默认使用NIO Netty框架</p>
-<h2 id="Dubbo的集群容错方案有哪些？"><a href="#Dubbo的集群容错方案有哪些？" class="headerlink" title="Dubbo的集群容错方案有哪些？"></a>Dubbo的集群容错方案有哪些？</h2><ul>
-<li>Failover Cluster（<strong>默认</strong>）<br>失败自动切换，当出现失败，重试其它服务器。通常用于读操作，但重试会带来更长延迟。</li>
-<li>Failfast Cluster<br>快速失败，只发起一次调用，失败立即报错。通常用于非幂等性的写操作，比如新增记录。</li>
-<li>Failsafe Cluster<br>失败安全，出现异常时，直接忽略。通常用于写入审计日志等操作。</li>
-<li>Failback Cluster<br>失败自动恢复，后台记录失败请求，定时重发。通常用于消息通知操作。</li>
-<li>Forking Cluster<br>并行调用多个服务器，只要一个成功即返回。通常用于实时性要求较高的读操作，但需要浪费更多服务资源。可通过 forks=”2″ 来设置最大并行数。</li>
-<li>Broadcast Cluster<br>广播调用所有提供者，逐个调用，任意一台报错则报错 。通常用于通知所有提供者更新缓存或日志等本地资源信息。</li>
-</ul>
-<h2 id="Dubbo超时时间怎样设置？"><a href="#Dubbo超时时间怎样设置？" class="headerlink" title="Dubbo超时时间怎样设置？"></a>Dubbo超时时间怎样设置？</h2><ul>
-<li>服务提供者端设置超时时间，在Dubbo的用户文档中，<strong>推荐如果能在服务端多配置就尽量多配置，因为服务提供者比消费者更清楚自己提供的服务特性</strong>。</li>
-<li>服务消费者端设置超时时间，<strong>如果在消费者端设置了超时时间，以消费者端为主，即优先级更高。因为服务调用方设置超时时间控制性更灵活</strong>。如果消费方超时，服务端线程不会定制，会产生警告。</li>
-</ul>
-<h2 id="服务调用超时问题怎么解决？"><a href="#服务调用超时问题怎么解决？" class="headerlink" title="服务调用超时问题怎么解决？"></a>服务调用超时问题怎么解决？</h2><p>dubbo在调用服务不成功时，默认是会重试两次的。</p>
-<h2 id="Dubbo在安全机制方面是如何解决？"><a href="#Dubbo在安全机制方面是如何解决？" class="headerlink" title="Dubbo在安全机制方面是如何解决？"></a>Dubbo在安全机制方面是如何解决？</h2><p>Dubbo通过Token令牌防止用户绕过注册中心直连，然后在注册中心上管理授权。Dubbo还提供服务黑白名单，来控制服务所允许的调用方。</p>
-<h2 id="Dubbo和Spring-Cloud的关系？、"><a href="#Dubbo和Spring-Cloud的关系？、" class="headerlink" title="Dubbo和Spring Cloud的关系？、"></a>Dubbo和Spring Cloud的关系？、</h2><p>Dubbo是 SOA 时代的产物，它的关注点主要在于服务的调用，流量分发、流量监控和熔断。<br>而 Spring Cloud诞生于微服务架构时代，考虑的是微服务治理的方方面面，另外由于依托了Spirng、Spirng Boot的优势之上，<br>两个框架在开始目标就不一致，Dubbo 定位服务治理、Spirng Cloud 是一个生态。</p>
-<h2 id="dubbo和spring-cloud的区别？"><a href="#dubbo和spring-cloud的区别？" class="headerlink" title="dubbo和spring cloud的区别？"></a>dubbo和spring cloud的区别？</h2><p>最大的区别：Dubbo底层是使用Netty这样的NIO框架，是基于TCP协议传输的，配合以Hession序列化完成RPC通信。</p>
-<p>而SpringCloud是基于Http协议+Rest接口调用远程过程的通信，相对来说，Http请求会有更大的报文，占的带宽也会更多。但是REST相比RPC更为灵活，服务提供方和调用方的依赖只依靠一纸契约，不存在代码级别的强依赖，这在强调快速演化的微服务环境下，显得更为合适，至于注重通信速度还是方便灵活性，具体情况具体考虑。<br><img src="http://ww1.sinaimg.cn/large/bb901a77gy1g8oorzn0exj20hs0a7aag.jpg" alt=""></p>
+<h2 id="什么时候选择用ReentrantLock"><a href="#什么时候选择用ReentrantLock" class="headerlink" title="什么时候选择用ReentrantLock"></a>什么时候选择用ReentrantLock</h2><p>适用场景：时间锁等候、可中断锁等候、无块结构锁、多个条件变量或者锁投票</p>
+<p>在确实需要一些 synchronized所没有的特性的时候，比如时间锁等候、可中断锁等候、无块结构锁、多个条件变量或者锁投票。 ReentrantLock 还具有可伸缩性的好处，应当在高度争用的情况下使用它，但是请记住，大多数 synchronized 块几乎从来没有出现过争用，所以可以把高度争用放在一边。我建议用 synchronized 开发，直到确实证明 synchronized 不合适，而不要仅仅是假设如果使用 ReentrantLock “性能会更好”。请记住，这些是供高级用户使用的高级工具。（而且，真正的高级用户喜欢选择能够找到的最简单工具，直到他们认为简单的工具不适用为止。）。一如既往，首先要把事情做好，然后再考虑是不是有必要做得更快。</p>
 
     
   </div>
@@ -284,7 +134,7 @@
 <div class="widget tagcloud">
   <h3 class="title">tagcloud</h3>
   <div class="entry">
-    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
+    <a href="/tags/Algorithm/" style="font-size: 10px;">Algorithm</a> <a href="/tags/Arithmetic/" style="font-size: 10px;">Arithmetic</a> <a href="/tags/Auth/" style="font-size: 10px;">Auth</a> <a href="/tags/Binary-Tree/" style="font-size: 10px;">Binary Tree</a> <a href="/tags/Cache/" style="font-size: 12.86px;">Cache</a> <a href="/tags/ClassLoader/" style="font-size: 12.86px;">ClassLoader</a> <a href="/tags/Collection/" style="font-size: 10px;">Collection</a> <a href="/tags/Component/" style="font-size: 10px;">Component</a> <a href="/tags/Concurrent/" style="font-size: 12.86px;">Concurrent</a> <a href="/tags/Design/" style="font-size: 11.43px;">Design</a> <a href="/tags/Distribut/" style="font-size: 11.43px;">Distribut</a> <a href="/tags/Dubbo/" style="font-size: 10px;">Dubbo</a> <a href="/tags/HashMap/" style="font-size: 10px;">HashMap</a> <a href="/tags/Http/" style="font-size: 10px;">Http</a> <a href="/tags/IO/" style="font-size: 10px;">IO</a> <a href="/tags/JVM/" style="font-size: 18.57px;">JVM</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Lock/" style="font-size: 10px;">Lock</a> <a href="/tags/MQ/" style="font-size: 15.71px;">MQ</a> <a href="/tags/Mermery-Leak/" style="font-size: 10px;">Mermery Leak</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/OS/" style="font-size: 10px;">OS</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/Script/" style="font-size: 10px;">Script</a> <a href="/tags/Service/" style="font-size: 10px;">Service</a> <a href="/tags/Spring/" style="font-size: 11.43px;">Spring</a> <a href="/tags/Spring-Cloud/" style="font-size: 15.71px;">Spring Cloud</a> <a href="/tags/Thread/" style="font-size: 10px;">Thread</a> <a href="/tags/Travel/" style="font-size: 12.86px;">Travel</a> <a href="/tags/concurrency/" style="font-size: 10px;">concurrency</a> <a href="/tags/distribut/" style="font-size: 10px;">distribut</a> <a href="/tags/distribute/" style="font-size: 10px;">distribute</a> <a href="/tags/distributed/" style="font-size: 12.86px;">distributed</a> <a href="/tags/dubbo/" style="font-size: 10px;">dubbo</a> <a href="/tags/encode/" style="font-size: 10px;">encode</a> <a href="/tags/lock/" style="font-size: 10px;">lock</a> <a href="/tags/mysql/" style="font-size: 12.86px;">mysql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/zookeeper/" style="font-size: 11.43px;">zookeeper</a> <a href="/tags/原/" style="font-size: 12.86px;">原</a> <a href="/tags/精分/" style="font-size: 17.14px;">精分</a>
   </div>
 </div>
 
@@ -293,6 +143,10 @@
 <div class="widget tag">
   <h3 class="title">recent_posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2019/11/27/binary-tree-common/">二叉树</a>
+      </li>
     
       <li>
         <a href="/2019/11/17/sort-algorithm-common/">常见排序算法总结</a>
@@ -308,10 +162,6 @@
     
       <li>
         <a href="/2019/11/08/jvm-memery-leak-complete-know/">JVM内存泄露场景及解决</a>
-      </li>
-    
-      <li>
-        <a href="/2019/11/08/jvm-optmize-complete-know/">JVM性能调优</a>
       </li>
     
   </ul>
