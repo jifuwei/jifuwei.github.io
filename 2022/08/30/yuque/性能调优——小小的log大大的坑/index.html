@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
 <meta name="theme-color" content="#222">
 <meta name="generator" content="Hexo 6.2.0">
-<meta name="referrer" content="no-referrer" />
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
@@ -28,13 +27,13 @@
 <meta property="og:site_name" content="是咕咕鸡">
 <meta property="og:description" content="引言“只有被线上服务问题毒打过的人才明白日志有多重要！”我先说结论，谁赞成，谁反对？如果你深有同感，那恭喜你是个社会人了：） 日志对程序的重要性不言而喻，轻巧、简单、无需费脑，程序代码中随处可见，帮助我们排查定位一个有一个问题问题。但看似不起眼的日志，却隐藏着各式各样的“坑”，如果使用不当，不仅不能帮助我们，反而会成为服务“杀手”。本文主要介绍生产环境日志使用不当导致的“坑”及避坑指北，高并发系统">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/694025/1661873455808-2f29dd48-b6cf-4709-b23f-c0e00f8945ff.png#clientId=u810b5934-dc6b-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=244&id=u2a668ef2&margin=%5Bobject%20Object%5D&name=image.png&originHeight=488&originWidth=632&originalType=binary%E2%88%B6=1&rotation=0&showTitle=false&size=41010&status=done&style=none&taskId=u0ba7d5fb-82bf-4ec2-8700-b048f9a25fe&title=&width=316">
-<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/694025/1661944352416-b1eca6dd-4441-4001-80e5-d3f61b7264d1.png#clientId=u810b5934-dc6b-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=616&id=uc84ae27d&margin=%5Bobject%20Object%5D&name=image.png&originHeight=1232&originWidth=2328&originalType=binary%E2%88%B6=1&rotation=0&showTitle=false&size=409683&status=done&style=none&taskId=uf6f24a72-1129-48c7-a6ba-ef9cf1a33ad&title=&width=1164">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FlicO5cmAA_VRlOgALZ1S-inR6_-.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsF3wYbr6zDMD1_yGua6mMzWLq3f.png">
 <meta property="article:published_time" content="2022-08-30T08:52:45.000Z">
-<meta property="article:modified_time" content="2022-09-02T08:23:10.244Z">
+<meta property="article:modified_time" content="2022-09-02T15:51:46.271Z">
 <meta property="article:author" content="是咕咕鸡">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://cdn.nlark.com/yuque/0/2022/png/694025/1661873455808-2f29dd48-b6cf-4709-b23f-c0e00f8945ff.png#clientId=u810b5934-dc6b-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=244&id=u2a668ef2&margin=%5Bobject%20Object%5D&name=image.png&originHeight=488&originWidth=632&originalType=binary%E2%88%B6=1&rotation=0&showTitle=false&size=41010&status=done&style=none&taskId=u0ba7d5fb-82bf-4ec2-8700-b048f9a25fe&title=&width=316">
+<meta name="twitter:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FlicO5cmAA_VRlOgALZ1S-inR6_-.png">
 
 <link rel="canonical" href="http://example.com/2022/08/30/yuque/%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E2%80%94%E2%80%94%E5%B0%8F%E5%B0%8F%E7%9A%84log%E5%A4%A7%E5%A4%A7%E7%9A%84%E5%9D%91/">
 
@@ -199,7 +198,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-09-02 16:23:10" itemprop="dateModified" datetime="2022-09-02T16:23:10+08:00">2022-09-02</time>
+                <time title="修改时间：2022-09-02 23:51:46" itemprop="dateModified" datetime="2022-09-02T23:51:46+08:00">2022-09-02</time>
               </span>
 
           
@@ -220,8 +219,10 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 格式1</span></span><br><span class="line">log.debug(<span class="string">&quot;get user&quot;</span> + uid + <span class="string">&quot; from DB is Empty!&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 格式2</span></span><br><span class="line"><span class="keyword">if</span> (log.isdebugEnable()) &#123;</span><br><span class="line">    log.debug(<span class="string">&quot;get user&quot;</span> + uid + <span class="string">&quot; from DB is Empty!&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 格式3</span></span><br><span class="line">log.debug(<span class="string">&quot;get user &#123;&#125; from DB is Empty!&quot;</span>, uid);</span><br></pre></td></tr></table></figure>
 
 <p>如上三种写法，我相信大家或多或少都在项目代码中看到过，那么他们之前有区别呢，会对性能造成什么影响？<br>如果此时关闭 DEBUG 日志级别，差异就出现了，格式 1 依然还是要执行字符串拼接，即使它不输出日志，属于浪费。</p>
+<span id="more"></span>
+
 <p>格式 2 的缺点就是就在于需要加入额外的判断逻辑，增加了废代码，一点都不优雅。<br>所以推荐格式 3，只有在执行时才会动态的拼接，关闭相应日志级别后，不会有任何性能损耗。</p>
-<h4 id="生产打印大量日志消耗性能"><a href="#生产打印大量日志消耗性能" class="headerlink" title="生产打印大量日志消耗性能"></a>生产打印大量日志消耗性能</h4><p>尽量多的日志，能够把用户的请求串起来，更容易断定出问题的代码位置。由于当前分布式系统，且业务庞杂，任何日志的缺失对于程序员定位问题都是极大的障碍。所以，吃过生产问题苦的程序员，在开发代码过程中，肯定是尽量多打日志。<br>为了以后线上出现问题能尽快定位问题并修复，程序员在编程实现阶段，就会尽量多打关键日志。那上线后是能快速定位问题了，但是紧接着又会有新的挑战：随着业务的快速发展，用户访问不断增多，系统压力越来越大，此时线上大量的 INFO 日志，尤其在高峰期，大量的日志磁盘写入，极具消耗服务性能。<br>那这就变成了博弈论，日志多了好排查问题，但是服务性能被“吃了”，日志少了服务稳定性没啥影响了，但是排查问题难了，程序员“苦”啊。<br><img src="https://cdn.nlark.com/yuque/0/2022/png/694025/1661873455808-2f29dd48-b6cf-4709-b23f-c0e00f8945ff.png#clientId=u810b5934-dc6b-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=244&id=u2a668ef2&margin=%5Bobject%20Object%5D&name=image.png&originHeight=488&originWidth=632&originalType=binary%E2%88%B6=1&rotation=0&showTitle=false&size=41010&status=done&style=none&taskId=u0ba7d5fb-82bf-4ec2-8700-b048f9a25fe&title=&width=316" alt="image.png"><br>提问：为何 INFO 日志打多了，性能会受损（此时 CPU 使用率很高）？</p>
+<h4 id="生产打印大量日志消耗性能"><a href="#生产打印大量日志消耗性能" class="headerlink" title="生产打印大量日志消耗性能"></a>生产打印大量日志消耗性能</h4><p>尽量多的日志，能够把用户的请求串起来，更容易断定出问题的代码位置。由于当前分布式系统，且业务庞杂，任何日志的缺失对于程序员定位问题都是极大的障碍。所以，吃过生产问题苦的程序员，在开发代码过程中，肯定是尽量多打日志。<br>为了以后线上出现问题能尽快定位问题并修复，程序员在编程实现阶段，就会尽量多打关键日志。那上线后是能快速定位问题了，但是紧接着又会有新的挑战：随着业务的快速发展，用户访问不断增多，系统压力越来越大，此时线上大量的 INFO 日志，尤其在高峰期，大量的日志磁盘写入，极具消耗服务性能。<br>那这就变成了博弈论，日志多了好排查问题，但是服务性能被“吃了”，日志少了服务稳定性没啥影响了，但是排查问题难了，程序员“苦”啊。<br><img src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FlicO5cmAA_VRlOgALZ1S-inR6_-.png"><br>提问：为何 INFO 日志打多了，性能会受损（此时 CPU 使用率很高）？</p>
 <h5 id="根因一：同步打印日志磁盘-I-x2F-O-成为瓶颈，导致大量线程-Block"><a href="#根因一：同步打印日志磁盘-I-x2F-O-成为瓶颈，导致大量线程-Block" class="headerlink" title="根因一：同步打印日志磁盘 I&#x2F;O 成为瓶颈，导致大量线程 Block"></a>根因一：同步打印日志磁盘 I&#x2F;O 成为瓶颈，导致大量线程 Block</h5><p>可以想象，如果日志都输出到同一个日志文件时，此时有多个线程都往文件里面写，是不是就乱了套了。那解决的办法就是加锁，保证日志文件输出不会错乱，如果是在高峰期，锁的争抢无疑是最耗性能的。当有一个线程抢到锁后，其他的线程只能 Block 等待，严重拖垮用户线程，表现就是上游调用超时，用户感觉卡顿。</p>
 <p>如下是线程卡在写文件时的堆栈</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Stack Trace is:</span><br><span class="line">java.lang.Thread.State: BLOCKED (on object monitor)</span><br><span class="line">at org.apache.logging.log4j.core.appender.OutputStreamManager.writeBytes(OutputStreamManager.java:<span class="number">352</span>)</span><br><span class="line">- waiting to lock &lt;<span class="number">0x000000063d668298</span>&gt; (a org.apache.logging.log4j.core.appender.rolling.RollingFileManager)</span><br><span class="line">at org.apache.logging.log4j.core.layout.TextEncoderHelper.writeEncodedText(TextEncoderHelper.java:<span class="number">96</span>)</span><br><span class="line">at org.apache.logging.log4j.core.layout.TextEncoderHelper.encodeText(TextEncoderHelper.java:<span class="number">65</span>)</span><br><span class="line">at org.apache.logging.log4j.core.layout.StringBuilderEncoder.encode(StringBuilderEncoder.java:<span class="number">68</span>)</span><br><span class="line">at org.apache.logging.log4j.core.layout.StringBuilderEncoder.encode(StringBuilderEncoder.java:<span class="number">32</span>)</span><br><span class="line">at org.apache.logging.log4j.core.layout.PatternLayout.encode(PatternLayout.java:<span class="number">228</span>)</span><br><span class="line">.....</span><br></pre></td></tr></table></figure>
@@ -260,7 +261,7 @@
 <p><a target="_blank" rel="noopener" href="https://logging.apache.org/log4j/2.x/performance.html#asyncLoggingWithLocation">官网</a>也有明确的性能对比提示，如果使用了如下字段输出，将极大的损耗性能</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">%C or $class, %F or %file, %l or %location, %L or %line, %M or %method</span><br></pre></td></tr></table></figure>
 
-<p><img src="https://cdn.nlark.com/yuque/0/2022/png/694025/1661944352416-b1eca6dd-4441-4001-80e5-d3f61b7264d1.png#clientId=u810b5934-dc6b-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=616&id=uc84ae27d&margin=%5Bobject%20Object%5D&name=image.png&originHeight=1232&originWidth=2328&originalType=binary%E2%88%B6=1&rotation=0&showTitle=false&size=409683&status=done&style=none&taskId=uf6f24a72-1129-48c7-a6ba-ef9cf1a33ad&title=&width=1164" alt="image.png"><br>log4j 为了拿到函数名称和行号信息，利用了异常机制，首先抛出一个异常，之后捕获异常并打印出异常信息的堆栈内容，再从堆栈内容中解析出行号。而实现源码中增加了锁的获取及解析过程，高并发下，性能损耗可想而知。</p>
+<p><img src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsF3wYbr6zDMD1_yGua6mMzWLq3f.png"><br>log4j 为了拿到函数名称和行号信息，利用了异常机制，首先抛出一个异常，之后捕获异常并打印出异常信息的堆栈内容，再从堆栈内容中解析出行号。而实现源码中增加了锁的获取及解析过程，高并发下，性能损耗可想而知。</p>
 <p>如下是比较影响性能的参数配置，请大家酌情配置：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">%C - 调用者的类名(速度慢,不推荐使用)</span><br><span class="line">%F - 调用者的文件名(速度极慢,不推荐使用)</span><br><span class="line">%l - 调用者的函数名、文件名、行号(极度不推荐，非常耗性能)</span><br><span class="line">%L - 调用者的行号(速度极慢,不推荐使用)</span><br><span class="line">%M - 调用者的函数名(速度极慢,不推荐使用)</span><br></pre></td></tr></table></figure>
 
