@@ -208,20 +208,6 @@
               </span>
 
           
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2021/11/05/yuque/Flink%20%E5%9C%A8%E9%A3%8E%E6%8E%A7%E5%9C%BA%E6%99%AF%E5%AE%9E%E6%97%B6%E7%89%B9%E5%BE%81%E8%90%BD%E5%9C%B0%E5%AE%9E%E6%88%98/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2021/11/05/yuque/Flink%20%E5%9C%A8%E9%A3%8E%E6%8E%A7%E5%9C%BA%E6%99%AF%E5%AE%9E%E6%97%B6%E7%89%B9%E5%BE%81%E8%90%BD%E5%9C%B0%E5%AE%9E%E6%88%98/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
 
         </div>
       </header>
@@ -434,7 +420,6 @@
 
           </div>
           
-    <div class="comments" id="valine-comments"></div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -584,35 +569,6 @@
   
 
   
-
-
-<script>
-NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
-  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.5.1/dist/Valine.min.js', () => {
-    var GUEST = ['nick', 'mail', 'link'];
-    var guest = 'nick,mail,link';
-    guest = guest.split(',').filter(item => {
-      return GUEST.includes(item);
-    });
-    new Valine({
-      el         : '#valine-comments',
-      verify     : false,
-      notify     : false,
-      appId      : 'MWMlUSaFkc5vEIOO5ojbElUk-MdYXbMMI',
-      appKey     : 'FLT3mwwHWCYRiZ6uh4u4lQOf',
-      placeholder: "欢迎提问",
-      avatar     : 'mm',
-      meta       : guest,
-      pageSize   : '10' || 10,
-      visitor    : false,
-      lang       : 'zh-cn' || 'zh-cn',
-      path       : location.pathname,
-      recordIP   : false,
-      serverURLs : 'https://mwmlusaf.api.lncldglobal.com'
-    });
-  }, window.Valine);
-});
-</script>
 
 </body>
 </html>
