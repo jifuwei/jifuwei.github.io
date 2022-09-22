@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="ZAxoxqp0q8qf8GaVFBLqt3fZ2g3Ch1QtMgFoQhUyzZQ">
+  <meta name="baidu-site-verification" content="code-YeeuLMqwzd">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.lug.ustc.edu.cn/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jifuwei.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="表达式引擎技术及比较Drools 简介Drools（JBoss Rules ）是一个开源业务规则引擎，符合业内标准，速度快、效率高。业务分析师或审核人员可以利用它轻松查看业务规则，从而检验是否已编码的规则执行了所需的业务规则。 除了应用了 Rete 核心算法，开源软件 License 和 100％ 的 Java 实现之外，Drools 还提供了很多有用的特性。其中包括实现了 JSR94 API 和">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Google Aviator——轻量级 Java 表达式引擎实战">
+<meta property="og:url" content="https://jifuwei.github.io/yuque/Google%20Aviator%E2%80%94%E2%80%94%E8%BD%BB%E9%87%8F%E7%BA%A7%20Java%20%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%BC%95%E6%93%8E%E5%AE%9E%E6%88%98.html">
+<meta property="og:site_name" content="是咕咕鸡">
+<meta property="og:description" content="表达式引擎技术及比较Drools 简介Drools（JBoss Rules ）是一个开源业务规则引擎，符合业内标准，速度快、效率高。业务分析师或审核人员可以利用它轻松查看业务规则，从而检验是否已编码的规则执行了所需的业务规则。 除了应用了 Rete 核心算法，开源软件 License 和 100％ 的 Java 实现之外，Drools 还提供了很多有用的特性。其中包括实现了 JSR94 API 和">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FscHKFcMItb4IYYPGqz0Q4xljWEh.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvUCjGrlj_xH3S07I4BlY8gJpAQm.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fj72dVhngtfGrWJHgSlQkNo1kNcX.png">
+<meta property="article:published_time" content="2022-03-01T05:59:59.000Z">
+<meta property="article:modified_time" content="2022-09-22T02:11:13.011Z">
+<meta property="article:author" content="是咕咕鸡">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FscHKFcMItb4IYYPGqz0Q4xljWEh.png">
+
+<link rel="canonical" href="https://jifuwei.github.io/yuque/Google%20Aviator%E2%80%94%E2%80%94%E8%BD%BB%E9%87%8F%E7%BA%A7%20Java%20%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%BC%95%E6%93%8E%E5%AE%9E%E6%88%98.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Google Aviator——轻量级 Java 表达式引擎实战 | 是咕咕鸡</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1575500ddb979a8e4e895121cbd848cb";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">是咕咕鸡</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">希望我分享的文章能够给每一位读者带来帮助！</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jifuwei.github.io/yuque/Google%20Aviator%E2%80%94%E2%80%94%E8%BD%BB%E9%87%8F%E7%BA%A7%20Java%20%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%BC%95%E6%93%8E%E5%AE%9E%E6%88%98.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="是咕咕鸡">
+      <meta itemprop="description" content="过刚易折，善柔不败">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="是咕咕鸡">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Google Aviator——轻量级 Java 表达式引擎实战
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-03-01 13:59:59" itemprop="dateCreated datePublished" datetime="2022-03-01T13:59:59+08:00">2022-03-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-09-22 10:11:13" itemprop="dateModified" datetime="2022-09-22T10:11:13+08:00">2022-09-22</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="表达式引擎技术及比较"><a href="#表达式引擎技术及比较" class="headerlink" title="表达式引擎技术及比较"></a>表达式引擎技术及比较</h3><h4 id="Drools-简介"><a href="#Drools-简介" class="headerlink" title="Drools 简介"></a>Drools 简介</h4><p>Drools（JBoss Rules ）是一个开源业务规则引擎，符合业内标准，速度快、效率高。业务分析师或审核人员可以利用它轻松查看业务规则，从而检验是否已编码的规则执行了所需的业务规则。</p>
+<p>除了应用了 Rete 核心算法，开源软件 License 和 100％ 的 Java 实现之外，Drools 还提供了很多有用的特性。其中包括实现了 JSR94 API 和创新的规则语义系统，这个语义系统可用来编写描述规则的语言。目前，Drools 提供了三种语义模块</p>
+<ul>
+<li>Python 模块</li>
+<li>Java 模块</li>
+<li>Groovy 模块</li>
+</ul>
+<p>Drools 的规则是写在 drl 文件中。 对于前面的表达式，在 Drools 的 drl 文件描述为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">rule &quot;Testing Comments&quot;</span><br><span class="line">when</span><br><span class="line">    // this is a single line comment</span><br><span class="line">    eval( true ) // this is a comment in the same line of a pattern</span><br><span class="line">then</span><br><span class="line">    // this is a comment inside a semantic code block</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+
+<p>When 表示条件，then 是满足条件以后，可以执行的动作，在这里可以调用任何 java 方法等。在 drools 不支持字符串的 contians 方法，只能采用正则表达式来代替。</p>
+<span id="more"></span>
+
+<h4 id="IKExpression-简介"><a href="#IKExpression-简介" class="headerlink" title="IKExpression 简介"></a>IKExpression 简介</h4><p>IK Expression 是一个开源的、可扩展的， 基于 java 语言开发的一个超轻量级的公式化语言解析执行工具包。IK Expression 不依赖于任何第三方的 java 库。它做为一个简单的 jar，可以集成于任意的 Java 应用中。</p>
+<p>对于前面的表达式，IKExpression 的写法为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Throwable&#123;</span><br><span class="line">    <span class="type">E2Say</span> <span class="variable">obj</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">E2Say</span>();</span><br><span class="line">    FunctionLoader.addFunction(<span class="string">&quot;indexOf&quot;</span>,</span><br><span class="line">                               obj,</span><br><span class="line">                               E2Say.class.getMethod(<span class="string">&quot;indexOf&quot;</span>,</span><br><span class="line">                               String.class,</span><br><span class="line">                               String.class));</span><br><span class="line">    System.out.println(ExpressionEvaluator.evaluate(<span class="string">&quot;$indexOf(\&quot;abcd\&quot;,\&quot;ab\&quot;)==0?1:0&quot;</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到 IK 是通过自定义函数 $indexOf 来实现功能的。</p>
+<h4 id="Groovy-简介"><a href="#Groovy-简介" class="headerlink" title="Groovy 简介"></a>Groovy 简介</h4><p>Groovy 经常被认为是脚本语言，但是把 Groovy 理解为脚本语言是一种误解，Groovy 代码被编译成 Java 字节码，然后能集成到 Java 应用程序中或者 web 应用程序，整个应用程序都可以是 Groovy 编写的——Groovy 是非常灵活的。</p>
+<p>Groovy 与 Java 平台非常融合，包括大量的 java 类库也可以直接在 groovy 中使用。对于前面的表达式，Groovy 的写法为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Binding</span> <span class="variable">binding</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Binding</span>();</span><br><span class="line">binding.setVariable(<span class="string">&quot;verifyStatus&quot;</span>, <span class="number">1</span>);</span><br><span class="line"><span class="type">GroovyShell</span> <span class="variable">shell</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">GroovyShell</span>(binding);</span><br><span class="line"><span class="type">boolean</span> <span class="variable">result</span> <span class="operator">=</span> (<span class="type">boolean</span>) shell.evaluate(<span class="string">&quot;verifyStatus == 1&quot;</span>);</span><br><span class="line">Assert.assertTrue(result);</span><br></pre></td></tr></table></figure>
+
+<h3 id=""><a href="#" class="headerlink" title=""></a></h3><h4 id="Aviator-简介"><a href="#Aviator-简介" class="headerlink" title="Aviator 简介"></a>Aviator 简介</h4><p>Aviator 是一个高性能、轻量级的 java 语言实现的表达式求值引擎，主要用于各种表达式的动态求值。现在已经有很多开源可用的 java 表达式求值引擎，为什么还需要 Avaitor 呢？</p>
+<p>Aviator 的设计目标是轻量级和高性能，相比于 Groovy、JRuby 的笨重，Aviator 非常小，加上依赖包也才 450K,不算依赖包的话只有 70K；当然，</p>
+<p>Aviator 的语法是受限的，它不是一门完整的语言，而只是语言的一小部分集合。</p>
+<p>其次，Aviator 的实现思路与其他轻量级的求值器很不相同，其他求值器一般都是通过解释的方式运行，而 Aviator 则是直接将表达式编译成 Java 字节码，交给 JVM 去执行。简单来说，Aviator 的定位是介于 Groovy 这样的重量级脚本语言和 IKExpression 这样的轻量级表达式引擎之间。对于前面的表达式，Aviator 的写法为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, Object&gt; env = Maps.newHashMap();</span><br><span class="line">env.put(STRATEGY_CONTEXT_KEY, context);</span><br><span class="line"></span><br><span class="line"><span class="comment">// triggerExec(t1) &amp;&amp; triggerExec(t2) &amp;&amp; triggerExec(t3)</span></span><br><span class="line">log.info(<span class="string">&quot;### guid: &#123;&#125; logicExpr: [ &#123;&#125; ], strategyData: &#123;&#125;&quot;</span>,</span><br><span class="line">        strategyData.getGuid(), strategyData.getLogicExpr(), JSON.toJSONString(strategyData));</span><br><span class="line"></span><br><span class="line"><span class="type">boolean</span> <span class="variable">hit</span> <span class="operator">=</span> (Boolean) AviatorEvaluator.execute(strategyData.getLogicExpr(), env, <span class="literal">true</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (Objects.isNull(strategyData.getGuid())) &#123;</span><br><span class="line">    <span class="comment">//若guid为空，为check告警策略，直接返回</span></span><br><span class="line">    log.info(<span class="string">&quot;### strategyData: &#123;&#125; check success&quot;</span>, strategyData.getName());</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h4><p><img src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FscHKFcMItb4IYYPGqz0Q4xljWEh.png"><img src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvUCjGrlj_xH3S07I4BlY8gJpAQm.png"></p>
+<p>Drools 是一个高性能的规则引擎，但是设计的使用场景和在本次测试中的场景并不太一样，Drools 的目标是一个复杂对象比如有上百上千的属性，怎么快速匹配规则，而不是简单对象重复匹配规则，因此在这次测试中结果垫底。<br>IKExpression 是依靠解释执行来完成表达式的执行，因此性能上来说也差强人意，和 Aviator，Groovy 编译执行相比，还是性能差距还是明显。</p>
+<p>Aviator 会把表达式编译成字节码，然后代入变量再执行，整体上性能做得很好。</p>
+<p>Groovy 是动态语言，依靠反射方式动态执行表达式的求值，并且依靠 JIT 编译器，在执行次数够多以后，编译成本地字节码，因此性能非常的高。对应于 eSOC 这样需要反复执行的表达式，Groovy 是一种非常好的选择。</p>
+<h3 id="场景实战"><a href="#场景实战" class="headerlink" title="场景实战"></a>场景实战</h3><h4 id="监控告警规则"><a href="#监控告警规则" class="headerlink" title="监控告警规则"></a>监控告警规则</h4><p>监控规则配置效果图：<br><img src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fj72dVhngtfGrWJHgSlQkNo1kNcX.png"></p>
+<p>最终转化成表达式语言可以表示为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">// 0.t实体逻辑如下</span><br><span class="line">&#123;</span><br><span class="line">&quot;indicatorCode&quot;: &quot;test001&quot;,</span><br><span class="line">&quot;operator&quot;: &quot;&gt;=&quot;,</span><br><span class="line">&quot;threshold&quot;: 1.5,</span><br><span class="line">&quot;aggFuc&quot;: &quot;sum&quot;,</span><br><span class="line">&quot;interval&quot;: 5,</span><br><span class="line">&quot;intervalUnit&quot;: &quot;minute&quot;,</span><br><span class="line">...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 1.规则命中表达式</span><br><span class="line">triggerExec(t1) &amp;&amp; triggerExec(t2) &amp;&amp; (triggerExec(t3) || triggerExec(t4))</span><br><span class="line"></span><br><span class="line">// 2.单个 triggerExec 执行内部</span><br><span class="line">indicatorExec(indicatorCode) &gt;= threshold</span><br></pre></td></tr></table></figure>
+
+<p>此时我们只需调用 Aviator 实现表达式执行逻辑如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">boolean hit = (Boolean) AviatorEvaluator.execute(strategyData.getLogicExpr(), env, true);</span><br><span class="line"></span><br><span class="line">if (hit) &#123;</span><br><span class="line">    // 告警</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="自定义函数实战"><a href="#自定义函数实战" class="headerlink" title="自定义函数实战"></a>自定义函数实战</h3><p>基于上节监控中心内 <code>triggerExec</code> 函数如何实现</p>
+<p>先看源码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">AlertStrategyFunction</span> <span class="keyword">extends</span> <span class="title class_">AbstractAlertFunction</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">TRIGGER_FUNCTION_NAME</span> <span class="operator">=</span> <span class="string">&quot;triggerExec&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">getName</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> TRIGGER_FUNCTION_NAME;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> AviatorObject <span class="title function_">call</span><span class="params">(Map&lt;String, Object&gt; env, AviatorObject arg1)</span> &#123;</span><br><span class="line">        <span class="type">AlertStrategyContext</span> <span class="variable">strategyContext</span> <span class="operator">=</span> getFromEnv(STRATEGY_CONTEXT_KEY, env, AlertStrategyContext.class);</span><br><span class="line">        <span class="type">AlertStrategyData</span> <span class="variable">strategyData</span> <span class="operator">=</span> strategyContext.getStrategyData();</span><br><span class="line">        <span class="type">AlertTriggerService</span> <span class="variable">triggerService</span> <span class="operator">=</span> ApplicationContextHolder.getBean(AlertTriggerService.class);</span><br><span class="line"></span><br><span class="line">        Map&lt;String, AlertTriggerData&gt; triggerDataMap = strategyData.getTriggerDataMap();</span><br><span class="line">        <span class="type">AviatorJavaType</span> <span class="variable">triggerId</span> <span class="operator">=</span> (AviatorJavaType) arg1;</span><br><span class="line">        <span class="keyword">if</span> (CollectionUtils.isEmpty(triggerDataMap) || !triggerDataMap.containsKey(triggerId.getName())) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;can&#x27;t find trigger config&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">res</span> <span class="operator">=</span> triggerService.executor(strategyContext, triggerId.getName());</span><br><span class="line">        <span class="keyword">return</span> AviatorBoolean.valueOf(res);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>按照官方文档，只需继承 <code>AbstractAlertFunction</code> ，即可实现自定义函数，重点如下：</p>
+<ul>
+<li>getName() 返回 函数对应的调用名称，必须实现</li>
+<li>call() 方法可以重载，尾部参数可选，对应函数入参多个参数分别调用使用</li>
+</ul>
+<p>实现自定义函数后，使用前需要注册，源码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AviatorEvaluator.addFunction(<span class="keyword">new</span> <span class="title class_">AlertStrategyFunction</span>());</span><br></pre></td></tr></table></figure>
+
+<p>如果在 Spring 项目中使用，只需在 bean 的初始化方法中调用即可。</p>
+<h3 id="踩坑指南-amp-调优"><a href="#踩坑指南-amp-调优" class="headerlink" title="踩坑指南 &amp; 调优"></a>踩坑指南 &amp; 调优</h3><h4 id="使用编译缓存模式"><a href="#使用编译缓存模式" class="headerlink" title="使用编译缓存模式"></a>使用编译缓存模式</h4><p>默认的编译方法如 <code>compile(script)</code> 、 <code>compileScript(path</code>  以及 <code>execute(script, env)</code>  都不会缓存编译的结果，每次都将重新编译表达式，生成一些匿名类，然后返回编译结果 <code>Expression</code>  实例， <code>execute</code>  方法会继续调用 <code>Expression#execute(env)</code>  执行。</p>
+<p>这种模式下有两个问题：</p>
+<ol>
+<li>每次都重新编译，如果你的脚本没有变化，这个开销是浪费的，非常影响性能。</li>
+<li>编译每次都产生新的匿名类，这些类会占用 JVM 方法区(Perm 或者 metaspace），内存逐步占满，并最终触发   full gc。</li>
+</ol>
+<p>因此，通常更推荐启用编译缓存模式， <code>compile</code> 、 <code>compileScript</code>  以及 <code>execute</code>  方法都有相应的重载方法，允许传入一个 <code>boolean cached</code>  参数，表示是否启用缓存，建议设置为 true：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">AviatorEvaluatorInstance</span> &#123;</span><br><span class="line">  <span class="keyword">public</span> Expression <span class="title function_">compile</span><span class="params">(<span class="keyword">final</span> String expression, <span class="keyword">final</span> <span class="type">boolean</span> cached)</span></span><br><span class="line">  <span class="keyword">public</span> Expression <span class="title function_">compile</span><span class="params">(<span class="keyword">final</span> String cacheKey, <span class="keyword">final</span> String expression, <span class="keyword">final</span> <span class="type">boolean</span> cached)</span></span><br><span class="line">  <span class="keyword">public</span> Expression <span class="title function_">compileScript</span><span class="params">(<span class="keyword">final</span> String path, <span class="keyword">final</span> <span class="type">boolean</span> cached)</span> <span class="keyword">throws</span> IOException</span><br><span class="line">  <span class="keyword">public</span> Object <span class="title function_">execute</span><span class="params">(<span class="keyword">final</span> String expression, <span class="keyword">final</span> Map&lt;String, Object&gt; env,</span></span><br><span class="line"><span class="params">      <span class="keyword">final</span> <span class="type">boolean</span> cached)</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中的 <code>cacheKey</code>  是用来指定缓存的 key，如果你的脚本特别长，默认使用脚本作为 key 会占用较多的内存并耗费 CPU 做字符串比较检测，可以使用 MD5 之类唯一的键值来降低缓存开销。</p>
+<h4 id="缓存管理"><a href="#缓存管理" class="headerlink" title="缓存管理"></a>缓存管理</h4><p><code>AviatorEvaluatorInstance</code>  有一系列用于管理缓存的方法：</p>
+<ul>
+<li>获取当前缓存大小，缓存的编译结果数量 <code>getExpressionCacheSize()</code></li>
+<li>获取脚本对应的编译缓存结果 <code>getCachedExpression(script)</code>  或者根据 cacheKey 获取 <code>getCachedExpressionByKey(cacheKey)</code> ，如果没有缓存过，返回 null。</li>
+<li>失效缓存 <code>invalidateCache(script)</code>  或者 <code>invalidateCacheByKey(cacheKey)</code> 。</li>
+<li>清空缓存 <code>clearExpressionCache()</code></li>
+</ul>
+<h4 id="性能建议"><a href="#性能建议" class="headerlink" title="性能建议"></a>性能建议</h4><ul>
+<li>优先使用执行优先模式（默认模式）。</li>
+<li>使用编译结果缓存模式，复用编译结果，传入不同变量执行。</li>
+<li>外部变量传入，优先使用编译结果的 <code>Expression#newEnv(..args)</code>  方法创建外部 env，将会启用符号化，降低变量访问开销。</li>
+<li>生产环境<strong>切勿</strong>打开执行跟踪模式。</li>
+<li>调用 Java 方法，优先使用自定义函数，其次是导入方法，最后是基于 FunctionMissing 的反射模式。</li>
+</ul>
+<h3 id="往期精彩"><a href="#往期精彩" class="headerlink" title="往期精彩"></a>往期精彩</h3><blockquote>
+<p>个人技术博客：<a href="https://jifuwei.github.io/">https://jifuwei.github.io/</a><br>公众号：是咕咕鸡</p>
+</blockquote>
+<ul>
+<li><a href="https://jifuwei.github.io/yuque/%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E2%80%94%E2%80%94%E5%B0%8F%E5%B0%8F%E7%9A%84log%E5%A4%A7%E5%A4%A7%E7%9A%84%E5%9D%91.html">性能调优——小小的 log 大大的坑</a></li>
+<li><a href="https://jifuwei.github.io/yuque/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%BF%85%E5%A4%87%E2%80%94%E2%80%94%E7%81%AB%E7%84%B0%E5%9B%BE.html">性能优化必备——火焰图</a></li>
+<li><a href="https://jifuwei.github.io/yuque/Flink%20%E5%9C%A8%E9%A3%8E%E6%8E%A7%E5%9C%BA%E6%99%AF%E5%AE%9E%E6%97%B6%E7%89%B9%E5%BE%81%E8%90%BD%E5%9C%B0%E5%AE%9E%E6%88%98.html">Flink 在风控场景实时特征落地实战</a></li>
+</ul>
+<p>参考：<br>[1].<a target="_blank" rel="noopener" href="https://www.javatt.com/p/43477">Drools, IKExpression, Aviator 和 Groovy 字符串表达式求值比较</a><br>[2].<a target="_blank" rel="noopener" href="https://www.yuque.com/boyan-avfmj/aviatorscript/cpow90">AviatorScript 编程指南</a></p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>原创技术分享，您的支持鼓励是我继续创作的动力！</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechat.jpg" alt="是咕咕鸡 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.png" alt="是咕咕鸡 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/wechat_channel.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/yuque/Java%20%E7%83%AD%E6%9B%B4%E6%96%B0%20Groovy%20%E5%AE%9E%E8%B7%B5%E5%8F%8A%E8%B8%A9%E5%9D%91%E6%8C%87%E5%8D%97.html" rel="prev" title="Java 热更新 Groovy 实践及踩坑指南">
+      <i class="fa fa-chevron-left"></i> Java 热更新 Groovy 实践及踩坑指南
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/yuque/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%BF%85%E5%A4%87%E2%80%94%E2%80%94%E7%81%AB%E7%84%B0%E5%9B%BE.html" rel="next" title="性能优化必备——火焰图">
+      性能优化必备——火焰图 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%BC%95%E6%93%8E%E6%8A%80%E6%9C%AF%E5%8F%8A%E6%AF%94%E8%BE%83"><span class="nav-number">1.</span> <span class="nav-text">表达式引擎技术及比较</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Drools-%E7%AE%80%E4%BB%8B"><span class="nav-number">1.1.</span> <span class="nav-text">Drools 简介</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IKExpression-%E7%AE%80%E4%BB%8B"><span class="nav-number">1.2.</span> <span class="nav-text">IKExpression 简介</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Groovy-%E7%AE%80%E4%BB%8B"><span class="nav-number">1.3.</span> <span class="nav-text">Groovy 简介</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text"></span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Aviator-%E7%AE%80%E4%BB%8B"><span class="nav-number">2.1.</span> <span class="nav-text">Aviator 简介</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">2.2.</span> <span class="nav-text">性能对比</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF%E5%AE%9E%E6%88%98"><span class="nav-number">3.</span> <span class="nav-text">场景实战</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7%E5%91%8A%E8%AD%A6%E8%A7%84%E5%88%99"><span class="nav-number">3.1.</span> <span class="nav-text">监控告警规则</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%87%BD%E6%95%B0%E5%AE%9E%E6%88%98"><span class="nav-number">4.</span> <span class="nav-text">自定义函数实战</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B8%A9%E5%9D%91%E6%8C%87%E5%8D%97-amp-%E8%B0%83%E4%BC%98"><span class="nav-number">5.</span> <span class="nav-text">踩坑指南 &amp; 调优</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%BC%96%E8%AF%91%E7%BC%93%E5%AD%98%E6%A8%A1%E5%BC%8F"><span class="nav-number">5.1.</span> <span class="nav-text">使用编译缓存模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-number">5.2.</span> <span class="nav-text">缓存管理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%BB%BA%E8%AE%AE"><span class="nav-number">5.3.</span> <span class="nav-text">性能建议</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BE%80%E6%9C%9F%E7%B2%BE%E5%BD%A9"><span class="nav-number">6.</span> <span class="nav-text">往期精彩</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="是咕咕鸡"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">是咕咕鸡</p>
+  <div class="site-description" itemprop="description">过刚易折，善柔不败</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/jifuwei" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;jifuwei" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+     
+      <div class="wechat_channel">
+        <br>
+        <!-- 公众号二维码引导 -->
+        <img src ="/images/wechat_channel.png">
+        <!-- <span>公众号</span> -->
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">是咕咕鸡</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://jifuwei.github.io/yuque/Google%20Aviator%E2%80%94%E2%80%94%E8%BD%BB%E9%87%8F%E7%BA%A7%20Java%20%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%BC%95%E6%93%8E%E5%AE%9E%E6%88%98.html</loc>
+    
+    <lastmod>2022-09-22</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://jifuwei.github.io/yuque/Java%20%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%9C%A8%E7%94%9F%E4%BA%A7%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF%E5%8F%8A%E5%AE%9E%E6%88%98.html</loc>
     
     <lastmod>2022-09-14</lastmod>
@@ -67,7 +76,7 @@
 
   <url>
     <loc>https://jifuwei.github.io/</loc>
-    <lastmod>2022-09-14</lastmod>
+    <lastmod>2022-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
