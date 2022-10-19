@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="ZAxoxqp0q8qf8GaVFBLqt3fZ2g3Ch1QtMgFoQhUyzZQ">
+  <meta name="baidu-site-verification" content="code-YeeuLMqwzd">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.lug.ustc.edu.cn/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jifuwei.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="背景数据爆炸的时代，信息化步伐越来越快，接入互联网的服务越来越多。随着业务迭代变更越来越复杂化，需求&#x2F;产品者对系统的要求越来越高，对业务走势及健康状态需要更直观的感知。这意味着我们需要随时能够“看见”系统的状态，对系统&#x2F;业务的实时监控以及可视化是技术演进的必然。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Grafana 自定义数据源支持 RESTful API 查询">
+<meta property="og:url" content="https://jifuwei.github.io/yuque/Grafana%20%E8%87%AA%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E6%BA%90%E6%94%AF%E6%8C%81%20RESTful%20API%20%E6%9F%A5%E8%AF%A2.html">
+<meta property="og:site_name" content="是咕咕鸡">
+<meta property="og:description" content="背景数据爆炸的时代，信息化步伐越来越快，接入互联网的服务越来越多。随着业务迭代变更越来越复杂化，需求&#x2F;产品者对系统的要求越来越高，对业务走势及健康状态需要更直观的感知。这意味着我们需要随时能够“看见”系统的状态，对系统&#x2F;业务的实时监控以及可视化是技术演进的必然。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FnbJ0oHacz-Dv7hkIkmAAIaTctfj.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fm1oRP4EKn4KBqTrBd3RjkDv7in2.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FlLucvmv3XhcsWoKOA1dQ08KAl9R.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FokHjmMF7_mIiknCZJHaDfPuwXw5.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fk5VGrevkI5y87tSzBQLogWGfs_n.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fplsi7ZhSeeihWTiSEGVcguyJ6Wl.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fg4x5pyQBv9vdBUjz1PUicDHM0yJ.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FgeFx26KrwligryfKM9ghsMjWQBE.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FoVz8AiMZmyPAJ6W5HFdrYqV8RP8.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FiBSW4b8ZJdA_0GtTz4GgtoqKEAh.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FnmyRlGqr6x6clCyh5wSG5GpeNbZ.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fg0HxbMItOtXkwaV3FZHqbxuRrzS.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FoLNsY4vXGts3UWz5SCCgy87DyLs.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FlQ6tNbWhXbi-T8hKFICc3Hez8Fe.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fh2DM4kM8e7FS7WPGyLJmo02Ex1C.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FmeO3bX-h0HAOlxLaY_eCxEqB0iU.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FjweSAXVc4AKYmHLZH1m5HegHl30.png">
+<meta property="article:published_time" content="2021-12-07T06:35:34.000Z">
+<meta property="article:modified_time" content="2022-10-19T02:10:28.497Z">
+<meta property="article:author" content="是咕咕鸡">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FnbJ0oHacz-Dv7hkIkmAAIaTctfj.png">
+
+<link rel="canonical" href="https://jifuwei.github.io/yuque/Grafana%20%E8%87%AA%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E6%BA%90%E6%94%AF%E6%8C%81%20RESTful%20API%20%E6%9F%A5%E8%AF%A2.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Grafana 自定义数据源支持 RESTful API 查询 | 是咕咕鸡</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1575500ddb979a8e4e895121cbd848cb";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">是咕咕鸡</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">希望我分享的文章能够给每一位读者带来帮助！</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jifuwei.github.io/yuque/Grafana%20%E8%87%AA%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E6%BA%90%E6%94%AF%E6%8C%81%20RESTful%20API%20%E6%9F%A5%E8%AF%A2.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="是咕咕鸡">
+      <meta itemprop="description" content="过刚易折，善柔不败">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="是咕咕鸡">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Grafana 自定义数据源支持 RESTful API 查询
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-07 14:35:34" itemprop="dateCreated datePublished" datetime="2021-12-07T14:35:34+08:00">2021-12-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-10-19 10:10:28" itemprop="dateModified" datetime="2022-10-19T10:10:28+08:00">2022-10-19</time>
+              </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>数据爆炸的时代，信息化步伐越来越快，接入互联网的服务越来越多。随着业务迭代变更越来越复杂化，需求&#x2F;产品者对系统的要求越来越高，对业务走势及健康状态需要更直观的感知。这意味着我们需要随时能够“看见”系统的状态，对系统&#x2F;业务的实时监控以及可视化是技术演进的必然。</p>
+<span id="more"></span>
+
+<h4 id="Grafana-是什么？"><a href="#Grafana-是什么？" class="headerlink" title="Grafana 是什么？"></a>Grafana 是什么？</h4><p>Grafana 是一个可视化面板（Dashboard），有着非常漂亮的图表和布局展示，功能齐全的度量仪表盘和图形编辑器。支持 Graphite、zabbix、InfluxDB、Prometheus 和 OpenTSDB 作为数据源。</p>
+<p>Grafana 特点：</p>
+<ul>
+<li>丰富的仪表盘插件：折线图、饼图、地图等，官方提供丰富的图表可供选择</li>
+<li>支持多种后端库：官方支持的时序数据库非常丰富，基本常用 API 皆可满足</li>
+<li>注释：支持直接在看板上标注注释，记录现场发生的问题待复盘使用</li>
+<li>过滤器：使用 Ad-hoc 过滤器允许动态创建新的键&#x2F;值过滤器</li>
+</ul>
+<p>合理利用 Grafana 图表和功能，能创造出非常 Amazing 的图表，可以参考下图一官网的模板示例：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FnbJ0oHacz-Dv7hkIkmAAIaTctfj.png"><br>图一 Grafana 示例模板</p>
+<h4 id="挑战"><a href="#挑战" class="headerlink" title="挑战"></a>挑战</h4><p>虽然 Grafana 的图表和插件很丰富，但是在实际的生产使用中，我们发现 Grafana 还是不能满足业务需求，官方和社区提供的数据源插件，大多是“运维型”的，即数据源本身实现的功能是监测数据源本身的性能状态，而不是数据源内存储的业务数据。</p>
+<p>如官方提供的 Redis 数据源 Redis Data Source for Grafana ，该插件提供很多当前 Redis 数据源的包括但不限于：QPS、连接数、key 数量、网络、内存使用等等，如图二是官方提供的示例图：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fm1oRP4EKn4KBqTrBd3RjkDv7in2.png"><br>图二 Redis 数据源看板示例</p>
+<p>那如何查询 Redis 内存储的业务数据？如何监控业务数据是否波动？如果数据存在 Hbase、MySQL&#x2F;PG、或者一些小众的数据源中，那又如何展示呢？本文就自定义数据源支持 RESTful API 方式做详细介绍。</p>
+<h3 id="熟悉-Grafana"><a href="#熟悉-Grafana" class="headerlink" title="熟悉 Grafana"></a>熟悉 Grafana</h3><p>我将基于一个 Grafana + ES 的 demo 向你展示如何使用，还是那句话，先会用，再去学。直观的使用并感受它，为更好的深入理解做准备。</p>
+<h4 id=""><a href="#" class="headerlink" title=""></a></h4><h4 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h4><p>我假设你熟悉 docker 使用方式，我将基于 docker 搭建 Grafana 环境及配置</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">docker pull grafana/grafana -- 拉取最新的grafana镜像</span><br><span class="line">docker images -- 查看是否存在镜像</span><br><span class="line"></span><br><span class="line">-- 运行 grafana 镜像</span><br><span class="line">-- 其中 -e 是指定需要安装的插件</span><br><span class="line">docker run -d \</span><br><span class="line">  -p 3000:3000 \</span><br><span class="line">  --name=grafana \</span><br><span class="line">  -e &quot;GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource&quot; \</span><br><span class="line">  grafana/grafana</span><br></pre></td></tr></table></figure>
+
+<p>如果一切顺利，此时访问 <a target="_blank" rel="noopener" href="http://localhost:3000/login">http://localhost:3000</a> 可以看到图三界面（默认密码登录即可），则搭建完毕。<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FlLucvmv3XhcsWoKOA1dQ08KAl9R.png"><br>图三 Grafana 登录界面</p>
+<h4 id="集成-Elasticsearch"><a href="#集成-Elasticsearch" class="headerlink" title="集成 Elasticsearch"></a>集成 Elasticsearch</h4><p>同上安装 docker 一直，Elasticsearch 也是基于 docker 安装</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">docker pull elasticsearch</span><br><span class="line">docker run -d \</span><br><span class="line">	--name elasticsearch \</span><br><span class="line">  --net somenetwork \</span><br><span class="line">  -p 9200:9200 -p 9300:9300 \</span><br><span class="line">  -e &quot;discovery.type=single-node&quot; elasticsearch:tag</span><br></pre></td></tr></table></figure>
+
+<p><strong>配置数据源</strong><br>如图四，添加 Elasticsearch 数据源<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FokHjmMF7_mIiknCZJHaDfPuwXw5.png"><br>图四 添加数据源</p>
+<p>如图五，搜索框输入关键字，匹配到 Elasticsearch 数据源后，点击 Select 开始配置<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fk5VGrevkI5y87tSzBQLogWGfs_n.png"><br>图五 选择 Elasticsearch 数据源</p>
+<p>如图六，配置数据源信息，假设你或者公司的 ES 集群需要权限认证，则需要配置 Auth 相关信息<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fplsi7ZhSeeihWTiSEGVcguyJ6Wl.png"><br>图六 配置 ES 数据源地址 &amp; 授权信息</p>
+<p>如图七，配置 ES Index 相关信息，然后保存，如果测试联通则保存成功，此时 Grafana 已经有访问 ES 的权限了。<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fg4x5pyQBv9vdBUjz1PUicDHM0yJ.png"><br>图七 配置 ES 索引信息</p>
+<p>下面我们就可以搭建看板并访问 ES 内的数据了，如图八，首先创建一个 Dashboard 默认初始化一个 Panel ，也可以点击右上角的 “图表＋” 创建新的 Panel 看板。<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FgeFx26KrwligryfKM9ghsMjWQBE.png"><br>图八 创建 Dashbard &amp; Panel</p>
+<p>Query 处填写 ES 查询语句（完全兼容 Lucene query syntax），添加分组信息，即可查看数据（此处省略 ES 写入数据逻辑），如图九所示<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FoVz8AiMZmyPAJ6W5HFdrYqV8RP8.png"><br>图九 ES Panel 配置 ES 查询语句及分组</p>
+<h3 id="Grafana-自定义数据源"><a href="#Grafana-自定义数据源" class="headerlink" title="Grafana 自定义数据源"></a>Grafana 自定义数据源</h3><p>如何通过 Grafana 去查询业务数据并展示呢？假设业务数据是存储在 Redis 中，首先得去官网的 Data Sources 资源库中检索是否存在插件，其次再去社区或者 Github 上搜寻是否有开源的适配插件。假设存在，那就开心了，拿来主义；如果不存在，要么将数据同步到能找到插件的库中存储，要么就得自己实现一个插件，两个方案怎么看都是不可控的。</p>
+<p>那有没有能直接适配所有库的插件呢？很明显是不存在的。那如何能满足一个插件对应所有的数据库？想想后端-前端开发交互，前端在获取数据时是通过 API，而不会去关心后端的数据是从 Hbase 来的还是从 Redis 来的。中间的桥接层正是 Controller，即 RESTful API 协议接口。如图十所示：</p>
+<p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FiBSW4b8ZJdA_0GtTz4GgtoqKEAh.png"><br>图十 数据源插件实现对比</p>
+<p>此时已经相当明显了，只需要找到支持 RESTful API 的数据源插件即可“一劳永逸”！幸运的是社区真的有志同道合的开发者，提供了开源的插件 JSON API Grafana Datasource.</p>
+<h4 id="RESTful-API-数据源插件"><a href="#RESTful-API-数据源插件" class="headerlink" title="RESTful API 数据源插件"></a>RESTful API 数据源插件</h4><p><a target="_blank" rel="noopener" href="https://grafana.com/grafana/plugins/simpod-json-datasource/">JSON API Grafana Datasource</a> 支持任意后端请求，并返回 JSON 数据给到 Grafana 作数据渲染。此处不在演示如何安装此款数据源插件，可以看下该数据源插件特点如下（具体的数据接口可查看官网地址）：</p>
+<p>要使用此数据源，后端需要实现 4 个接口：</p>
+<ul>
+<li>GET &#x2F;带有 200 状态代码响应。属于数据源测试的心跳接口。</li>
+<li>POST &#x2F;search 很重要，假设你需要自定义变量，需要用到该接口。</li>
+<li>POST &#x2F;query 很重要，自定义实现图表数据的展示接口。</li>
+</ul>
+<p>这两个网址是可选的（基本不用）：</p>
+<ul>
+<li>POST &#x2F;tag-keys 为临时过滤器返回标签键。</li>
+<li>POST &#x2F;tag-values 为临时过滤器返回标签值。</li>
+</ul>
+<p>该数据源最大特点是支持传递自定义参数 JSON 到后端，这为我们设计统一的接口协议是利好的。经过梳理分析，我们设计如下架构，如图十一所示:<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FnmyRlGqr6x6clCyh5wSG5GpeNbZ.png"><br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fg0HxbMItOtXkwaV3FZHqbxuRrzS.png"><br>图十一 数据查询接口设计</p>
+<p>四个接口实现</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/grafana&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">GrafanaController</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> GrafanaJsonDataSourceGenerator grafanaJsonDataSourceGenerator;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 该接口用于对数据源进行测试，请求方式是 GET ，无需返回有意义的实体，调用状态码为200即可</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@GetMapping</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">status</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;success&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 接口用于在编辑图表query时选择相应的metric</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> search</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@PostMapping(&quot;/search&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> String[] search(<span class="meta">@RequestBody</span> GrafanaSearch search) &#123;</span><br><span class="line">        <span class="keyword">return</span> grafanaJsonDataSourceGenerator.search(search);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 接口用于返回query所请求的数据</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> dto</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@PostMapping(&quot;/query&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">query</span><span class="params">(<span class="meta">@RequestBody</span> GrafanaQuery dto)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> grafanaJsonDataSourceGenerator.generate(dto);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * returning annotations.</span></span><br><span class="line"><span class="comment">     * 暂时用不到</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> req</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@PostMapping(&quot;/annotations&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> List&lt;AnnotationData&gt; <span class="title function_">annotations</span><span class="params">(<span class="meta">@RequestBody</span> GrafanaAnnotations req)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> grafanaJsonDataSourceGenerator.annotations(req);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>DataHandle 路由</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> List&lt;SimpleBaseData&gt; <span class="title function_">generate</span><span class="params">(GrafanaQuery query)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (CollectionUtils.isEmpty(query.getTargets())) &#123;</span><br><span class="line">        <span class="keyword">return</span> Collections.emptyList();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> query.getTargets().stream()</span><br><span class="line">        .filter(t -&gt; StringUtils.isNotEmpty(t.getTarget()))</span><br><span class="line">        <span class="comment">// 解析自定义指标</span></span><br><span class="line">        .map(<span class="built_in">this</span>::analyzeCustomerConfig)</span><br><span class="line">        .filter(ct -&gt; StringUtils.isNotEmpty(ct.getHandle()))</span><br><span class="line">        <span class="comment">// 定位解析器</span></span><br><span class="line">        .map(ct -&gt; execHandle(ct, query))</span><br><span class="line">        .flatMap(Collection::stream)</span><br><span class="line">        .collect(Collectors.toList());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> List&lt;SimpleBaseData&gt; <span class="title function_">execHandle</span><span class="params">(CustomerTargetInfo ct, GrafanaQuery query)</span> &#123;</span><br><span class="line">    <span class="type">TimeRange</span> <span class="variable">timeRange</span> <span class="operator">=</span> analyzeCustomerTimeRange(ct, query.getRange());</span><br><span class="line">    List&lt;SimpleBaseData&gt; list = applicationContext.getBean(TARGET_HANDLE_PREFIX + ct.getHandle(), IDataHandle.class)</span><br><span class="line">        .exec(ct, timeRange.getFrom().toDate(), timeRange.getTo().toDate());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 包装名字&amp;时间轴，否则无法展示</span></span><br><span class="line">    wrapRangeRawTimeData(ct, list);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 聚合函数</span></span><br><span class="line">    aggFunHandle(ct, list);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> list;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此时，前端在配置查询条件时，只需要配置一段 JSON Config 即可</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;handle&quot;</span><span class="punctuation">:</span> <span class="string">&quot;appServerLog&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;config&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    	<span class="attr">&quot;appNames&quot;</span><span class="punctuation">:</span> $appServer</span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FoLNsY4vXGts3UWz5SCCgy87DyLs.png"></p>
+<h3 id="Grafana-图表数据美化"><a href="#Grafana-图表数据美化" class="headerlink" title="Grafana 图表数据美化"></a>Grafana 图表数据美化</h3><p>Grafana 的可玩性绝对超乎你的想象，如果你是一个心灵手巧且富有美感的人，一定创造美观 🈶 使用的看板！</p>
+<h4 id="Table-展示"><a href="#Table-展示" class="headerlink" title="Table 展示"></a>Table 展示</h4><p>如图十二配置所示，Grafana 支持将多个图表返回聚合成 Table 展示，且能在窗口内支持常用的聚合函数，如 Min、Max、Avg、Current、Total 等。当然也支持 Table 暂时在底部还是右部可选。<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FlQ6tNbWhXbi-T8hKFICc3Hez8Fe.png"><br>图十二 多图表渲染为 Table</p>
+<h4 id="Points-Or-Line-展示"><a href="#Points-Or-Line-展示" class="headerlink" title="Points Or Line 展示"></a>Points Or Line 展示</h4><p>一版时序数据展示使用线段即可，但是部分业务数据使用线段就会显得非常杂乱，如风控拒绝数据，可能某一时刻没有拒绝，某一时刻拒接很高，此时如果连城线后，突刺非常对，非常不雅观，此时可参考使用点来展示，并且过滤掉不存在数据的点，如图十三所配置：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fh2DM4kM8e7FS7WPGyLJmo02Ex1C.png"><br>图十三 点状展示决策数据</p>
+<h4 id="左右-Y-轴并列展示"><a href="#左右-Y-轴并列展示" class="headerlink" title="左右 Y 轴并列展示"></a>左右 Y 轴并列展示</h4><p>当我想在一个 Panel 上展示同一类数据不同维度数据，比如某个风控场景下的拒绝&#x2F;通过&#x2F;超时数量，如果直接展示，会出现什么问题？由于通过的数量非常高，拒绝和超时的数据相对通过数量非常低，就会被压在看板的最底下，根本看不出任何波动。<br>此时我们需要借助左右 Y 轴来规避，将同数量级的数据合并，遮样就避免了因为数据量级不一致而使得小数据展示无法看见问题。如图十四所示：</p>
+<p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FmeO3bX-h0HAOlxLaY_eCxEqB0iU.png"><br>图十四 左右 Y 轴分类展示展示</p>
+<p>如上是我在实际使用图表看板时常用的，且搜索引擎一时半会搜索不到的案例，当然更多的使用且精美的模板需要你去官网的<a target="_blank" rel="noopener" href="https://grafana.com/grafana/dashboards/">模板案例库</a>中探索。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>总的来说，Grafana 对现有数据展示基本满足需求，如果你是后端，且缺少前端资源，那建议你使用 Grafana 来做展示，开箱即用。但是想要展示门户看板，更精致，更华丽的看板，还是需要前端介入的，市面上丝滑的图库比比皆是，如百度开源的已被 Apache 收录的 ECharts.</p>
+<blockquote>
+<p>欢迎关注公众号：咕咕鸡技术专栏<br>个人技术博客：<a href="https://jifuwei.github.io/">https://jifuwei.github.io/</a> &gt; <img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FjweSAXVc4AKYmHLZH1m5HegHl30.png"></p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>原创技术分享，您的支持鼓励是我继续创作的动力！</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechat.jpg" alt="是咕咕鸡 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.png" alt="是咕咕鸡 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/wechat_channel.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/yuque/Java%20%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%9C%A8%E7%94%9F%E4%BA%A7%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF%E5%8F%8A%E5%AE%9E%E6%88%98.html" rel="prev" title="Java 并发编程在生产应用场景及实战">
+      <i class="fa fa-chevron-left"></i> Java 并发编程在生产应用场景及实战
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/yuque/Java%20%E7%83%AD%E6%9B%B4%E6%96%B0%20Groovy%20%E5%AE%9E%E8%B7%B5%E5%8F%8A%E8%B8%A9%E5%9D%91%E6%8C%87%E5%8D%97.html" rel="next" title="Java 热更新 Groovy 实践及踩坑指南">
+      Java 热更新 Groovy 实践及踩坑指南 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Grafana-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.1.</span> <span class="nav-text">Grafana 是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8C%91%E6%88%98"><span class="nav-number">1.2.</span> <span class="nav-text">挑战</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%86%9F%E6%82%89-Grafana"><span class="nav-number">2.</span> <span class="nav-text">熟悉 Grafana</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">2.1.</span> <span class="nav-text"></span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"><span class="nav-number">2.2.</span> <span class="nav-text">环境搭建</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%86%E6%88%90-Elasticsearch"><span class="nav-number">2.3.</span> <span class="nav-text">集成 Elasticsearch</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Grafana-%E8%87%AA%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E6%BA%90"><span class="nav-number">3.</span> <span class="nav-text">Grafana 自定义数据源</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#RESTful-API-%E6%95%B0%E6%8D%AE%E6%BA%90%E6%8F%92%E4%BB%B6"><span class="nav-number">3.1.</span> <span class="nav-text">RESTful API 数据源插件</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Grafana-%E5%9B%BE%E8%A1%A8%E6%95%B0%E6%8D%AE%E7%BE%8E%E5%8C%96"><span class="nav-number">4.</span> <span class="nav-text">Grafana 图表数据美化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Table-%E5%B1%95%E7%A4%BA"><span class="nav-number">4.1.</span> <span class="nav-text">Table 展示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Points-Or-Line-%E5%B1%95%E7%A4%BA"><span class="nav-number">4.2.</span> <span class="nav-text">Points Or Line 展示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B7%A6%E5%8F%B3-Y-%E8%BD%B4%E5%B9%B6%E5%88%97%E5%B1%95%E7%A4%BA"><span class="nav-number">4.3.</span> <span class="nav-text">左右 Y 轴并列展示</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="是咕咕鸡"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">是咕咕鸡</p>
+  <div class="site-description" itemprop="description">过刚易折，善柔不败</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/jifuwei" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;jifuwei" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+     
+      <div class="wechat_channel">
+        <br>
+        <!-- 公众号二维码引导 -->
+        <img src ="/images/wechat_channel.png">
+        <!-- <span>公众号</span> -->
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">是咕咕鸡</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">68k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">1:02</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
