@@ -31,9 +31,14 @@
 <meta property="og:description" content="引言性能调优也是有迹可寻的，本文梳理了在实际开发过程中沉淀的通用性能优化策略，并且结合风控系统服务内使用场景，帮助读者理解性能调优相关可行策略，从而建立性能优化 SOP 概念，以后出现问题即可参照优化流程改造即可。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvXYECSP3PcOb3bC9Eq3ulj3wu5i.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FlkL2lco9dirl8FwHV2RYo95ZuiJ.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fv-7DI-9h43QPwQlJE4Ew6Od026E.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fuyl3z5Wu14VenqKcwMCHRf77bO9.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FisDscma0oP2tgFL1M8EeTfDmN_y.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FkGsv0EJRGtwzS3uXaR1Vs0qHksc.png">
 <meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FjweSAXVc4AKYmHLZH1m5HegHl30.png">
 <meta property="article:published_time" content="2022-10-18T02:57:46.000Z">
-<meta property="article:modified_time" content="2022-10-19T02:05:58.189Z">
+<meta property="article:modified_time" content="2022-10-19T02:50:16.189Z">
 <meta property="article:author" content="是咕咕鸡">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvXYECSP3PcOb3bC9Eq3ulj3wu5i.png">
@@ -202,7 +207,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-10-19 10:05:58" itemprop="dateModified" datetime="2022-10-19T10:05:58+08:00">2022-10-19</time>
+                <time title="修改时间：2022-10-19 10:50:16" itemprop="dateModified" datetime="2022-10-19T10:50:16+08:00">2022-10-19</time>
               </span>
 
           
@@ -243,13 +248,13 @@
 <h2 id="性能优化策略"><a href="#性能优化策略" class="headerlink" title="性能优化策略"></a>性能优化策略</h2><p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvXYECSP3PcOb3bC9Eq3ulj3wu5i.png"></p>
 <h3 id="时空转换"><a href="#时空转换" class="headerlink" title="时空转换"></a>时空转换</h3><p>刷过算法题目的都知道评分条件有：<strong>时间复杂度</strong>、<strong>空间复杂度</strong>，两样消耗都很小的话，评分越高，即优秀的算法。</p>
 <p>但在实际开发过程中，一般二者不可兼得。要么占用空间小运行时间长一点，要么追求效率则占用空间就多一点。我们要做的就是在特定的需求场景中，极力优化其中的一方，此时往往需要牺牲另一方来达到目的。</p>
-<h4 id="空间换时间"><a href="#空间换时间" class="headerlink" title="空间换时间"></a>空间换时间</h4><p>在当前业务场景下，追求的是<strong>极致性能</strong>，即响应速度要足够快，比如开屏页的打开速度，如果每次打开 H5 都去服务端请求页面的渲染数据，再加上用户所在城市不同，从纽约用户访问北京，比北京本地用户访问肯定慢很多。那此时就有了 **CDN **这种工具。运营商的 CDN 节点遍布全球，页面在开发完毕后，直接推送到全球各地的 CDN 中缓存起来，这样用户访问时只需要命中最近的 CDN 节点，速度自然而然就上去了，但是付出了空间的成本。</p>
+<h4 id="空间换时间"><a href="#空间换时间" class="headerlink" title="空间换时间"></a>空间换时间</h4><p>在当前业务场景下，追求的是<strong>极致性能</strong>，即响应速度要足够快，比如开屏页的打开速度，如果每次打开 H5 都去服务端请求页面的渲染数据，再加上用户所在城市不同，从纽约用户访问北京，比北京本地用户访问肯定慢很多。那此时就有了 **CDN **这种工具。运营商的 CDN 节点遍布全球，页面在开发完毕后，直接推送到全球各地的 CDN 中缓存起来，这样用户访问时只需要命中最近的 CDN 节点，速度自然而然就上去了，但是付出了空间的成本。<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FlkL2lco9dirl8FwHV2RYo95ZuiJ.png"></p>
 <p>在风控场景内也有类似场景，决策引擎为了极致性能，也需要空间换取时间：</p>
 <ul>
 <li><strong>配置数据缓存</strong>：决策流数据关联复杂，如果每次都去和 DB 或者数据中心交互，I&#x2F;O 耗时大，得不偿失。本地缓存一道 + 更新触发反而是更好的选择。</li>
 <li><strong>短期缓存</strong>：热点信息且在一段时间内不会改变的（或者能容忍一段时间不变的），接入缓存会更利于查询速度。</li>
 </ul>
-<h4 id="时间换空间"><a href="#时间换空间" class="headerlink" title="时间换空间"></a>时间换空间</h4><p>此策略反其道而行，用时间换取空间。此时，“<strong>空间比较宝贵</strong>”，比如内存相对于磁盘来说就很宝贵，但是存放在磁盘内再调度起来使用时，需要一定的时间来获取。</p>
+<h4 id="时间换空间"><a href="#时间换空间" class="headerlink" title="时间换空间"></a>时间换空间</h4><p>此策略反其道而行，用时间换取空间。此时，“<strong>空间比较宝贵</strong>”，比如内存相对于磁盘来说就很宝贵，但是存放在磁盘内再调度起来使用时，需要一定的时间来获取。<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fv-7DI-9h43QPwQlJE4Ew6Od026E.png"></p>
 <p>在风控场景内，同样存在很多场景：</p>
 <ul>
 <li><strong>节省空间成本</strong>：“云上”服务器相对“云下”自建 IDC 机房是更贵的空间资源，所以风控将大量非实时的数据放在云下服务器计算，云上服务需要用的时候，需要付出一定的调用时间即可：跨机房调用（专线带宽争抢占用）需要额外多消耗 5~10 ms</li>
@@ -258,9 +263,9 @@
 <h3 id="预处理-x2F-后处理"><a href="#预处理-x2F-后处理" class="headerlink" title="预处理&#x2F;后处理"></a>预处理&#x2F;后处理</h3><h4 id="提前处理"><a href="#提前处理" class="headerlink" title="提前处理"></a>提前处理</h4><p>预处理主要是为了<strong>提速</strong>。比如 CPU 和内存的预取操作，将内存中的指令和数据，提前存放到缓存中，从而加快执行的速度。</p>
 <p>决策引擎为了保证策略的执行 RT 控制到 200ms 内，需要优化压缩执行策略的时间，假设一个策略再怎么优化，执行时间也是超过 200ms 的，那此时可以在上一个事件（场景）提前触发预处理操作。</p>
 <p>举例：用户发单时需要判定群组风险，但访问群组是比较耗时，那可以在用户进入发单前先触发查询群组信息并缓住，真正发单时直接读取上次结果即可。同样的，我们可以在用户登录时触发一些操作，利于后续风控事件感知。</p>
-<h4 id="延后处理"><a href="#延后处理" class="headerlink" title="延后处理"></a>延后处理</h4><p><strong>不到必要时刻坚决不执行，节省成本</strong>。运用这一策略最有名的例子，就是 <strong>COW</strong>（Copy On Write，写时复制）。假设多个线程都想操作一份数据，一般情况下，每个线程可以自己拷贝一份，放到自己的空间里面。但是拷贝的操作很费时间。系统如果采用惰性处理，就会将拷贝的操作推迟。如果多个线程对这份数据只有读的请求，那么同一个数据资源是可以共享的，因为“读”的操作不会改变这份数据。当某个线程需要修改这一数据时（写操作），系统就将资源拷贝一份给该线程使用，允许改写，这样就不会影响别的线程。</p>
+<h4 id="延后处理"><a href="#延后处理" class="headerlink" title="延后处理"></a>延后处理</h4><p><strong>不到必要时刻坚决不执行，节省成本</strong>。运用这一策略最有名的例子，就是 <strong>COW</strong>（Copy On Write，写时复制）。假设多个线程都想操作一份数据，一般情况下，每个线程可以自己拷贝一份，放到自己的空间里面。但是拷贝的操作很费时间。系统如果采用惰性处理，就会将拷贝的操作推迟。如果多个线程对这份数据只有读的请求，那么同一个数据资源是可以共享的，因为“读”的操作不会改变这份数据。当某个线程需要修改这一数据时（写操作），系统就将资源拷贝一份给该线程使用，允许改写，这样就不会影响别的线程。<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fuyl3z5Wu14VenqKcwMCHRf77bO9.png"></p>
 <p>延后操作在风控中主要为了节省成本，决策引擎为了极致的性能，很多<strong>变量</strong>（或者叫特征&#x2F;指标）都是一次性并行加载的，但此时有的变量是<strong>第三方收费</strong>指标，比如 IP、同盾、蚁盾等，预加载的好处显而易见，但是也极大的增加了成本：用户有可能还未走到付费变量决策节点时就被拒或者白名单直接通过，此时这部分用户提前请求三方就是极大的浪费。只有真正走到付费策略时，才会去请求，此时成本最小。</p>
-<h3 id="并行-x2F-异步操作"><a href="#并行-x2F-异步操作" class="headerlink" title="并行&#x2F;异步操作"></a>并行&#x2F;异步操作</h3><h4 id="并行"><a href="#并行" class="headerlink" title="并行"></a>并行</h4><p>一个人干不完的活，那就多找几个人一起干！并行操作，处理效率高（前提是机器多核心），时间大大缩短，极大缩短了 RT 时间。绝大多数互联网服务器，要么使用多进程，要么使用多线程来处理用户的请求，以充分利用多核 CPU。另外一种情况就是在有 IO 阻塞的地方，也是非常适合使用多线程并行操作的，因为这种情况 CPU 基本上是空闲状态，多线程可以让 CPU 多干点活。</p>
+<h3 id="并行-x2F-异步操作"><a href="#并行-x2F-异步操作" class="headerlink" title="并行&#x2F;异步操作"></a>并行&#x2F;异步操作</h3><h4 id="并行"><a href="#并行" class="headerlink" title="并行"></a>并行</h4><p>一个人干不完的活，那就多找几个人一起干！并行操作，处理效率高（前提是机器多核心），时间大大缩短，极大缩短了 RT 时间。绝大多数互联网服务器，要么使用多进程，要么使用多线程来处理用户的请求，以充分利用多核 CPU。另外一种情况就是在有 IO 阻塞的地方，也是非常适合使用多线程并行操作的，因为这种情况 CPU 基本上是空闲状态，多线程可以让 CPU 多干点活。<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FisDscma0oP2tgFL1M8EeTfDmN_y.png"></p>
 <p>决策引擎如果执行策略都是同步执行的话，几分钟可能都执行不完，运用并行，充分发挥 CPU 多个核心的性能，那么此时性能瓶颈就是最长的那块木板，只要专攻优化它就好了。</p>
 <h4 id="异步"><a href="#异步" class="headerlink" title="异步"></a>异步</h4><p>异步相对同步来说，就是是否等待结果还是立即返回。同步操作在碰到内部有大量 I&#x2F;O 操作时，性能损耗极大，此时采用异步操作，系统的吞吐行会有极大的提升。但是有利有弊，异步操作也增加了程序的复杂度，需要考虑失败补偿等额外的操作。</p>
 <p>此类场景在风控系统中也是随处可见：</p>
@@ -273,6 +278,7 @@
 <li><strong>IOC 控制反转</strong>：不仅仅是依赖注入，同时也节省了创建 bean 的时间</li>
 <li><strong>线程池中活跃线程</strong>：池化概念目的是增速，池本身就是一个缓存容器，频繁的创建池内对象，得不偿失，此时固定一批在池内，用完即还，极大的避免了创建新对象的开销。</li>
 </ul>
+<p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FkGsv0EJRGtwzS3uXaR1Vs0qHksc.png"></p>
 <h4 id="批量合并处理"><a href="#批量合并处理" class="headerlink" title="批量合并处理"></a>批量合并处理</h4><p>批操作一般是遇到 I&#x2F;O 操作时才会使用，一次性尽量多的查询到多的数据，减少网络耗时时间（注意，这不是绝对，思考一下为何需要分页，在时间和空间找平衡）。</p>
 <p>常见批操作如下：</p>
 <ul>
