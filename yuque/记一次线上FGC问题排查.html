@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="ZAxoxqp0q8qf8GaVFBLqt3fZ2g3Ch1QtMgFoQhUyzZQ">
+  <meta name="baidu-site-verification" content="code-YeeuLMqwzd">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.lug.ustc.edu.cn/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jifuwei.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="引言本文记录一次线上 GC 问题的排查过程与思路，希望对各位读者有所帮助。过程中也走了一些弯路，现在有时间沉淀下来思考并总结出来分享给大家，希望对大家今后排查线上 GC 问题有帮助。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次线上FGC问题排查">
+<meta property="og:url" content="https://jifuwei.github.io/yuque/%E8%AE%B0%E4%B8%80%E6%AC%A1%E7%BA%BF%E4%B8%8AFGC%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5.html">
+<meta property="og:site_name" content="是咕咕鸡">
+<meta property="og:description" content="引言本文记录一次线上 GC 问题的排查过程与思路，希望对各位读者有所帮助。过程中也走了一些弯路，现在有时间沉淀下来思考并总结出来分享给大家，希望对大家今后排查线上 GC 问题有帮助。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FrLZ_Ib8MG2hOQY0pvW9QZQd7_s-.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FnLwEtI7YpUu6xvBmbriGrAc2n8m.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FhQKNZYrWvE4bTkyuMAb50EWKhv3.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvSkK08Fw79POjFzweSXPUjJ4M1P.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FqanlKPrRflJPTp_S_IMn-wEIH1m.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FjweSAXVc4AKYmHLZH1m5HegHl30.png">
+<meta property="article:published_time" content="2023-01-31T02:55:02.000Z">
+<meta property="article:modified_time" content="2023-01-31T08:49:57.113Z">
+<meta property="article:author" content="是咕咕鸡">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FrLZ_Ib8MG2hOQY0pvW9QZQd7_s-.png">
+
+<link rel="canonical" href="https://jifuwei.github.io/yuque/%E8%AE%B0%E4%B8%80%E6%AC%A1%E7%BA%BF%E4%B8%8AFGC%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>记一次线上FGC问题排查 | 是咕咕鸡</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1575500ddb979a8e4e895121cbd848cb";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">是咕咕鸡</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">希望我分享的文章能够给每一位读者带来帮助！</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jifuwei.github.io/yuque/%E8%AE%B0%E4%B8%80%E6%AC%A1%E7%BA%BF%E4%B8%8AFGC%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="是咕咕鸡">
+      <meta itemprop="description" content="过刚易折，善柔不败">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="是咕咕鸡">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          记一次线上FGC问题排查
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2023-01-31 10:55:02 / 修改时间：16:49:57" itemprop="dateCreated datePublished" datetime="2023-01-31T10:55:02+08:00">2023-01-31</time>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>本文记录一次线上 GC 问题的排查过程与思路，希望对各位读者有所帮助。过程中也走了一些弯路，现在有时间沉淀下来思考并总结出来分享给大家，希望对大家今后排查线上 GC 问题有帮助。</p>
+<span id="more"></span>
+
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>服务新功能发版一周后下午，突然收到 CMS GC 告警，导致单台节点被拉出，随后集群内每个节点先后都发生了一次 CMS GC，拉出后的节点垃圾回收后接入流量恢复正常（事后排查发现被重启了）。</p>
+<p>告警信息如下（已脱敏）：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FrLZ_Ib8MG2hOQY0pvW9QZQd7_s-.png"></p>
+<p>多个节点几乎同时发生 GC 问题，且排查自然流量监控后发现并未有明显增高，基本可以确定是有 GC 问题的，需要解决。</p>
+<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><h3 id="GC-日志排查"><a href="#GC-日志排查" class="headerlink" title="GC 日志排查"></a>GC 日志排查</h3><p>GC 问题首先排查的应该是 GC 日志，日志能能够清晰的判定发生 GC 的那一刻是什么导致的 GC，通过分析 GC 日志，能够清晰的得出 GC 哪一部分在出问题，如下是 GC 日志示例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0.514</span>: [GC (Allocation Failure) [PSYoungGen: 4445K-&gt;1386K(28672K)] 168285K-&gt;165234K(200704K), <span class="number">0.0036830</span> secs] [Times: user=<span class="number">0.00</span> sys=<span class="number">0.00</span>, real=<span class="number">0.00</span> secs]</span><br><span class="line"><span class="number">0.518</span>: [Full <span class="title function_">GC</span> <span class="params">(Ergonomics)</span> [PSYoungGen: 1386K-&gt;0K(28672K)] [ParOldGen: 163848K-&gt;165101K(172032K)] 165234K-&gt;165101K(200704K), [Metaspace: 3509K-&gt;3509K(1056768K)], <span class="number">0.0103061</span> secs] [Times: user=<span class="number">0.05</span> sys=<span class="number">0.00</span>, real=<span class="number">0.01</span> secs]</span><br><span class="line"><span class="number">0.528</span>: [GC (Allocation Failure) [PSYoungGen: 0K-&gt;0K(28672K)] 165101K-&gt;165101K(200704K), <span class="number">0.0019968</span> secs] [Times: user=<span class="number">0.00</span> sys=<span class="number">0.00</span>, real=<span class="number">0.00</span> secs]</span><br><span class="line"><span class="number">0.530</span>: [Full <span class="title function_">GC</span> <span class="params">(Allocation Failure)</span> [PSYoungGen: 0K-&gt;0K(28672K)] [ParOldGen: 165101K-&gt;165082K(172032K)] 165101K-&gt;165082K(200704K), [Metaspace: 3509K-&gt;3509K(1056768K)], <span class="number">0.0108352</span> secs] [Times: user=<span class="number">0.03</span> sys=<span class="number">0.00</span>, real=<span class="number">0.01</span> secs]</span><br></pre></td></tr></table></figure>
+
+<p>如上 GC 日志能很明显发现导致 Full GC 的问题是：Full GC 之后，新生代内存没有变化，老年代内存使用从 165101K 降低到 165082K （几乎没有变化）。这个程序最后内存溢出了，因为没有可用的堆内存创建 70m 的大对象。</p>
+<p>但是，生产环境总是有奇奇怪怪的问题，由于服务部署在 K8s 容器，且运维有对服务心跳检测，当程序触发 Full GC 时，整个系统 Stop World，连续多次心跳检测失败，则判定为当前节点可能出故障（硬件、网络、BUG 等等问题），则直接拉出当前节点，并立即重建，此时之前打印的 GC 日志都是在当前容器卷内，一旦重建，所有日志全部丢失，也就无法通过 GC 日志排查问题了。</p>
+<h3 id="JVM-监控埋点排查"><a href="#JVM-监控埋点排查" class="headerlink" title="JVM 监控埋点排查"></a>JVM 监控埋点排查</h3><p>上述 GC 日志丢失问题基本无解，发生 GC 则立即重建，除非人为干预，否则很难拿到当时的 GC 日志，且很难预知下次发生 GC 问题时间（如果能上报 GC 日子就不会有这样的问题，事后发现有，但是我没找到。。）。</p>
+<p>此时，另一种办法就是通过 JVM 埋点监控来排查问题。企业应用都会配备完备的 JVM 监控看板，就是为了能清晰明了的看到“<strong>事故现场</strong>”，通过监控，可以清楚的看到 JVM 内部在时间线上是如何分配内存及回收内存的。</p>
+<p>JVM 监控用于监控重要的 JVM 指标，包括堆内存、非堆内存、直接缓冲区、内存映射缓冲区、GC 累计信息、线程数等。</p>
+<p>主要关注的核心指标如下：</p>
+<ul>
+<li>GC（垃圾收集）瞬时和累计详情<ul>
+<li>FullGC 次数</li>
+<li>YoungGC 次数</li>
+<li>FullGC 耗时</li>
+<li>YoungGC 耗时</li>
+</ul>
+</li>
+<li>堆内存详情<ul>
+<li>堆内存总和</li>
+<li>堆内存老年代字节数</li>
+<li>堆内存年轻代 Survivor 区字节数</li>
+<li>堆内存年轻代 Eden 区字节数</li>
+<li>已提交内存字节数</li>
+</ul>
+</li>
+<li>元空间元空间字节数</li>
+<li>非堆内存<ul>
+<li>非堆内存提交字节数</li>
+<li>非堆内存初始字节数</li>
+<li>非堆内存最大字节数</li>
+</ul>
+</li>
+<li>直接缓冲区<ul>
+<li>DirectBuffer 总大小（字节）</li>
+<li>DirectBuffer 使用大小（字节）</li>
+</ul>
+</li>
+<li>JVM 线程数<ul>
+<li>线程总数量</li>
+<li>死锁线程数量</li>
+<li>新建线程数量</li>
+<li>阻塞线程数量</li>
+<li>可运行线程数量</li>
+<li>终结线程数量</li>
+<li>限时等待线程数量</li>
+<li>等待中线程数量</li>
+</ul>
+</li>
+</ul>
+<p>发生 GC 问题，重点关注的就是这几个指标，大致就能圈定 GC 问题了。</p>
+<h4 id="堆内存排查"><a href="#堆内存排查" class="headerlink" title="堆内存排查"></a>堆内存排查</h4><p>首先查看堆内存，确认是否有<strong>内存溢出</strong>（指无法申请足够的内存导致），对内监控如下：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FnLwEtI7YpUu6xvBmbriGrAc2n8m.png"><br>可以看到发生 Full GC 后，堆内存明显降低了很多，但是在未发生大量 Full GC 后也有内存回收到和全量 GC 同等位置，所以可以断定堆内存是可以正常回收的，不是导致大量 Full GC 的元凶。</p>
+<h4 id="非堆内存排查"><a href="#非堆内存排查" class="headerlink" title="非堆内存排查"></a>非堆内存排查</h4><p>非堆内存指 Metaspace 区域，监控埋点如下：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FhQKNZYrWvE4bTkyuMAb50EWKhv3.png"></p>
+<p>可以看到发生告警后，非堆内存瞬间回收很多（因为服务器被健康检查判定失效后重建，相当于重新启动，JVM 重新初始化），此处如果有 GC 排查经验的人一定能立即笃定，metaspace 是有问题的。</p>
+<p>Metaspace 是用来干嘛的？JDK8 的到来，JVM 不再有 PermGen（永久代），但类的元数据信息（metadata）还在，只不过不再是存储在连续的堆空间上，而是移动到叫做 “Metaspace” 的本地内存（Native memory）中。</p>
+<p>那么何时会加载类信息呢？</p>
+<ul>
+<li>程序运行时：当运行 Java 程序时，该程序所需的类和方法。</li>
+<li>类被引用时：当程序首次引用某个类时，加载该类。</li>
+<li>反射：当使用反射 API 访问某个类时，加载该类。</li>
+<li>动态代理：当使用动态代理创建代理对象时，加载该对象所需的类。</li>
+</ul>
+<p>由上得出结论，如果一个服务内没有大量的反射或者动态代理等类加载需求时，讲道理，程序启动后，类的加载数量应该是波动很小的（不排除一些异常堆栈反射时也会加载类导致增加），但是如上监控显示，GC 后，metaspace 的内存使用量一直缓步增长，即程序内不停地制造“类”。</p>
+<p>查看 JVM 加载类监控如下：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvSkK08Fw79POjFzweSXPUjJ4M1P.png"></p>
+<p>由上监控，确实是加载了大量的类，数量趋势和非堆使用量趋势吻合。</p>
+<p>查看当前 JVM 设置的非堆内存大小如下：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FqanlKPrRflJPTp_S_IMn-wEIH1m.png"></p>
+<p>MetaspaceSize &amp; MaxMetaspaceSize &#x3D; 1024 M，由上面非堆内存使用监控得出，使用量已接近 1000 M，无法在分配足够的内存来加载类，最终导致发生 Full GC 问题。</p>
+<h3 id="程序代码排查"><a href="#程序代码排查" class="headerlink" title="程序代码排查"></a>程序代码排查</h3><p>由上面排查得出的结论：<strong>程序内在大量的创建类导致非堆内存被打爆</strong>。结合当前服务内存在大量使用 Groovy 动态脚本功能，大概率应该是创建脚本出了问题，脚本创建动态类代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> GroovyObject <span class="title function_">buildGroovyObject</span><span class="params">(String script)</span> &#123;</span><br><span class="line">    <span class="type">GroovyClassLoader</span> <span class="variable">classLoader</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">GroovyClassLoader</span>();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Class&lt;?&gt; groovyClass = classLoader.parseClass(script);</span><br><span class="line">        <span class="type">GroovyObject</span> <span class="variable">groovyObject</span> <span class="operator">=</span> (GroovyObject) groovyClass.newInstance();</span><br><span class="line">        classLoader.clearCache();</span><br><span class="line"></span><br><span class="line">        log.info(<span class="string">&quot;groovy buildScript success: &#123;&#125;&quot;</span>, groovyObject);</span><br><span class="line">        <span class="keyword">return</span> groovyObject;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;buildScript error&quot;</span>, e);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            classLoader.close();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            log.error(<span class="string">&quot;close GroovyClassLoader error&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>线上打开日志，确实证明了在不停的创建类。</p>
+<p>脚本创建类导致堆内存被打爆，之间也是踩过坑的，针对同一个脚本（MD5 值相同），则会直接拿缓存，不会重复创建类，缓存 check 逻辑如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> GroovyObject <span class="title function_">buildScript</span><span class="params">(String scriptId, String script)</span> &#123;</span><br><span class="line">    Validate.notEmpty(scriptId, <span class="string">&quot;scriptId is empty&quot;</span>);</span><br><span class="line">    Validate.notEmpty(scriptId, <span class="string">&quot;script is empty&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 尝试缓存获取</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">currScriptMD5</span> <span class="operator">=</span> DigestUtils.md5DigestAsHex(script.getBytes());</span><br><span class="line">    <span class="keyword">if</span> (GROOVY_OBJECT_CACHE_MAP.containsKey(scriptId)</span><br><span class="line">            &amp;&amp; currScriptMD5.equals(GROOVY_OBJECT_CACHE_MAP.get(scriptId).getScriptMD5())) &#123;</span><br><span class="line">        log.info(<span class="string">&quot;groovyObjectCache hit, scriptId: &#123;&#125;&quot;</span>, scriptId);</span><br><span class="line">        <span class="keyword">return</span> GROOVY_OBJECT_CACHE_MAP.get(scriptId).getGroovyObject();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="type">GroovyObject</span> <span class="variable">groovyObject</span> <span class="operator">=</span> buildGroovyObject(script);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 塞入缓存</span></span><br><span class="line">        GROOVY_OBJECT_CACHE_MAP.put(scriptId, GroovyCacheData.builder()</span><br><span class="line">                .scriptMD5(currScriptMD5)</span><br><span class="line">                .groovyObject(groovyObject)</span><br><span class="line">                .build());</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(String.format(<span class="string">&quot;scriptId: %s buildGroovyObject error&quot;</span>, scriptId), e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> GROOVY_OBJECT_CACHE_MAP.get(scriptId).getGroovyObject();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此处代码逻辑在之前的测试中都是反复验证过的，不会存在问题，即只有缓存 Key 出问题导致了类的重复加载。结合最近修改上线的逻辑，排查后发现，<strong>scriptId 存在重复的可能，导致不同脚本，相同 scriptId 不停重复加载</strong>（加载的频次 10 分钟更新一次，所以非堆使用缓慢上升）。</p>
+<p><strong>此处埋了一个小坑</strong>：加载的类使用 Map 存储的，即同一个 cacheKey 调用 Map.put() 方法，重复加载的类会被后面加载的类给替换掉，即之前加载的类已经不在被 Map 所“持有”，会被垃圾回收器回收掉，按理来说 Metaspace 不应该一直增长下去！？</p>
+<p>提示：<strong>类加载与 Groovy 类加载、Metaspace 何时会被回收。</strong></p>
+<p>由于篇幅原因，本文就不在此处细究原因了，感兴趣的朋友自行 Google 或者关注一下我，后续我再专门开一章详解下原因。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>知其然知其所以然。</p>
+<p>想要系统性地掌握 GC 问题处理方法，还是得了解 GC 的基础：基础概念、内存划分、分配对象、收集对象、收集器等。掌握常用的分析 GC 问题的工具，如 <a target="_blank" rel="noopener" href="https://gceasy.io/">gceasy.io</a> 在线 GC 日志分析工具，此处笔者参照了美团技术团队文章 <a target="_blank" rel="noopener" href="https://tech.meituan.com/2020/11/12/java-9-cms-gc.html">Java 中 9 种常见的 CMS GC 问题分析与解决</a> 收益匪浅，推荐大家阅读。</p>
+<h2 id="往期精彩"><a href="#往期精彩" class="headerlink" title="往期精彩"></a>往期精彩</h2><ul>
+<li><a href="https://jifuwei.github.io/yuque/%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E2%80%94%E2%80%94%E5%B0%8F%E5%B0%8F%E7%9A%84log%E5%A4%A7%E5%A4%A7%E7%9A%84%E5%9D%91.html">性能调优——小小的 log 大大的坑</a></li>
+<li><a href="https://jifuwei.github.io/yuque/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%BF%85%E5%A4%87%E2%80%94%E2%80%94%E7%81%AB%E7%84%B0%E5%9B%BE.html">性能优化必备——火焰图</a></li>
+<li><a href="https://jifuwei.github.io/yuque/Flink%20%E5%9C%A8%E9%A3%8E%E6%8E%A7%E5%9C%BA%E6%99%AF%E5%AE%9E%E6%97%B6%E7%89%B9%E5%BE%81%E8%90%BD%E5%9C%B0%E5%AE%9E%E6%88%98.html">Flink 在风控场景实时特征落地实战</a></li>
+</ul>
+<blockquote>
+<p>欢迎关注公众号：咕咕鸡技术专栏<br>个人技术博客：<a href="https://jifuwei.github.io/">https://jifuwei.github.io/</a> &gt; <img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FjweSAXVc4AKYmHLZH1m5HegHl30.png"></p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>原创技术分享，您的支持鼓励是我继续创作的动力！</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechat.jpg" alt="是咕咕鸡 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.png" alt="是咕咕鸡 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/wechat_channel.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/yuque/%E9%A3%8E%E6%8E%A7%E6%A0%B8%E5%BF%83%E5%AD%90%E5%9F%9F%E2%80%94%E2%80%94%E5%90%8D%E5%8D%95%E6%9C%8D%E5%8A%A1%E6%9E%84%E5%BB%BA%E5%8F%8A%E6%8C%91%E6%88%98.html" rel="prev" title="风控核心子域——名单服务构建及挑战">
+      <i class="fa fa-chevron-left"></i> 风控核心子域——名单服务构建及挑战
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%92%E6%9F%A5%E8%BF%87%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">排查过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#GC-%E6%97%A5%E5%BF%97%E6%8E%92%E6%9F%A5"><span class="nav-number">3.1.</span> <span class="nav-text">GC 日志排查</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JVM-%E7%9B%91%E6%8E%A7%E5%9F%8B%E7%82%B9%E6%8E%92%E6%9F%A5"><span class="nav-number">3.2.</span> <span class="nav-text">JVM 监控埋点排查</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A0%86%E5%86%85%E5%AD%98%E6%8E%92%E6%9F%A5"><span class="nav-number">3.2.1.</span> <span class="nav-text">堆内存排查</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9D%9E%E5%A0%86%E5%86%85%E5%AD%98%E6%8E%92%E6%9F%A5"><span class="nav-number">3.2.2.</span> <span class="nav-text">非堆内存排查</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E4%BB%A3%E7%A0%81%E6%8E%92%E6%9F%A5"><span class="nav-number">3.3.</span> <span class="nav-text">程序代码排查</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%80%E6%9C%9F%E7%B2%BE%E5%BD%A9"><span class="nav-number">5.</span> <span class="nav-text">往期精彩</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="是咕咕鸡"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">是咕咕鸡</p>
+  <div class="site-description" itemprop="description">过刚易折，善柔不败</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/jifuwei" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;jifuwei" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+     
+      <div class="wechat_channel">
+        <br>
+        <!-- 公众号二维码引导 -->
+        <img src ="/images/wechat_channel.png">
+        <!-- <span>公众号</span> -->
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2022 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">是咕咕鸡</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">80k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">1:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
