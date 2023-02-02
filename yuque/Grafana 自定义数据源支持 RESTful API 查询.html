@@ -252,7 +252,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>数据爆炸的时代，信息化步伐越来越快，接入互联网的服务越来越多。随着业务迭代变更越来越复杂化，需求&#x2F;产品者对系统的要求越来越高，对业务走势及健康状态需要更直观的感知。这意味着我们需要随时能够“看见”系统的状态，对系统&#x2F;业务的实时监控以及可视化是技术演进的必然。</p>
+        <div id="vip-container"><h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>数据爆炸的时代，信息化步伐越来越快，接入互联网的服务越来越多。随着业务迭代变更越来越复杂化，需求&#x2F;产品者对系统的要求越来越高，对业务走势及健康状态需要更直观的感知。这意味着我们需要随时能够“看见”系统的状态，对系统&#x2F;业务的实时监控以及可视化是技术演进的必然。</p>
 <span id="more"></span>
 
 <h4 id="Grafana-是什么？"><a href="#Grafana-是什么？" class="headerlink" title="Grafana 是什么？"></a>Grafana 是什么？</h4><p>Grafana 是一个可视化面板（Dashboard），有着非常漂亮的图表和布局展示，功能齐全的度量仪表盘和图形编辑器。支持 Graphite、zabbix、InfluxDB、Prometheus 和 OpenTSDB 作为数据源。</p>
@@ -318,7 +318,23 @@
 <blockquote>
 <p>欢迎关注公众号：咕咕鸡技术专栏<br>个人技术博客：<a href="https://jifuwei.github.io/">https://jifuwei.github.io/</a> &gt; <img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FjweSAXVc4AKYmHLZH1m5HegHl30.png"></p>
 </blockquote>
+</div>
 
+			<script src="https://my.openwrite.cn/js/readmore.js" type="text/javascript"></script>
+			<script>
+			var isMobile = navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i);
+			if (!isMobile) {
+			    var btw = new BTWPlugin();
+			    btw.init({
+			        "id": "vip-container",
+			        "blogId": "31077-1675308002228-922",
+			        "name": "咕咕鸡技术专栏",
+			        "qrcode": "https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/qrcode_for_guguji_it.jpg",
+			        "keyword": "blog"
+			    });
+			}
+			</script>
+		
     </div>
 
     
@@ -437,7 +453,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Grafana-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.1.</span> <span class="nav-text">Grafana 是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8C%91%E6%88%98"><span class="nav-number">1.2.</span> <span class="nav-text">挑战</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%86%9F%E6%82%89-Grafana"><span class="nav-number">2.</span> <span class="nav-text">熟悉 Grafana</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">2.1.</span> <span class="nav-text"></span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"><span class="nav-number">2.2.</span> <span class="nav-text">环境搭建</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%86%E6%88%90-Elasticsearch"><span class="nav-number">2.3.</span> <span class="nav-text">集成 Elasticsearch</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Grafana-%E8%87%AA%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E6%BA%90"><span class="nav-number">3.</span> <span class="nav-text">Grafana 自定义数据源</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#RESTful-API-%E6%95%B0%E6%8D%AE%E6%BA%90%E6%8F%92%E4%BB%B6"><span class="nav-number">3.1.</span> <span class="nav-text">RESTful API 数据源插件</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Grafana-%E5%9B%BE%E8%A1%A8%E6%95%B0%E6%8D%AE%E7%BE%8E%E5%8C%96"><span class="nav-number">4.</span> <span class="nav-text">Grafana 图表数据美化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Table-%E5%B1%95%E7%A4%BA"><span class="nav-number">4.1.</span> <span class="nav-text">Table 展示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Points-Or-Line-%E5%B1%95%E7%A4%BA"><span class="nav-number">4.2.</span> <span class="nav-text">Points Or Line 展示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B7%A6%E5%8F%B3-Y-%E8%BD%B4%E5%B9%B6%E5%88%97%E5%B1%95%E7%A4%BA"><span class="nav-number">4.3.</span> <span class="nav-text">左右 Y 轴并列展示</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Grafana-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.1.</span> <span class="nav-text">Grafana 是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8C%91%E6%88%98"><span class="nav-number">1.2.</span> <span class="nav-text">挑战</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%86%9F%E6%82%89-Grafana"><span class="nav-number">2.</span> <span class="nav-text">熟悉 Grafana</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#vip-container"><span class="nav-number">2.1.</span> <span class="nav-text"></span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"><span class="nav-number">2.2.</span> <span class="nav-text">环境搭建</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%86%E6%88%90-Elasticsearch"><span class="nav-number">2.3.</span> <span class="nav-text">集成 Elasticsearch</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Grafana-%E8%87%AA%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E6%BA%90"><span class="nav-number">3.</span> <span class="nav-text">Grafana 自定义数据源</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#RESTful-API-%E6%95%B0%E6%8D%AE%E6%BA%90%E6%8F%92%E4%BB%B6"><span class="nav-number">3.1.</span> <span class="nav-text">RESTful API 数据源插件</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Grafana-%E5%9B%BE%E8%A1%A8%E6%95%B0%E6%8D%AE%E7%BE%8E%E5%8C%96"><span class="nav-number">4.</span> <span class="nav-text">Grafana 图表数据美化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Table-%E5%B1%95%E7%A4%BA"><span class="nav-number">4.1.</span> <span class="nav-text">Table 展示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Points-Or-Line-%E5%B1%95%E7%A4%BA"><span class="nav-number">4.2.</span> <span class="nav-text">Points Or Line 展示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B7%A6%E5%8F%B3-Y-%E8%BD%B4%E5%B9%B6%E5%88%97%E5%B1%95%E7%A4%BA"><span class="nav-number">4.3.</span> <span class="nav-text">左右 Y 轴并列展示</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

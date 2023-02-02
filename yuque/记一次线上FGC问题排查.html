@@ -235,7 +235,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>本文记录一次线上 GC 问题的排查过程与思路，希望对各位读者有所帮助。过程中也走了一些弯路，现在有时间沉淀下来思考并总结出来分享给大家，希望对大家今后排查线上 GC 问题有帮助。</p>
+        <div id="vip-container"><h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>本文记录一次线上 GC 问题的排查过程与思路，希望对各位读者有所帮助。过程中也走了一些弯路，现在有时间沉淀下来思考并总结出来分享给大家，希望对大家今后排查线上 GC 问题有帮助。</p>
 <span id="more"></span>
 
 <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>服务新功能发版一周后下午，突然收到 CMS GC 告警，导致单台节点被拉出，随后集群内每个节点先后都发生了一次 CMS GC，拉出后的节点垃圾回收后接入流量恢复正常（事后排查发现被重启了）。</p>
@@ -328,7 +328,23 @@
 <blockquote>
 <p>欢迎关注公众号：咕咕鸡技术专栏<br>个人技术博客：<a href="https://jifuwei.github.io/">https://jifuwei.github.io/</a> &gt; <img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FjweSAXVc4AKYmHLZH1m5HegHl30.png"></p>
 </blockquote>
+</div>
 
+			<script src="https://my.openwrite.cn/js/readmore.js" type="text/javascript"></script>
+			<script>
+			var isMobile = navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i);
+			if (!isMobile) {
+			    var btw = new BTWPlugin();
+			    btw.init({
+			        "id": "vip-container",
+			        "blogId": "31077-1675308002228-922",
+			        "name": "咕咕鸡技术专栏",
+			        "qrcode": "https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/qrcode_for_guguji_it.jpg",
+			        "keyword": "blog"
+			    });
+			}
+			</script>
+		
     </div>
 
     
