@@ -23,24 +23,34 @@
     var CONFIG = {"hostname":"jifuwei.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="引言名单服务是风控架构中重要子域，对风险决策的性能、用户体验、成本管控、风险治理沉淀都有重要影响，本文将详细介绍名单服务设计思路和实现。">
+  <meta name="description" content="引言ChatGPT 最近非常火，引发各界关注。吸引了几亿人在使用。报道中充斥了各种言论：“学生用 ChatGPT 写作业”、“上线两个月活跃用户破亿”、“以后很多文案工作者要被 ChatGPT 取代了！”等等。究竟什么是 ChatGPT？用途有哪些？它与之前的人工智能有什么区别？真的能改变你的搜索方式么？本文带你认识当红炸子鸡 ChatGPT！">
 <meta property="og:type" content="article">
-<meta property="og:title" content="风控核心子域——名单服务构建及挑战">
-<meta property="og:url" content="https://jifuwei.github.io/yuque/%E9%A3%8E%E6%8E%A7%E6%A0%B8%E5%BF%83%E5%AD%90%E5%9F%9F%E2%80%94%E2%80%94%E5%90%8D%E5%8D%95%E6%9C%8D%E5%8A%A1%E6%9E%84%E5%BB%BA%E5%8F%8A%E6%8C%91%E6%88%98.html">
+<meta property="og:title" content="火爆全球的ChatGPT是什么？">
+<meta property="og:url" content="https://jifuwei.github.io/yuque/%E7%81%AB%E7%88%86%E5%85%A8%E7%90%83%E7%9A%84ChatGPT%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F.html">
 <meta property="og:site_name" content="是咕咕鸡">
-<meta property="og:description" content="引言名单服务是风控架构中重要子域，对风险决策的性能、用户体验、成本管控、风险治理沉淀都有重要影响，本文将详细介绍名单服务设计思路和实现。">
+<meta property="og:description" content="引言ChatGPT 最近非常火，引发各界关注。吸引了几亿人在使用。报道中充斥了各种言论：“学生用 ChatGPT 写作业”、“上线两个月活跃用户破亿”、“以后很多文案工作者要被 ChatGPT 取代了！”等等。究竟什么是 ChatGPT？用途有哪些？它与之前的人工智能有什么区别？真的能改变你的搜索方式么？本文带你认识当红炸子鸡 ChatGPT！">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvDw0ODkNOQj5GPv5id4w7Az4rEd.png">
-<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FujxIJvlg6u1p1xvlP2jxaUjsRWw.png">
-<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Flz4E0YPEe8sXPeGS-GP5KhfRKzZ.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsXFZ75i6LTK70uAeYJhqpfEh7M8.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvlaUbh6LJRQlo3Umi8cohSKw3ad.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FiNz26Ia4mKn9BrkTiYVxQWX-Stj.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FuI88Vy5EKHsjEfMRNvz2lVUhoX5.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FrxMt_ljMmQioVaON1jN-PNdSg9J.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fih_rLFw4YtJzwMf0TO7bsoca5kB.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FgB8Cfa0UPLAY2Mfj-F1qPzCLsmt.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FpNf8nYCQmLF0gnKBsk1rivl1Cjk.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fk35PQpyarwTATqOnFI_GLUy0gIU.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FoFvrkKP0Pc6m9Te46ofq6i0MN0H.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fi2cY7nuNGBjYYg-YFDFMf5VyNYm.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsSQ9tublTWmcwpaqzptTD9nyItK.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fki51WOwxMtM6MPM00mG2yGryIWI.png">
 <meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FjweSAXVc4AKYmHLZH1m5HegHl30.png">
-<meta property="article:published_time" content="2023-01-13T03:39:48.000Z">
-<meta property="article:modified_time" content="2023-01-14T08:45:04.564Z">
+<meta property="article:published_time" content="2023-02-17T07:45:16.000Z">
+<meta property="article:modified_time" content="2023-02-17T09:46:07.076Z">
 <meta property="article:author" content="是咕咕鸡">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvDw0ODkNOQj5GPv5id4w7Az4rEd.png">
+<meta name="twitter:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsXFZ75i6LTK70uAeYJhqpfEh7M8.png">
 
-<link rel="canonical" href="https://jifuwei.github.io/yuque/%E9%A3%8E%E6%8E%A7%E6%A0%B8%E5%BF%83%E5%AD%90%E5%9F%9F%E2%80%94%E2%80%94%E5%90%8D%E5%8D%95%E6%9C%8D%E5%8A%A1%E6%9E%84%E5%BB%BA%E5%8F%8A%E6%8C%91%E6%88%98.html">
+<link rel="canonical" href="https://jifuwei.github.io/yuque/%E7%81%AB%E7%88%86%E5%85%A8%E7%90%83%E7%9A%84ChatGPT%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F.html">
 
 
 <script id="page-configurations">
@@ -53,7 +63,7 @@
   };
 </script>
 
-  <title>风控核心子域——名单服务构建及挑战 | 是咕咕鸡</title>
+  <title>火爆全球的ChatGPT是什么？ | 是咕咕鸡</title>
   
 
 
@@ -174,7 +184,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://jifuwei.github.io/yuque/%E9%A3%8E%E6%8E%A7%E6%A0%B8%E5%BF%83%E5%AD%90%E5%9F%9F%E2%80%94%E2%80%94%E5%90%8D%E5%8D%95%E6%9C%8D%E5%8A%A1%E6%9E%84%E5%BB%BA%E5%8F%8A%E6%8C%91%E6%88%98.html">
+    <link itemprop="mainEntityOfPage" href="https://jifuwei.github.io/yuque/%E7%81%AB%E7%88%86%E5%85%A8%E7%90%83%E7%9A%84ChatGPT%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.png">
@@ -187,7 +197,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          风控核心子域——名单服务构建及挑战
+          火爆全球的ChatGPT是什么？
         </h1>
 
         <div class="post-meta">
@@ -196,16 +206,10 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2023-01-13 11:39:48" itemprop="dateCreated datePublished" datetime="2023-01-13T11:39:48+08:00">2023-01-13</time>
+              <time title="创建时间：2023-02-17 15:45:16 / 修改时间：17:46:07" itemprop="dateCreated datePublished" datetime="2023-02-17T15:45:16+08:00">2023-02-17</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-01-14 16:45:04" itemprop="dateModified" datetime="2023-01-14T16:45:04+08:00">2023-01-14</time>
-              </span>
 
           
             <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
@@ -220,7 +224,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.1k</span>
+              <span>1.7k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -239,62 +243,43 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <div id="vip-container"><h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>名单服务是风控架构中重要子域，对风险决策的性能、用户体验、成本管控、风险治理沉淀都有重要影响，本文将详细介绍名单服务设计思路和实现。</p>
+        <div id="vip-container"><h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>ChatGPT 最近非常火，引发各界关注。吸引了几亿人在使用。报道中充斥了各种言论：“学生用 ChatGPT 写作业”、“上线两个月活跃用户破亿”、“以后很多文案工作者要被 ChatGPT 取代了！”等等。究竟什么是 ChatGPT？用途有哪些？它与之前的人工智能有什么区别？真的能改变你的搜索方式么？本文带你认识当红炸子鸡 ChatGPT！</p>
 <span id="more"></span>
 
-<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><h3 id="什么是名单？"><a href="#什么是名单？" class="headerlink" title="什么是名单？"></a>什么是名单？</h3><p>名单服务通常有几个部分组成：</p>
-<p><strong>风险类型</strong></p>
+<h2 id="ChatGPT-是什么？"><a href="#ChatGPT-是什么？" class="headerlink" title="ChatGPT 是什么？"></a>ChatGPT 是什么？</h2><p>ChatGPT（全名：Chat Generative Pre-trained Transformer）是由 OpenAI 开发的一个人工智能聊天机器人程序，于 2022 年 11 月推出。该程序使用基于 GPT-3.5 架构的大型语言模型并通过强化学习进行训练。</p>
+<p>ChatGPT 目前仍以文字方式互动，而除了可以透过人类自然对话方式进行交互，还可以用于相对复杂的语言工作，包括自动文本生成、自动问答、自动摘要等在内的多种任务。如：在自动文本生成方面，ChatGPT 可以根据输入的文本自动生成类似的文本（剧本、歌曲、企划等），在自动问答方面，ChatGPT 可以根据输入的问题自动生成答案。还具有编写和调试计算机程序的能力。在推广期间，所有人可以免费注册，并在登入后免费使用 ChatGPT 实现与 AI 机器人对话[1]。</p>
+<h2 id="ChatGPT-能干嘛？"><a href="#ChatGPT-能干嘛？" class="headerlink" title="ChatGPT 能干嘛？"></a>ChatGPT 能干嘛？</h2><p>先上一个小例子，近距离感受下 ChatGPT 的强大：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsXFZ75i6LTK70uAeYJhqpfEh7M8.png"></p>
+<p>ChatGPT 可以当做搜索引擎使用，它有强大的文本处理功能，以下列举出一些常用的功能：</p>
 <ul>
-<li><strong>黑名单</strong>：绝对会被拒绝的用户。大部分是历史数据清洗出来作弊或者破坏业务的用户，这部分用户对企业无价值且放之进入会破坏生态平衡</li>
-<li><strong>灰名单</strong>：灰名单上的客户需要进一步审核。这部分用户可能存在某些风险，但是没有明确的证据表明他们是“黑”的</li>
-<li><strong>白名单</strong>：这部分客户是正常用户，是企业数分人员基于历史表现清洗出来的合规高价值用户，可以直接放行</li>
+<li>故事创作：输入角色、背景等相关信息，即可创建故事</li>
+<li>编程：找 Bug、解释代码、代码语言翻译等等</li>
+<li>翻译：文本可按照要求翻译成任何语言</li>
+<li>修改语法错误：输入一段文字，可以修正语法和错别字等</li>
+<li>写诗、写歌：提供背景资料即可创作</li>
+<li>文本增强：整理、归纳、增强即可</li>
 </ul>
-<p><strong>名单维度</strong></p>
+<h2 id="ChatGPT-为何爆红？"><a href="#ChatGPT-为何爆红？" class="headerlink" title="ChatGPT 为何爆红？"></a>ChatGPT 为何爆红？</h2><p>ChatGPT 可能会颠覆很多行业！尤其是文字和教育工作者，他们从事的工作在未来很大可能会被 AI 所代替。</p>
+<p>笔者认为 <strong>ChatGPT 颠覆了传统的人机交互方式</strong>。拿搜索引擎来说，你在搜索框中填入关键字，搜索引擎是加权返回关键字包含的网页，就类似与一个字典，按照索引检索找到特定的内容。然而 ChatGPT 完全不同，其背后的 GTP-3.5 自然语言处理模型（大模型），使得机器在经过数以亿计的知识训练后，形成知识神经网络，能够模拟“自然人”的方式回答你的提问。相当于 ChatGPT 学会了这本字典的所有文本，并学习了自然语言，不仅能帮你找到内容，甚至能给你推荐，或者颠覆你的想法。</p>
+<p>笔者认为 ChatGPT 为何如此火的原因如下：</p>
 <ul>
-<li><strong>主键</strong>：手机号、用户 ID、身份证号、IP、设备标识、wifi MAC 地址等等</li>
-<li><strong>业务域</strong>：全域、业务子域、细分领域等等，这边需要字典服务来枚举出需要管控的粒度和场景</li>
+<li>颠覆了传统的人机交互方式，更智能、更高效，强大的功能使得用户形成依赖及传播效应</li>
+<li>资本助推：颠覆性的产品必然有颠覆性的变革，而变革的时间需要持续数年，各行各业都会或多或少的改变，资本逐利，自然有利可图。</li>
+<li>大模型的兴起：AI 智能生成图片等等大模型训练的兴起，ChatGPT 是能 AI 落地化的东西且落地的让人们真正觉得是人工智能，在推进人效、成本控制、产品效果等领域会有奇效，自然大公司竞争追逐。</li>
 </ul>
-<p><strong>时间维度</strong><br>名单是有一定的生效期的，不同的行为会导致锁定期不一样，生效时间可以灵活设置</p>
-<h3 id="为什么需要名单服务？"><a href="#为什么需要名单服务？" class="headerlink" title="为什么需要名单服务？"></a>为什么需要名单服务？</h3><ul>
-<li><strong>最易构建的决策能力</strong>：风控前期的构建是比较依赖名单决策的，策略数分人员通过历史数据判定哪些是“坏用户”，直接将其存储到名单库中，后续请求直接在第一道名单决策中踢出，而不需要执行后续策略在判定一次。策略相对名单来说是非常“重”的，且名单服务构建简单便捷，省时省力。</li>
-<li><strong>性能考虑</strong>：名单判定一般是在决策流的第一道，试想，对企业服务来说，大部分用户其实都是正常的，如果每个用户的请求都过一遍策略，对成本是极大的浪费，同时对性能来说也是极大的挑战。此时名单服务通过白黑名单，将大部分用户直接决策出去，只对不明确的客户和有风险的客户来做决策，极大地减少了开销。</li>
-</ul>
-<h2 id="设计实现"><a href="#设计实现" class="headerlink" title="设计实现"></a>设计实现</h2><p>名单服务的特点如下：</p>
-<ul>
-<li><strong>名单数据来源</strong>：可以是实时产生、离线跑批生产、运营人员手动批量导入等等，形式多样</li>
-<li><strong>性能足够好</strong>：属于决策流入口必过服务之一，即最大流量冲击，需要经得起峰值压力，RT 要足够小</li>
-<li><strong>稳定性</strong>：高性能同时还需要高质量保证，如果名单服务出问题，后果不堪设想，流量全部流放到下游，可能会出现服务雪崩</li>
-<li><strong>质量保证</strong>：任何名单添加到名单库中都需要重视，随意的添加可能会给企业带来难以想象的损失，所以得有完备的审核记录及添加原因，最重要的是生效时间的设定</li>
-</ul>
-<p>整体名单服务的数据流图如下所示，重要节点会作明确说明：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvDw0ODkNOQj5GPv5id4w7Az4rEd.png"></p>
-<h3 id="实时链路名单查询设计"><a href="#实时链路名单查询设计" class="headerlink" title="实时链路名单查询设计"></a>实时链路名单查询设计</h3><p>考虑到名单有时效性及性能要求，且名单数据结构整体简单（多维度，单个维度存储内容小），选择 Redis 存储名单数据非常适合快速查询，数据结构如下：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FujxIJvlg6u1p1xvlP2jxaUjsRWw.png"><br>说明：</p>
-<ul>
-<li>采用 Redis Hash 结构存储数据</li>
-<li><strong>为何不用 TTL 来存储过期时间？</strong>：一是 <code>expire</code> 最大过期时间不能超过 <code>Integer.MAXVALUE</code> 不能满足长时间的过期诉求；二来 Redis 本身定位是缓存，不是永久存储，即数据是可丢失的，需要自己保证服务的高可用</li>
-</ul>
-<p>依赖于 Redis 集群良好的性能，基本能满足线上峰值高 QPS 查询需求，且 RT 能很好的控制在 10 ms 以内。如上所说就是要保障高稳定性需求，如何保障名单数据的高可用是首要问题。</p>
-<h3 id="高可用设计"><a href="#高可用设计" class="headerlink" title="高可用设计"></a>高可用设计</h3><p>Redis 本身定位是缓存，不能永久保存数据，且集群瘫痪或者数据部分缺失应对业务影响较小（能及时恢复的情况下，运维保障集群的可用性），如下是高可用数据设计架构：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Flz4E0YPEe8sXPeGS-GP5KhfRKzZ.png"><br>说明：</p>
-<ul>
-<li><strong>T+1 Job 保证数据稳定</strong>：每天离线任务全量覆盖，从关系数据库 PG&#x2F;MySQL 中抽数 push 到 Redis 中即可</li>
-<li><strong>Redis 集群出问题</strong>：不管是老集群重启还是更换到新集群，先用 RDB 恢复数据，保证线上可用，再立即执行离线任务做精确覆盖（T 日的数据丢失需要立即覆盖），考虑到读写同时进行可能会有问题，需要分集群切流</li>
-</ul>
-<p>同时需要关注<strong>多线程问题</strong>，同一个维度，在同一时间可能存在批量更新情况，尤其是离线任务恢复时，历史数据会存在对一个维度多次更新问题，不考虑多线程问题可能会导致数据被篡改。</p>
-<h3 id="数据安全审计"><a href="#数据安全审计" class="headerlink" title="数据安全审计"></a>数据安全审计</h3><p>名单库的风险点在于：<strong>随意地添加名单可能导致“坏用户”畅通无阻，“好用户”无法在进入业务流程</strong></p>
-<p>名单的生产来源及定性原因不明确，线上在排查问题时也只能干瞪眼，为了能回溯名单操作，需要做到如下几点：</p>
-<ul>
-<li><strong>写日志</strong>：任何写动作需要追加日志，且需要做持久换存储，方便做名单时序数据分析</li>
-<li><strong>黑名单 &amp; 白名单需要审计</strong>：尤其是线上单独添加这种，必须指明原因且要对操作负责</li>
-<li><strong>跑批任务审计</strong>：离线任务或者算法推数等需要控量，否则在迭代更新过程中出现 BUG 问题，导致名单数据猛增，后果不堪设想</li>
-</ul>
-<h3 id="异动监控"><a href="#异动监控" class="headerlink" title="异动监控"></a>异动监控</h3><p><strong>监控重中之重</strong>。</p>
-<p>能第一时间感知问题，监控的维度如下：</p>
-<ul>
-<li><strong>决策层面监控</strong>：灰、白、黑名单决策数量监控</li>
-<li><strong>元数据产出层面监控</strong>：任何名单猛增或猛跌都是需要去定性是否正常</li>
-<li><strong>拉黑踢白</strong>：没有永久犯错的人，也没有永久的好人，名单之间的流动也需要关注</li>
-</ul>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>名单服务在风控域中是最重要的子域之一，是风控流量的“网关”。名单库对整个风控决策的稳定性，性能提升起到决定性影响。</p>
-<p>同时名单服务也是“高危”的，如果使用不当，可能会给企业良好用户带来困扰，给那些“黑产”敞开门户，需要做好数据审核及异动监控。</p>
+<h2 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a>最佳实践</h2><p>官网提供了很多案例来提示 ChatGPT 的功能有多强大，笔者节选了一些比较有意思的功能出来，希望能对读者使用 ChatGPT 有所启发。</p>
+<h3 id="翻译"><a href="#翻译" class="headerlink" title="翻译"></a>翻译</h3><h4 id="自然语言翻译"><a href="#自然语言翻译" class="headerlink" title="自然语言翻译"></a>自然语言翻译</h4><p>可以任意选择 A 语言翻译成 B 语言，类似翻译软件的功能<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FvlaUbh6LJRQlo3Umi8cohSKw3ad.png"></p>
+<h4 id="编程语言翻译"><a href="#编程语言翻译" class="headerlink" title="编程语言翻译"></a>编程语言翻译</h4><p>任意翻译语言由 A 到 B<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FiNz26Ia4mKn9BrkTiYVxQWX-Stj.png"></p>
+<h4 id="SQL-语言翻译"><a href="#SQL-语言翻译" class="headerlink" title="SQL 语言翻译"></a>SQL 语言翻译</h4><p>自然语言能后生成 SQL 语句<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FuI88Vy5EKHsjEfMRNvz2lVUhoX5.png"></p>
+<h3 id="文本增强"><a href="#文本增强" class="headerlink" title="文本增强"></a>文本增强</h3><h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>总结一段文本，提炼其中的内容<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FrxMt_ljMmQioVaON1jN-PNdSg9J.png"></p>
+<h4 id="文本结构化输出"><a href="#文本结构化输出" class="headerlink" title="文本结构化输出"></a>文本结构化输出</h4><p>将文本内的数据结构化输出<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fih_rLFw4YtJzwMf0TO7bsoca5kB.png"></p>
+<h4 id="联想"><a href="#联想" class="headerlink" title="联想"></a>联想</h4><p>将文本按照提示联想得出结果<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FgB8Cfa0UPLAY2Mfj-F1qPzCLsmt.png"></p>
+<h4 id="关键字提取"><a href="#关键字提取" class="headerlink" title="关键字提取"></a>关键字提取</h4><p>提取文本内的关键字以供使用<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FpNf8nYCQmLF0gnKBsk1rivl1Cjk.png"></p>
+<h3 id="创作"><a href="#创作" class="headerlink" title="创作"></a>创作</h3><h4 id="写诗"><a href="#写诗" class="headerlink" title="写诗"></a>写诗</h4><p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fk35PQpyarwTATqOnFI_GLUy0gIU.png"></p>
+<h4 id="写故事"><a href="#写故事" class="headerlink" title="写故事"></a>写故事</h4><p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FoFvrkKP0Pc6m9Te46ofq6i0MN0H.png"></p>
+<h4 id="编程"><a href="#编程" class="headerlink" title="编程"></a>编程</h4><p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fi2cY7nuNGBjYYg-YFDFMf5VyNYm.png"></p>
+<h3 id="百科"><a href="#百科" class="headerlink" title="百科"></a>百科</h3><h4 id="提问"><a href="#提问" class="headerlink" title="提问"></a>提问</h4><p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsSQ9tublTWmcwpaqzptTD9nyItK.png"></p>
+<h4 id="食谱"><a href="#食谱" class="headerlink" title="食谱"></a>食谱</h4><p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fki51WOwxMtM6MPM00mG2yGryIWI.png"></p>
+<h2 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h2><p>ChatGPT 的强大毋庸置疑，同时也带给我了我们思考：AI 最终会取代人力么？这个只能由时间来检验了。但是可以肯定的是，它的确可以释放部分重复的劳动力以节约成本，全面普及这类 AI 还有很复杂的经济学问题、伦理问题等等。</p>
 <h2 id="往期精彩"><a href="#往期精彩" class="headerlink" title="往期精彩"></a>往期精彩</h2><ul>
 <li><a href="https://jifuwei.github.io/yuque/%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E2%80%94%E2%80%94%E5%B0%8F%E5%B0%8F%E7%9A%84log%E5%A4%A7%E5%A4%A7%E7%9A%84%E5%9D%91.html">性能调优——小小的 log 大大的坑</a></li>
 <li><a href="https://jifuwei.github.io/yuque/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%BF%85%E5%A4%87%E2%80%94%E2%80%94%E7%81%AB%E7%84%B0%E5%9B%BE.html">性能优化必备——火焰图</a></li>
@@ -303,7 +288,6 @@
 <blockquote>
 <p>欢迎关注公众号：咕咕鸡技术专栏<br>个人技术博客：<a href="https://jifuwei.github.io/">https://jifuwei.github.io/</a> &gt; <img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FjweSAXVc4AKYmHLZH1m5HegHl30.png"></p>
 </blockquote>
-<p>若有收获，就点个赞吧</p>
 </div>
 
 			<script src="https://my.openwrite.cn/js/readmore.js" type="text/javascript"></script>
@@ -374,13 +358,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/yuque/%E9%A3%8E%E6%8E%A7%E8%A7%84%E5%88%99%E5%BC%95%E6%93%8E%E6%9E%84%E5%BB%BA%E5%8F%8A%E6%8C%91%E6%88%98.html" rel="prev" title="风控规则引擎构建及挑战">
-      <i class="fa fa-chevron-left"></i> 风控规则引擎构建及挑战
+    <a href="/yuque/%E8%AE%B0%E4%B8%80%E6%AC%A1%E7%BA%BF%E4%B8%8AFGC%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5.html" rel="prev" title="记一次线上FGC问题排查">
+      <i class="fa fa-chevron-left"></i> 记一次线上FGC问题排查
     </a></div>
-      <div class="post-nav-item">
-    <a href="/yuque/%E8%AE%B0%E4%B8%80%E6%AC%A1%E7%BA%BF%E4%B8%8AFGC%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5.html" rel="next" title="记一次线上FGC问题排查">
-      记一次线上FGC问题排查 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -439,7 +420,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">背景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%90%8D%E5%8D%95%EF%BC%9F"><span class="nav-number">2.1.</span> <span class="nav-text">什么是名单？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%90%8D%E5%8D%95%E6%9C%8D%E5%8A%A1%EF%BC%9F"><span class="nav-number">2.2.</span> <span class="nav-text">为什么需要名单服务？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">设计实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E6%97%B6%E9%93%BE%E8%B7%AF%E5%90%8D%E5%8D%95%E6%9F%A5%E8%AF%A2%E8%AE%BE%E8%AE%A1"><span class="nav-number">3.1.</span> <span class="nav-text">实时链路名单查询设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8%E8%AE%BE%E8%AE%A1"><span class="nav-number">3.2.</span> <span class="nav-text">高可用设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%AE%89%E5%85%A8%E5%AE%A1%E8%AE%A1"><span class="nav-number">3.3.</span> <span class="nav-text">数据安全审计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%82%E5%8A%A8%E7%9B%91%E6%8E%A7"><span class="nav-number">3.4.</span> <span class="nav-text">异动监控</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%80%E6%9C%9F%E7%B2%BE%E5%BD%A9"><span class="nav-number">5.</span> <span class="nav-text">往期精彩</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ChatGPT-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">ChatGPT 是什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ChatGPT-%E8%83%BD%E5%B9%B2%E5%98%9B%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">ChatGPT 能干嘛？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ChatGPT-%E4%B8%BA%E4%BD%95%E7%88%86%E7%BA%A2%EF%BC%9F"><span class="nav-number">4.</span> <span class="nav-text">ChatGPT 为何爆红？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">5.</span> <span class="nav-text">最佳实践</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BF%BB%E8%AF%91"><span class="nav-number">5.1.</span> <span class="nav-text">翻译</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E7%BF%BB%E8%AF%91"><span class="nav-number">5.1.1.</span> <span class="nav-text">自然语言翻译</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E7%BF%BB%E8%AF%91"><span class="nav-number">5.1.2.</span> <span class="nav-text">编程语言翻译</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SQL-%E8%AF%AD%E8%A8%80%E7%BF%BB%E8%AF%91"><span class="nav-number">5.1.3.</span> <span class="nav-text">SQL 语言翻译</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E6%9C%AC%E5%A2%9E%E5%BC%BA"><span class="nav-number">5.2.</span> <span class="nav-text">文本增强</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.2.1.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%87%E6%9C%AC%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA"><span class="nav-number">5.2.2.</span> <span class="nav-text">文本结构化输出</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%81%94%E6%83%B3"><span class="nav-number">5.2.3.</span> <span class="nav-text">联想</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E5%AD%97%E6%8F%90%E5%8F%96"><span class="nav-number">5.2.4.</span> <span class="nav-text">关键字提取</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E4%BD%9C"><span class="nav-number">5.3.</span> <span class="nav-text">创作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E8%AF%97"><span class="nav-number">5.3.1.</span> <span class="nav-text">写诗</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E6%95%85%E4%BA%8B"><span class="nav-number">5.3.2.</span> <span class="nav-text">写故事</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%96%E7%A8%8B"><span class="nav-number">5.3.3.</span> <span class="nav-text">编程</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%99%BE%E7%A7%91"><span class="nav-number">5.4.</span> <span class="nav-text">百科</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8F%90%E9%97%AE"><span class="nav-number">5.4.1.</span> <span class="nav-text">提问</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%A3%9F%E8%B0%B1"><span class="nav-number">5.4.2.</span> <span class="nav-text">食谱</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93-1"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%80%E6%9C%9F%E7%B2%BE%E5%BD%A9"><span class="nav-number">7.</span> <span class="nav-text">往期精彩</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

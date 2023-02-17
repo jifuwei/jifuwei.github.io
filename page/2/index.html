@@ -166,6 +166,98 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jifuwei.github.io/yuque/%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E2%80%94%E2%80%94%E5%B0%8F%E5%B0%8F%E7%9A%84log%E5%A4%A7%E5%A4%A7%E7%9A%84%E5%9D%91.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="是咕咕鸡">
+      <meta itemprop="description" content="过刚易折，善柔不败">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="是咕咕鸡">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/yuque/%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E2%80%94%E2%80%94%E5%B0%8F%E5%B0%8F%E7%9A%84log%E5%A4%A7%E5%A4%A7%E7%9A%84%E5%9D%91.html" class="post-title-link" itemprop="url">性能调优——小小的log大大的坑</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-30 16:52:45" itemprop="dateCreated datePublished" datetime="2022-08-30T16:52:45+08:00">2022-08-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-01-06 11:12:21" itemprop="dateModified" datetime="2023-01-06T11:12:21+08:00">2023-01-06</time>
+              </span>
+
+          
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h3><p>“只有被线上服务问题毒打过的人才明白日志有多重要！”<br>我先说结论，谁赞成，谁反对？如果你深有同感，那恭喜你是个社会人了：）</p>
+<p>日志对程序的重要性不言而喻，轻巧、简单、无需费脑，程序代码中随处可见，帮助我们排查定位一个有一个问题问题。但看似不起眼的日志，却隐藏着各式各样的“坑”，如果使用不当，不仅不能帮助我们，反而会成为服务“杀手”。<br>本文主要介绍生产环境日志使用不当导致的“坑”及避坑指北，高并发系统下尤为明显。同时提供一套实现方案能让程序与日志“和谐共处”。</p>
+<h3 id="避坑指北"><a href="#避坑指北" class="headerlink" title="避坑指北"></a>避坑指北</h3><p>本章节我将介绍过往线上遇到的日志问题，并逐个剖析问题根因。</p>
+<h4 id="不规范的日志书写格式"><a href="#不规范的日志书写格式" class="headerlink" title="不规范的日志书写格式"></a>不规范的日志书写格式</h4><p>场景</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 格式1</span></span><br><span class="line">log.debug(<span class="string">&quot;get user&quot;</span> + uid + <span class="string">&quot; from DB is Empty!&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 格式2</span></span><br><span class="line"><span class="keyword">if</span> (log.isdebugEnable()) &#123;</span><br><span class="line">    log.debug(<span class="string">&quot;get user&quot;</span> + uid + <span class="string">&quot; from DB is Empty!&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 格式3</span></span><br><span class="line">log.debug(<span class="string">&quot;get user &#123;&#125; from DB is Empty!&quot;</span>, uid);</span><br></pre></td></tr></table></figure>
+
+<p>如上三种写法，我相信大家或多或少都在项目代码中看到过，那么他们之前有区别呢，会对性能造成什么影响？<br>如果此时关闭 DEBUG 日志级别，差异就出现了，格式 1 依然还是要执行字符串拼接，即使它不输出日志，属于浪费。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/yuque/%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E2%80%94%E2%80%94%E5%B0%8F%E5%B0%8F%E7%9A%84log%E5%A4%A7%E5%A4%A7%E7%9A%84%E5%9D%91.html#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://jifuwei.github.io/yuque/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%BF%85%E5%A4%87%E2%80%94%E2%80%94%E7%81%AB%E7%84%B0%E5%9B%BE.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -768,7 +860,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-count">17</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -818,13 +910,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">80k</span>
+    <span title="站点总字数">82k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1:13</span>
+    <span title="站点阅读时长">1:15</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>
