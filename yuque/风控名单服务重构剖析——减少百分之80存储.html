@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="ZAxoxqp0q8qf8GaVFBLqt3fZ2g3Ch1QtMgFoQhUyzZQ">
+  <meta name="baidu-site-verification" content="code-YeeuLMqwzd">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.lug.ustc.edu.cn/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jifuwei.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="引言小小的 Redis 大大的不简单，本文将结合风控名单服务在使用 Redis 存储数据时的数据结构设计及优化，并详细分析 redis 底层实现对数据结构选型的重要性。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="风控名单服务重构剖析——减少百分之80存储">
+<meta property="og:url" content="https://jifuwei.github.io/yuque/%E9%A3%8E%E6%8E%A7%E5%90%8D%E5%8D%95%E6%9C%8D%E5%8A%A1%E9%87%8D%E6%9E%84%E5%89%96%E6%9E%90%E2%80%94%E2%80%94%E5%87%8F%E5%B0%91%E7%99%BE%E5%88%86%E4%B9%8B80%E5%AD%98%E5%82%A8.html">
+<meta property="og:site_name" content="是咕咕鸡">
+<meta property="og:description" content="引言小小的 Redis 大大的不简单，本文将结合风控名单服务在使用 Redis 存储数据时的数据结构设计及优化，并详细分析 redis 底层实现对数据结构选型的重要性。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FujxIJvlg6u1p1xvlP2jxaUjsRWw.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fq2lhmSeEBUcUgKxWHf93yy1K6Js.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FlRRNnWzDbSsgWULT1FWQ_2IIE2j.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsqgjDKp4-0C01ZR6GHMpJ6OuxTc.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsdYmWe1pgNx2hCIL3bp1OM3hP2I.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fr2Vxdt1-0S3da1GJV7SY4Gp1M70.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FhDIN3h3k7Sd7LGbVHKiiuUsxflP.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FuMIqhCO798HOuhZ1ox1u_9vV0RB.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsOSbXbWIelFXkPdwuOpw4Z2gH9B.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FhMb6ZIf5DQKhivBEViPj4LJbkL6.png">
+<meta property="og:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FjweSAXVc4AKYmHLZH1m5HegHl30.png">
+<meta property="article:published_time" content="2023-03-06T08:55:25.000Z">
+<meta property="article:modified_time" content="2023-03-07T08:14:20.678Z">
+<meta property="article:author" content="是咕咕鸡">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FujxIJvlg6u1p1xvlP2jxaUjsRWw.png">
+
+<link rel="canonical" href="https://jifuwei.github.io/yuque/%E9%A3%8E%E6%8E%A7%E5%90%8D%E5%8D%95%E6%9C%8D%E5%8A%A1%E9%87%8D%E6%9E%84%E5%89%96%E6%9E%90%E2%80%94%E2%80%94%E5%87%8F%E5%B0%91%E7%99%BE%E5%88%86%E4%B9%8B80%E5%AD%98%E5%82%A8.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>风控名单服务重构剖析——减少百分之80存储 | 是咕咕鸡</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1575500ddb979a8e4e895121cbd848cb";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">是咕咕鸡</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">希望我分享的文章能够给每一位读者带来帮助！</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jifuwei.github.io/yuque/%E9%A3%8E%E6%8E%A7%E5%90%8D%E5%8D%95%E6%9C%8D%E5%8A%A1%E9%87%8D%E6%9E%84%E5%89%96%E6%9E%90%E2%80%94%E2%80%94%E5%87%8F%E5%B0%91%E7%99%BE%E5%88%86%E4%B9%8B80%E5%AD%98%E5%82%A8.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="是咕咕鸡">
+      <meta itemprop="description" content="过刚易折，善柔不败">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="是咕咕鸡">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          风控名单服务重构剖析——减少百分之80存储
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-06 16:55:25" itemprop="dateCreated datePublished" datetime="2023-03-06T16:55:25+08:00">2023-03-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-03-07 16:14:20" itemprop="dateModified" datetime="2023-03-07T16:14:20+08:00">2023-03-07</time>
+              </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div id="vip-container"><h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>小小的 Redis 大大的不简单，本文将结合风控名单服务在使用 Redis 存储数据时的数据结构设计及优化，并详细分析 redis 底层实现对数据结构选型的重要性。</p>
+<span id="more"></span>
+
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>先来交代下使用场景，在风控场景下，名单服务每时每刻都需要承受海量数据查询。</p>
+<p>名单检索内容涉及维度非常广：用户业务标识（UID）、手机号、身份证号、设备号、IMEI（International Mobile Equipment Identity, 国际移动设备识别码）、Wifi Mac、IP 等等。用户的一次业务请求，在风控的中会扩散到多个名单维度，同时还需要在 RT（Response-time） 上满足业务场景诉求。</p>
+<p>这就导致名单服务的构建需要承受住如下挑战:</p>
+<ul>
+<li><strong>海量数据存储</strong>：维度多，存储内容尚可（是否命中），按照 X 个用户，Y 个维度，Z 个业务线（隔离），量级非常大</li>
+<li><strong>大流量、高并发</strong>：业务场景下任何存在风险敞口的点都需要评估过风控，每天决策峰值 TPS 过万</li>
+<li><strong>极低耗时</strong>：留给名单服务的时间不多了，如果整体业务系统给风控决策的耗时是 200 ms，名单服务必须要在 30 ~ 50 ms 就得得到结果，否则将极大影响后续规则引擎的运算执行进度</li>
+</ul>
+<p>如上系统要求其实在大数据系统架构下都是适用的，只是名单服务要的更极致而已。</p>
+<p>在上一篇 <a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/jxOzNDnOwFV3h1jB9gs5ow">《风控核心子域——名单服务构建及挑战》</a> 文章中已经介绍了名单服务设计，选用了 Redis 作为存储，目前也只能是 Redis 能满足名单服务场景的高性能诉求。同时也介绍了选择用 Redis 中遇到的数据异常及高可用设计架构，忘了或者感兴趣的朋友可以再回顾一遍。</p>
+<p>名单数据的存储结构选用的是 Hash 存储，结构如下：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FujxIJvlg6u1p1xvlP2jxaUjsRWw.png"></p>
+<p>在此我提出几个疑问（不知道读者看完后是否也有~）：</p>
+<ul>
+<li>为何使用 Hash? 使用 <code>set key-value</code> 结构可以么？</li>
+<li>过期时间如何维护？set key-val 可以直接基于 <code>expire</code> 设置， hash 结构内过期的数据是如何删除的？</li>
+<li>当前设计架构，对 Redis 的内存消耗大概在什么水位？可预见的未来能够满足业务的增长需求么？</li>
+</ul>
+<p>如果你也有这些疑问，那么本篇文章将为你解惑，希望能有收获。</p>
+<h2 id="Redis-是如何存储数据的？"><a href="#Redis-是如何存储数据的？" class="headerlink" title="Redis 是如何存储数据的？"></a>Redis 是如何存储数据的？</h2><p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fq2lhmSeEBUcUgKxWHf93yy1K6Js.png"><br>工欲善其事必先利其器，我们先将常用的 Redis 结构底层实现摸透，才能在使用上游刃有余，由于本文在用的 redis 结构只会涉及到 <code>string</code> 和 <code>hash</code>，笔者仅分析这两种，其它的读者们感兴趣可以自行搜索。</p>
+<h3 id="字符串存储"><a href="#字符串存储" class="headerlink" title="字符串存储"></a>字符串存储</h3><p><code>string</code> 是 redis 中最常用的存储结构，redis 实现是是基于 C 语言，此处的字符串并不是直接使用 c 中的字符串，而是自己实现了一套 “<strong>SDS</strong>”（<strong>简单动态字符串</strong>）。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">struct <span class="title function_">sdshdr</span><span class="params">(</span></span><br><span class="line"><span class="params">    //记录 buf 数组中已使用字节的数量</span></span><br><span class="line"><span class="params">    //等于 SDS 保存字符串的长度</span></span><br><span class="line"><span class="params">    <span class="type">int</span> len;</span></span><br><span class="line"><span class="params">    //记录 buf 数组中未使用字节的数量</span></span><br><span class="line"><span class="params">    <span class="type">int</span> free;</span></span><br><span class="line"><span class="params">    //字节数组，用于保存字符串</span></span><br><span class="line"><span class="params">    <span class="type">char</span> buf[];</span></span><br><span class="line"><span class="params">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>redis 的底层存储会使用三种方式来存储数据：<code>**int**</code>、<code>**raw**</code>和<code>**embstr**</code></p>
+<h4 id="int-类型"><a href="#int-类型" class="headerlink" title="int 类型"></a>int 类型</h4><p>存储值：整形，且可以用 long 类型来表示的。举例如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">redis&gt; </span><span class="language-bash">OBJECT ENCODING number</span></span><br><span class="line">&quot;int&quot;</span><br></pre></td></tr></table></figure>
+
+<p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FlRRNnWzDbSsgWULT1FWQ_2IIE2j.png"></p>
+<h4 id="raw-类型"><a href="#raw-类型" class="headerlink" title="raw 类型"></a>raw 类型</h4><p>存储值：字符串值，且字符串长度 &gt; 39 字节的。举例如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">redis&gt; </span><span class="language-bash">SET story <span class="string">&quot;Long, long, long ago there lived a king ...&quot;</span></span></span><br><span class="line">OK</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">redis&gt; </span><span class="language-bash">STRLEN story</span></span><br><span class="line">(integer) 43</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">redis&gt; </span><span class="language-bash">OBJECT ENCODING story</span></span><br><span class="line">&quot;raw&quot;</span><br></pre></td></tr></table></figure>
+
+<p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsqgjDKp4-0C01ZR6GHMpJ6OuxTc.png"></p>
+<h4 id="embstr-类型"><a href="#embstr-类型" class="headerlink" title="embstr 类型"></a>embstr 类型</h4><p>存储值：字符串值，且字符串长度 &lt;&#x3D; 39 字节的。</p>
+<p>embstr 编码的字符串对象在执行命令时， 产生的效果和 raw 编码的字符串对象执行命令时产生的效果是相同的， 但使用 embstr 编码的字符串对象来保存短字符串值有以下好处：</p>
+<ol>
+<li>embstr 编码将创建字符串对象所需的内存分配次数从 raw 编码的<strong>两次降低为一次</strong>。</li>
+<li>释放 embstr 编码的字符串对象<strong>只需要调用一次内存释放函数</strong>， 而释放 raw 编码的字符串对象需要调用两次内存释放函数。</li>
+<li>因为 embstr 编码的字符串对象的所有数据都保存在一块连续的内存里面， 所以这种编码的字符串对象比起 raw 编码的字符串对象能够<strong>更好地利用缓存带来的优势</strong>。</li>
+</ol>
+<p>举例如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">redis&gt; </span><span class="language-bash">SET msg <span class="string">&quot;hello&quot;</span></span></span><br><span class="line">OK</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">redis&gt; </span><span class="language-bash">OBJECT ENCODING msg</span></span><br><span class="line">&quot;embstr&quot;</span><br></pre></td></tr></table></figure>
+
+<p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsdYmWe1pgNx2hCIL3bp1OM3hP2I.png"></p>
+<p>总结如下（redis version &gt; 3.2）：</p>
+<table>
+<thead>
+<tr>
+<th>值</th>
+<th>编码</th>
+<th>占用内存</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>可以用 long 类型保存的整数。</td>
+<td>int</td>
+<td>定长 8 字节</td>
+</tr>
+<tr>
+<td>可以用 long double 类型保存的浮点数。</td>
+<td>embstr 或者 raw</td>
+<td>动态扩容的，每次扩容 1 倍，超过 1M 时，每次只扩容 1M。</td>
+</tr>
+<tr>
+<td>字符串值， 或者因为长度太大而没办法用 long 类型表示的整数， 又或者因为长度太大而没办法用 long double 类型表示的浮点数。</td>
+<td>embstr 或者 raw</td>
+<td>用来存储大于 44 个字节的字符串。</td>
+</tr>
+</tbody></table>
+<h3 id="Hash-存储"><a href="#Hash-存储" class="headerlink" title="Hash 存储"></a>Hash 存储</h3><p>哈希对象的编码可以是 ziplist 或者 hashtable 。</p>
+<h4 id="ziplist-类型"><a href="#ziplist-类型" class="headerlink" title="ziplist 类型"></a>ziplist 类型</h4><p>ziplist 编码的哈希对象使用压缩列表作为底层实现， 每当有新的键值对要加入到哈希对象时， 程序会先将保存了键的压缩列表节点推入到压缩列表表尾， 然后再将保存了值的压缩列表节点推入到压缩列表表尾， 因此：</p>
+<ul>
+<li>保存了同一键值对的两个节点总是紧挨在一起， 保存键的节点在前， 保存值的节点在后；</li>
+<li>先添加到哈希对象中的键值对会被放在压缩列表的表头方向， 而后来添加到哈希对象中的键值对会被放在压缩列表的表尾方向。</li>
+</ul>
+<p>举例如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">redis&gt; </span><span class="language-bash">HSET profile name <span class="string">&quot;Tom&quot;</span></span></span><br><span class="line">(integer) 1</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">redis&gt; </span><span class="language-bash">HSET profile age 25</span></span><br><span class="line">(integer) 1</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">redis&gt; </span><span class="language-bash">HSET profile career <span class="string">&quot;Programmer&quot;</span></span></span><br><span class="line">(integer) 1</span><br></pre></td></tr></table></figure>
+
+<p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/Fr2Vxdt1-0S3da1GJV7SY4Gp1M70.png"><br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FhDIN3h3k7Sd7LGbVHKiiuUsxflP.png"></p>
+<h4 id="hashtable-类型"><a href="#hashtable-类型" class="headerlink" title="hashtable 类型"></a>hashtable 类型</h4><p>哈希对象中的每个键值对都使用一个字典键值对来保存：</p>
+<ul>
+<li>字典的每个键都是一个字符串对象， 对象中保存了键值对的键；</li>
+<li>字典的每个值都是一个字符串对象， 对象中保存了键值对的值。</li>
+</ul>
+<p>如果上述例子的底层存储方式是 hashtable，那么对象结构会如图所示：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FuMIqhCO798HOuhZ1ox1u_9vV0RB.png"></p>
+<p>总结如下（redis version &lt; 3.2，新版本的优化了使用 quicklist，更新的版本使用 listpack，道理一样，此处以 ziplist 总结）:</p>
+<table>
+<thead>
+<tr>
+<th>值</th>
+<th>编码</th>
+<th>占用内存</th>
+</tr>
+</thead>
+</table>
+<p>| 哈希对象保存的所有键值对的键和值的字符串长度都小于 64 字节；<br>哈希对象保存的键值对数量小于 512 个； | ziplist | 本质是一个字符串；寻值需要遍历字符串；缺点是耗费更多的 cpu 来查询（如果值很少，可以忽略不计） |<br>| 不满足上述 ziplist 条件的值 | hashtable | 类似 java HashMap 实现；空间换时间；需要多花费本身存储的 25%内存 |</p>
+<p>注意：ziplist 两个条件的上限值是可以修改的， 具体请看配置文件 redis.conf 中关于 hash-max-ziplist-value 选项和 hash-max-ziplist-entries 选项的说明。</p>
+<p>两种数据结构，按照解释，当 value 数量控制在 512 时，性能和单纯的使用 hashtable 基本一致，value 数量在不超过 1024 时，性能只有极小的降低，<strong>然而内存的占用 ziplist 比 hashtable 降低了 80% 左右。</strong></p>
+<h2 id="名单服务改造"><a href="#名单服务改造" class="headerlink" title="名单服务改造"></a>名单服务改造</h2><p>通过如上的分析，我们得出两个重要结论：</p>
+<ul>
+<li><strong>key 或者 val 使用编码是 int 类型时（8 个字节），要比编码使用 string 即 raw|embstr 要省很多空间</strong></li>
+<li><strong>使用 ziplist 存储，要比使用 key-value 节省巨大的空间</strong></li>
+</ul>
+<p>分析一下名单服务支撑的业务数据量，假设有 5 亿个用户（可能非活跃，就假设全量），每个用户衍生出 10 个名单维度（手机号、身份证、设备等等），每个维度再衍生出 10 个沙盒隔离环境（业务线、渠道等等），那么总的数据量级在： <strong>500 亿左右</strong>。</p>
+<h3 id="分桶"><a href="#分桶" class="headerlink" title="分桶"></a>分桶</h3><p>500 亿个值如果都存放在 hash 结构中，需要分散到不同的<strong>桶（bucket）</strong>中，每个桶最大不超过 <strong>512</strong> 个（这个可以自行配置，最好<strong>不超 1024 个</strong>，不然损失了查询性能，配置过大后需要实际压测检验）。从而避免 hash 的编码从 ziplist 切换至 hashtable。</p>
+<p>bucket 数量 &#x3D; 500 亿 &#x2F; 512 &#x3D; 97,656,250，即需要这么多桶来承载，如果是 1024 个，则桶的量可缩小一倍，但是意义不大。</p>
+<h3 id="hash-算法选择"><a href="#hash-算法选择" class="headerlink" title="hash 算法选择"></a>hash 算法选择</h3><p>需要将这么多维度的数据通过 hash 算法，均匀、离散的分摊到这些个 bucket 内，必须选择业内比较有名且碰撞率不高的优秀算法。可以选择 <code>crc32(key) % bucketNum</code>，得到该存在哪个 bucket 内，此时再使用 hash 算法（需要考虑前后两次 hash 的碰撞率，建议选择与分桶算法不一致）或者直接使用 Java 对象的 hashcode 作为 field 即可，整体效果如图：<br><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FsOSbXbWIelFXkPdwuOpw4Z2gH9B.png"></p>
+<h3 id="新老数据比对"><a href="#新老数据比对" class="headerlink" title="新老数据比对"></a>新老数据比对</h3><p><img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FhMb6ZIf5DQKhivBEViPj4LJbkL6.png"><br>我将用三种数据作比对，分别是：字符串直插、老的名单服务数据、新的数据结构</p>
+<h4 id="字符串直插"><a href="#字符串直插" class="headerlink" title="字符串直插"></a>字符串直插</h4><p><code>key = deviceHash-$&#123;名单类型&#125;-$&#123;设备指纹&#125;-$&#123;沙盒隔离标识&#125;</code><br><code>val = 过期时间戳</code></p>
+<p>模拟在同一个设备指纹下有 10 个业务域隔离，即需要插入 10 条数据</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 插入 10 条数据，此处省略剩余 9 条</span></span></span><br><span class="line">127.0.0.1:6379&gt; set deviceHash-3-a313633418103bf58fe65b56bef28884e0ada768d20c94d69fc49ad618d92724-100000 1678157018608</span><br><span class="line">OK</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 单条占用内存大小（字节）</span></span></span><br><span class="line">127.0.0.1:6379&gt; memory usage deviceHash-3-a313633418103bf58fe65b56bef28884e0ada768d20c94d69fc49ad618d92724-100000</span><br><span class="line">(integer) 136</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 编码类型</span></span></span><br><span class="line">127.0.0.1:6379&gt; debug object deviceHash-3-a313633418103bf58fe65b56bef28884e0ada768d20c94d69fc49ad618d92724-100000</span><br><span class="line">Value at:0xffffb9a7c0c0 refcount:1 encoding:int serializedlength:14 lru:439622 lru_seconds_idle:745</span><br></pre></td></tr></table></figure>
+
+<p>整体占用内存（字节） &#x3D; 136 * 10 &#x3D; 1360</p>
+<h4 id="老名单服务数据结构"><a href="#老名单服务数据结构" class="headerlink" title="老名单服务数据结构"></a>老名单服务数据结构</h4><p><code>key = deviceHash-$&#123;名单类型&#125;-$&#123;设备指纹&#125;</code><br><code>field = $&#123;沙盒隔离标识&#125;</code><br><code>val = 过期时间戳</code></p>
+<p>模拟在同一个设备指纹下有 10 个业务域隔离，即需要插入 10 条数据</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 插入 10 条数据，此处省略剩余 9 条</span></span></span><br><span class="line">127.0.0.1:6379&gt; hset deviceHash-3-a313633418103bf58fe65b56bef28884e0ada768d20c94d69fc49ad618d92724 100000 1678157018608</span><br><span class="line">(integer) 1</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 单条占用内存大小（字节）</span></span></span><br><span class="line">memory usage deviceHash-3-a313633418103bf58fe65b56bef28884e0ada768d20c94d69fc49ad618d92724</span><br><span class="line">(integer) 296</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 编码类型</span></span></span><br><span class="line">127.0.0.1:6379&gt; debug object deviceHash-3-a313633418103bf58fe65b56bef28884e0ada768d20c94d69fc49ad618d92724</span><br><span class="line">Value at:0xffffb9a7c0d0 refcount:1 encoding:ziplist serializedlength:75 lru:439622 lru_seconds_idle:1168</span><br></pre></td></tr></table></figure>
+
+<p>整体占用内存（字节） &#x3D; 296<br>注：此处 hash 的 field 和 val 都为超 64 字节，满足 ziplist 要求。</p>
+<h4 id="新名单服务数据结构"><a href="#新名单服务数据结构" class="headerlink" title="新名单服务数据结构"></a>新名单服务数据结构</h4><p><code>key = bucket_$&#123;取余&#125;</code><br><code>field = hash_long_method(deviceHash-$&#123;名单类型&#125;-$&#123;设备指纹&#125;-$&#123;沙盒隔离标识&#125;)</code><br><code>val = 过期时间戳</code></p>
+<p>模拟在同一个设备指纹下有 10 个业务域隔离，即需要插入 10 条数据</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 插入 10 条数据，此处省略剩余 9 条</span></span></span><br><span class="line">127.0.0.1:6379&gt; hset bucket_11 206652428 1678157018608</span><br><span class="line">(integer) 1</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 单条占用内存大小（字节）</span></span></span><br><span class="line">127.0.0.1:6379&gt; memory usage bucket_11</span><br><span class="line">(integer) 248</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 编码类型</span></span></span><br><span class="line">127.0.0.1:6379&gt; debug object bucket_11</span><br><span class="line">Value at:0xffffb9a7c050 refcount:1 encoding:ziplist serializedlength:76 lru:439622 lru_seconds_idle:1214</span><br></pre></td></tr></table></figure>
+
+<p>整体占用内存（字节） &#x3D; 248（此处实际节省的是原始字符串作直接作为 key 所带来的消耗）</p>
+<p>可见，如上按照 500 亿数据计算的话，去除 10 个沙盒隔离维度，则老方案需要 50 亿个 hash 结构来存储，新方案只需要不到 1 亿个 结构来存储，节省的内存还是很客观的。</p>
+<p>由于名单服务比较特殊，<code>field</code> 和 <code>val</code> 都不大，假设业务上存储的值超 64 字节或者 filed 个数超 512，转变为 hashtable 的话，则新方案节省的就是巨量的内存。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>新的数据设计结构规避了如下几个问题：</p>
+<ul>
+<li>使用 Hash 是有代价的，底层如果是 hashtable 实现的话，会多用 25% 内存空间，毕竟空间换时间嘛</li>
+<li>key 最好不用原始的字符串，更有胜者，长短不一，导致内存碎片，占用空间情况更加严重</li>
+<li>部分开发者喜欢原始字符串加 MD5 后得到 32 位字符，解决了内存碎片问题，但是相比于编码是 int 类型，emstr 更占用空间，毕竟前者只需固定 8 个字节</li>
+<li>如上 <code>value</code> 我们只存储了时间戳，即是 long 类型整数，没有什么好优化的，假设业务中需要存储的是 字符串，序列化 JSON 串等，应采用高效的 byte[] 压缩算法，如 <code>Protocol Buffers</code> 等等</li>
+</ul>
+<p>同时，在实施过程中也要注意一些问题：</p>
+<ul>
+<li>hash 算法终归是有碰撞率的，在一些不容许错误的（比如金融、风控）等场景下，需要一定的取舍</li>
+<li>才有 hash 结构存储数据，失去了 redis 天然的支持 expire 功能，需要自主维护数据的生命周期，比如在值中追加生命时间戳，整体的高可用也需要保证</li>
+</ul>
+<h2 id="往期精彩"><a href="#往期精彩" class="headerlink" title="往期精彩"></a>往期精彩</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/eib0VRx-a-y3xwiBLZBnqw">风控规则引擎构建及挑战</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/teSuwP7u22hlDgStmc2GQw">风控决策引擎——决策流路径规划</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/AzHXeEX2bWOSMaxILZ44NQ">风控决策引擎——决策流构建实战</a></li>
+</ul>
+<blockquote>
+<p>欢迎关注公众号：咕咕鸡技术专栏<br>个人技术博客：<a href="https://jifuwei.github.io/">https://jifuwei.github.io/</a> &gt; <img data-src="https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/undefined/FjweSAXVc4AKYmHLZH1m5HegHl30.png"></p>
+</blockquote>
+</div>
+
+			<script src="https://my.openwrite.cn/js/readmore.js" type="text/javascript"></script>
+			<script>
+			var isMobile = navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i);
+			if (!isMobile) {
+			    var btw = new BTWPlugin();
+			    btw.init({
+			        "id": "vip-container",
+			        "blogId": "31077-1675308002228-922",
+			        "name": "咕咕鸡技术专栏",
+			        "qrcode": "https://jfw-blog-1313671624.cos.ap-nanjing.myqcloud.com/qrcode_for_guguji_it.jpg",
+			        "keyword": "blog"
+			    });
+			}
+			</script>
+		
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>原创技术分享，您的支持鼓励是我继续创作的动力！</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechat.jpg" alt="是咕咕鸡 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.png" alt="是咕咕鸡 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/wechat_channel.png">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/yuque/%E7%81%AB%E7%88%86%E5%85%A8%E7%90%83%E7%9A%84ChatGPT%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F.html" rel="prev" title="火爆全球的ChatGPT是什么？">
+      <i class="fa fa-chevron-left"></i> 火爆全球的ChatGPT是什么？
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis-%E6%98%AF%E5%A6%82%E4%BD%95%E5%AD%98%E5%82%A8%E6%95%B0%E6%8D%AE%E7%9A%84%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">Redis 是如何存储数据的？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%AD%98%E5%82%A8"><span class="nav-number">3.1.</span> <span class="nav-text">字符串存储</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#int-%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.1.1.</span> <span class="nav-text">int 类型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#raw-%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.1.2.</span> <span class="nav-text">raw 类型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#embstr-%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.1.3.</span> <span class="nav-text">embstr 类型</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hash-%E5%AD%98%E5%82%A8"><span class="nav-number">3.2.</span> <span class="nav-text">Hash 存储</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ziplist-%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.2.1.</span> <span class="nav-text">ziplist 类型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hashtable-%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.2.2.</span> <span class="nav-text">hashtable 类型</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8D%E5%8D%95%E6%9C%8D%E5%8A%A1%E6%94%B9%E9%80%A0"><span class="nav-number">4.</span> <span class="nav-text">名单服务改造</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%A1%B6"><span class="nav-number">4.1.</span> <span class="nav-text">分桶</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hash-%E7%AE%97%E6%B3%95%E9%80%89%E6%8B%A9"><span class="nav-number">4.2.</span> <span class="nav-text">hash 算法选择</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B0%E8%80%81%E6%95%B0%E6%8D%AE%E6%AF%94%E5%AF%B9"><span class="nav-number">4.3.</span> <span class="nav-text">新老数据比对</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9B%B4%E6%8F%92"><span class="nav-number">4.3.1.</span> <span class="nav-text">字符串直插</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%80%81%E5%90%8D%E5%8D%95%E6%9C%8D%E5%8A%A1%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">4.3.2.</span> <span class="nav-text">老名单服务数据结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B0%E5%90%8D%E5%8D%95%E6%9C%8D%E5%8A%A1%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">4.3.3.</span> <span class="nav-text">新名单服务数据结构</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%80%E6%9C%9F%E7%B2%BE%E5%BD%A9"><span class="nav-number">6.</span> <span class="nav-text">往期精彩</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="是咕咕鸡"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">是咕咕鸡</p>
+  <div class="site-description" itemprop="description">过刚易折，善柔不败</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/jifuwei" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;jifuwei" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+     
+      <div class="wechat_channel">
+        <br>
+        <!-- 公众号二维码引导 -->
+        <img src ="/images/wechat_channel.png">
+        <!-- <span>公众号</span> -->
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2022 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">是咕咕鸡</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">83k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">1:16</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
